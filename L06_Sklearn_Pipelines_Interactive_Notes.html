@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sklearn Pipelines — Class 6 Notes</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Patrick+Hand&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --board:#0c1014; --card:#151b21; --card-line:#222b32;
+    --chalk:#e9eef2; --chalk-dim:#9fb0bb;
+    --cyan:#5fd8e0; --cyan-dim:#2c5a5e;
+    --pink:#f17fb0; --pink-dim:#5a2f42;
+    --yellow:#f4cf5e; --green:#8fe3a6; --green-dim:#2f4f3a;
+    --white-marker:#f5f5f0; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{ background:var(--board); color:var(--chalk); font-family:'Inter',sans-serif; line-height:1.55; -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width:1180px; margin:0 auto; padding:0 24px 120px; }
+  h1,h2,h3,.hand{ font-family:'Caveat',cursive; font-weight:700; }
+  .hero{ padding:56px 0 30px; text-align:center; }
+  .chip{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--cyan); border:1px solid var(--cyan-dim); background:rgba(95,216,224,0.06); padding:6px 14px; border-radius:999px; margin-bottom:16px; }
+  .hero h1{ font-size:clamp(30px,6vw,54px); color:var(--white-marker); margin:0 0 8px; }
+  .hero h1 span{color:var(--pink);}
+  .hero p{ font-family:'Patrick Hand',cursive; color:var(--chalk-dim); font-size:18px; max-width:720px; margin:0 auto; }
+  .layout{ display:grid; grid-template-columns:250px 1fr; gap:36px; align-items:start; }
+  nav.toc{ position:sticky; top:24px; background:var(--card); border:1px solid var(--card-line); border-radius:var(--radius); padding:18px 16px; font-family:'JetBrains Mono',monospace; font-size:11.5px; max-height:calc(100vh - 48px); overflow-y:auto; }
+  nav.toc .toc-title{ color:var(--chalk-dim); text-transform:uppercase; letter-spacing:1.2px; font-size:10.5px; margin-bottom:8px; margin-top:14px; }
+  nav.toc .toc-title:first-child{margin-top:0;}
+  nav.toc a{ display:block; color:var(--chalk-dim); text-decoration:none; padding:6px 8px; border-radius:8px; margin-bottom:1px; }
+  nav.toc a:hover{color:var(--chalk); background:rgba(255,255,255,0.04);}
+  main{min-width:0;}
+  section.block{ margin-bottom:50px; scroll-margin-top:24px; }
+  .section-eyebrow{ font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--pink); margin-bottom:6px; }
+  section.block h2{ font-size:32px; color:var(--white-marker); margin:0 0 12px; }
+  section.block h2 .underline{ text-decoration:underline; text-decoration-color:var(--cyan); text-decoration-thickness:3px; }
+  p.lead{ font-size:14.5px; color:#cdd8de; max-width:820px; }
+  .card{ background:var(--card); border:1px solid var(--card-line); border-radius:var(--radius); padding:20px 22px; margin:14px 0; }
+  .card h3{ font-family:'Inter',sans-serif; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.7px; color:var(--cyan); margin:0 0 10px; }
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  .grid-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;}
+  .grid-4{display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:12px;}
+  @media (max-width:900px){ .layout{grid-template-columns:1fr;} nav.toc{position:relative; top:0; margin-bottom:20px; max-height:none;} .grid-2,.grid-3,.grid-4{grid-template-columns:1fr;} }
+  table.data-table{ width:100%; border-collapse:collapse; font-family:'JetBrains Mono',monospace; font-size:12.5px; }
+  table.data-table th{ text-align:left; color:var(--chalk-dim); font-weight:500; padding:7px 10px; border-bottom:1px solid var(--card-line); text-transform:uppercase; font-size:10px; letter-spacing:0.4px; }
+  table.data-table td{ padding:7px 10px; border-bottom:1px solid rgba(255,255,255,0.04); }
+  table.data-table td.hl{color:var(--yellow); font-weight:700;}
+  table.data-table td.zero{color:var(--pink); font-weight:700; background:rgba(241,127,176,0.08);}
+  table.data-table td.good{color:var(--green); font-weight:700;}
+  blockquote.story{ font-family:'Patrick Hand',cursive; font-size:16.5px; color:#dbe6ec; border-left:3px solid var(--yellow); padding:6px 18px; margin:14px 0; background:rgba(244,207,94,0.04); border-radius:0 10px 10px 0; }
+  .pipeline{ display:flex; align-items:center; gap:0; overflow-x:auto; padding:10px 0 18px; }
+  .pipe-step{ flex:0 0 auto; min-width:130px; background:var(--card); border:1px solid var(--card-line); border-radius:12px; padding:12px 14px; text-align:center; }
+  .pipe-step .n{ font-family:'JetBrains Mono',monospace; color:var(--cyan); font-size:10.5px; margin-bottom:5px; }
+  .pipe-step .t{font-weight:700; font-size:12.5px; color:var(--white-marker);}
+  .pipe-step .d{font-size:10px; color:var(--chalk-dim); margin-top:3px;}
+  .pipe-arrow{ flex:0 0 auto; width:24px; text-align:center; color:var(--pink); font-size:16px; }
+  .formula{ font-family:'JetBrains Mono',monospace; background:#0a0d10; border:1px solid var(--card-line); border-radius:10px; padding:14px 20px; margin:12px 0; font-size:14.5px; color:var(--white-marker); overflow-x:auto; }
+  .formula.center{text-align:center;}
+  .formula .k{color:var(--yellow);} .formula .r{color:var(--cyan);} .formula .l{color:var(--pink);}
+  .formula-note{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--chalk-dim); margin-top:6px; }
+  .callout{ background:rgba(143,227,166,0.08); border:1px solid var(--green-dim); border-radius:10px; padding:12px 16px; color:var(--green); font-size:13px; font-family:'JetBrains Mono',monospace; margin:12px 0; line-height:1.6; }
+  .callout.warn{ background:rgba(244,207,94,0.08); border-color:#5a4f2f; color:var(--yellow); }
+  .callout.bad{ background:rgba(241,127,176,0.08); border-color:var(--pink-dim); color:var(--pink); }
+  .callout.info{ background:rgba(95,216,224,0.08); border-color:var(--cyan-dim); color:var(--cyan); }
+  .optional-box{ border:1.5px dashed var(--pink-dim); border-radius:14px; padding:20px 22px; margin:18px 0; background:rgba(241,127,176,0.04); }
+  .optional-box .opt-tag{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--pink); border:1px solid var(--pink-dim); padding:3px 10px; border-radius:999px; margin-bottom:10px; }
+  .step-card{ background:rgba(0,0,0,0.22); border-radius:10px; padding:14px 18px; margin:10px 0; border:1px solid var(--card-line); }
+  .step-tag{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--board); background:var(--cyan); padding:2px 8px; border-radius:6px; margin-right:8px; font-weight:700; }
+  .code{ font-family:'JetBrains Mono',monospace; background:#0a0d10; border:1px solid var(--card-line); border-radius:10px; padding:14px 18px; margin:10px 0; font-size:12.5px; overflow-x:auto; white-space:pre; color:#dbe6ec; }
+  .code .c{color:#6b7f8a; font-style:italic;} .code .kw{color:#f17fb0;} .code .s{color:#f4cf5e;} .code .fn{color:#5fd8e0;} .code .num{color:#8fe3a6;}
+  .analogy-row{ display:flex; gap:14px; margin-top:12px; flex-wrap:wrap; }
+  .analogy{ flex:1; min-width:150px; background:var(--card); border:1px solid var(--card-line); border-radius:10px; padding:14px 16px; text-align:center; }
+  .analogy .icon{font-size:24px;}
+  .analogy h4{font-size:14px; margin:6px 0 4px; color:var(--white-marker);}
+  .analogy p{font-size:11.5px; color:var(--chalk-dim); margin:0;}
+  .footnote-strip{ margin-top:60px; border-top:1px dashed var(--card-line); padding-top:22px; text-align:center; color:var(--chalk-dim); font-family:'JetBrains Mono',monospace; font-size:12px; }
+  .footnote-strip .hand{color:var(--cyan); font-size:22px; display:block; margin-bottom:6px;}
+  .flowbox{ display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; margin:14px 0;}
+  .fbox{ background:#0a0d10; border:1px solid var(--card-line); border-radius:10px; padding:10px 16px; font-family:'JetBrains Mono',monospace; font-size:12px; text-align:center; }
+  .fbox.hl{ border-color:var(--cyan-dim); color:var(--cyan);}
+  .farrow{color:var(--pink); font-size:16px;}
+  .svg-card{ background:#fff; border:1px solid var(--card-line); border-radius:12px; padding:14px; }
+  .svg-caption{ text-align:center; font-family:'JetBrains Mono',monospace; font-size:11px; color:#555; margin-top:8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="chip">13-07-2026 · Module: Applied ML Engineering</div>
+    <h1>Sklearn <span>Pipelines</span></h1>
+    <div class="chip" style="background:none; border-color:var(--pink-dim); color:var(--pink); margin-top:0;">📘 Class 6 · Raw Data → Encoding → Scaling → ColumnTransformer → Pipeline / FeatureUnion</div>
+  </div>
+
+  <div class="layout">
+    <nav class="toc" id="toc">
+      <div class="toc-title">Start here</div>
+      <a href="#precap">Precap &amp; agenda</a>
+      <div class="toc-title">1 · From raw to ready</div>
+      <a href="#journey">Raw data → model journey</a>
+      <div class="toc-title">2 · Encoding</div>
+      <a href="#onehot">One-Hot Encoding</a>
+      <a href="#ordinal">Ordinal Encoding</a>
+      <a href="#highcard">⭐ Optional: high-cardinality features</a>
+      <div class="toc-title">3 · Scaling</div>
+      <a href="#whyscale">Why scaling matters</a>
+      <a href="#standard">Standard Scaler</a>
+      <a href="#minmax">Min-Max Scaler</a>
+      <a href="#maxabs">Max-Abs Scaler</a>
+      <a href="#whichscaler">Which scaler, when?</a>
+      <a href="#robust">⭐ Optional: Robust Scaler</a>
+      <a href="#samescale">Does everything need the same scale?</a>
+      <div class="toc-title">4 · Assembling it</div>
+      <a href="#coltrans">ColumnTransformer</a>
+      <a href="#pipeunion">Pipeline vs. FeatureUnion</a>
+      <a href="#fitscore">fit_transform vs. transform vs. fit+score</a>
+      <a href="#whenpipe">When to use / not use a pipeline</a>
+      <div class="toc-title">Optional deep-dive</div>
+      <a href="#customtrans">⭐ Custom Transformers</a>
+      <div class="toc-title">Wrap-up</div>
+      <a href="#summary">Class summary</a>
+    </nav>
+
+    <main>
+
+      <section class="block" id="precap">
+        <div class="section-eyebrow">Where we're headed today</div>
+        <h2>Precap &amp; <span class="underline">agenda</span></h2>
+        <p class="lead">So far we've obsessed over the <i>model</i> — Ridge, Lasso, gradient descent, bias-variance. Today we zoom out to the part that happens <b>before</b> any model ever sees the data: turning a raw, messy CSV into clean numeric columns a model can actually consume — reliably, and without accidentally cheating by peeking at test data. This is a coding-and-walkthrough class, built around a real dataset (car prices), but every code cell below is backed by the theory of <i>why</i> it's written that way.</p>
+        <div class="pipeline">
+          <div class="pipe-step"><div class="n">01</div><div class="t">Raw data → EDA</div><div class="d">nulls, dupes, univariate/bivariate</div></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step"><div class="n">02</div><div class="t">Encoding</div><div class="d">One-Hot, Ordinal</div></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step"><div class="n">03</div><div class="t">Scaling</div><div class="d">Standard, MinMax, MaxAbs</div></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step"><div class="n">04</div><div class="t">ColumnTransformer</div><div class="d">apply both, in parallel</div></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step"><div class="n">05</div><div class="t">Pipeline</div><div class="d">preprocessing + model, one object</div></div>
+        </div>
+      </section>
+
+      <!-- ============ 1. JOURNEY ============ -->
+      <section class="block" id="journey">
+        <div class="section-eyebrow">Step 1 · From raw to ready</div>
+        <h2>The raw-data → model <span class="underline">journey</span></h2>
+        <p class="lead">A model like <code>ŷ = w₀ + w₁x₁ + ...</code> only understands clean numbers. Real data almost never arrives that way. Before any modelling, every dataset goes through the same checklist:</p>
+        <div class="card">
+          <h3>The checklist, in order</h3>
+          <div class="step-card"><span class="step-tag">1</span> <b>Missing values check</b> — <code>cars.isnull().sum()</code>. Decide per column: drop the row, drop the column, or impute (mean/median/mode).</div>
+          <div class="step-card"><span class="step-tag">2</span> <b>Duplicates check</b> — <code>cars.duplicated().sum()</code>. Duplicate rows silently inflate a pattern's importance and can even leak between train/test if not removed first.</div>
+          <div class="step-card"><span class="step-tag">3</span> <b>Data dictionary pass</b> — read what every column actually means before touching it. In our dataset: <code>car_ID</code> is just a row number (dropped), <code>symboling</code> is an insurance risk rating from -2 (safest) to +3 (riskiest) — genuinely ordered, so it's an <code>OrdinalEncoder</code> candidate, not a plain number to feed in directly.</div>
+          <div class="step-card"><span class="step-tag">4</span> <b>Univariate analysis</b> — look at one column at a time. For categorical columns, value counts (<code>cars['aspiration'].value_counts()</code>); for numeric columns, a histogram with <code>sns.histplot(cars['price'], kde=True)</code> to see the shape (skewed? multi-modal? outliers?).</div>
+          <div class="step-card"><span class="step-tag">5</span> <b>Bivariate analysis</b> — look at pairs of columns. <code>sns.pairplot(cars_numeric)</code> scatters every numeric column against every other — a near-straight-line scatter between two <i>features</i> is an early collinearity warning; between a feature and the <i>target</i>, it's a good predictive signal.</div>
+          <div class="step-card"><span class="step-tag">6</span> <b>Correlation heatmap</b> — <code>sns.heatmap(cars_numeric.corr(), annot=True)</code>. From today's board: <code>curbweight</code> and <code>enginesize</code> both correlate ~0.84–0.87 with <code>price</code> — strong candidates — while <code>carwidth</code> correlates 0.87 with <code>carlength</code>, a collinearity flag between two features to keep in mind for Ridge/Lasso.</div>
+          <div class="step-card"><span class="step-tag">7</span> <b>Cleaning</b> — e.g. <code>CarName</code> arrives as messy free text ("alfa-romero giulia", "vw dasher", "toyouta corona"). We extract just the brand (<code>car_company</code>) via string split or regex, then fix misspellings (<code>vw</code>/<code>vokswagen</code> → <code>volkswagen</code>, <code>toyouta</code> → <code>toyota</code>, <code>Nissan</code> → <code>nissan</code>) before it ever reaches an encoder — an encoder has no way to know "vw" and "volkswagen" mean the same brand.</div>
+          <div class="callout warn">None of this is optional busywork — an encoder or scaler fit on dirty, duplicated, or mis-typed data faithfully learns the mess right along with the signal.</div>
+        </div>
+      </section>
+
+      <!-- ============ 2. ENCODING ============ -->
+      <section class="block" id="onehot">
+        <div class="section-eyebrow">Step 2 · Encoding</div>
+        <h2>One-Hot Encoding — <span class="underline">for categories with no order</span></h2>
+        <p class="lead">Models only understand numbers, but many columns are text categories: <code>fueltype</code> is "gas" or "diesel", <code>carbody</code> is "sedan", "hatchback", "wagon"... There's no natural ranking here — "hatchback" isn't "more" or "less" than "sedan". One-Hot Encoding's answer: create one new 0/1 column <i>per category</i>.</p>
+        <div class="card">
+          <h3>Worked example</h3>
+          <p class="lead" style="margin-top:0;">Take <code>doornumber</code>, with values two/four/two/four across 4 rows:</p>
+          <table class="data-table">
+            <tr><th>row</th><th>doornumber</th></tr>
+            <tr><td>0</td><td>two</td></tr><tr><td>1</td><td>four</td></tr>
+            <tr><td>2</td><td>two</td></tr><tr><td>3</td><td>four</td></tr>
+          </table>
+          <p class="lead" style="margin:10px 0 4px;">becomes:</p>
+          <table class="data-table">
+            <tr><th>row</th><th>doornumber_two</th><th>doornumber_four</th></tr>
+            <tr><td>0</td><td class="hl">1</td><td>0</td></tr>
+            <tr><td>1</td><td>0</td><td class="hl">1</td></tr>
+            <tr><td>2</td><td class="hl">1</td><td>0</td></tr>
+            <tr><td>3</td><td>0</td><td class="hl">1</td></tr>
+          </table>
+          <div class="callout">Every row gets exactly one "1" — the column matching its category — and 0 everywhere else. No numeric ordering is implied between "two" and "four" anymore; the model just sees two independent yes/no signals.</div>
+        </div>
+        <div class="card">
+          <h3>The dummy-variable trap — why we drop one column</h3>
+          <p class="lead" style="margin-top:0;">If a column has only 2 categories (like doornumber), <code>doornumber_four</code> is entirely predictable from <code>doornumber_two</code> (it's always the opposite) — this is perfect multicollinearity, one column is a linear function of the other. That's why the real pipeline code uses <code>OneHotEncoder(drop='first', ...)</code> — drop one category's column entirely; its information is still fully recoverable (all-zeros across the remaining columns = "it was the dropped category").</p>
+          <div class="code"><span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> OneHotEncoder
+
+OneHotEncoder(<span class="fn">drop</span>=<span class="s">'first'</span>, <span class="fn">sparse_output</span>=<span class="kw">False</span>, <span class="fn">handle_unknown</span>=<span class="s">'ignore'</span>)
+<span class="c"># handle_unknown='ignore' -> if the test set has a brand-new category never seen
+# in training (e.g. a new car brand), it just encodes as all-zeros instead of crashing</span></div>
+        </div>
+      </section>
+
+      <section class="block" id="ordinal">
+        <h2>Ordinal Encoding — <span class="underline">for categories with a genuine order</span></h2>
+        <p class="lead">Some categorical columns aren't really "categories" at all — they're numbers in disguise, with a real, meaningful rank. <code>symboling</code> (insurance risk: -2 → +3) and <code>cylindernumber</code> ("two", "four", "six", "eight"...) both have a genuine order: fewer cylinders always means fewer cylinders, safer always means safer. One-Hot would <i>throw away</i> that order — Ordinal Encoding preserves it by mapping each category to a single number reflecting its rank.</p>
+        <div class="card">
+          <h3>Worked example</h3>
+          <table class="data-table">
+            <tr><th>cylindernumber</th><th>encoded rank</th></tr>
+            <tr><td>two</td><td>0</td></tr><tr><td>three</td><td>1</td></tr>
+            <tr><td>four</td><td>2</td></tr><tr><td>five</td><td>3</td></tr>
+            <tr><td>six</td><td>4</td></tr><tr><td>eight</td><td>5</td></tr>
+            <tr><td>twelve</td><td>6</td></tr>
+          </table>
+          <div class="code"><span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> OrdinalEncoder
+
+OE_categories_list = [
+    [<span class="num">-2</span>, <span class="num">-1</span>, <span class="num">0</span>, <span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>],  <span class="c"># symboling: safest -> riskiest</span>
+    [<span class="s">'two'</span>,<span class="s">'three'</span>,<span class="s">'four'</span>,<span class="s">'five'</span>,<span class="s">'six'</span>,<span class="s">'eight'</span>,<span class="s">'twelve'</span>]  <span class="c"># fewer -> more cylinders</span>
+]
+OrdinalEncoder(<span class="fn">categories</span>=OE_categories_list)</div>
+          <div class="callout bad">Critical detail: you must pass the category order explicitly via <code>categories=</code>. Left to its defaults, <code>OrdinalEncoder</code> just sorts alphabetically — which would rank "eight" before "five" (alphabetical) instead of after (numerical) — silently teaching the model a completely wrong order.</div>
+        </div>
+        <div class="card">
+          <h3>One-Hot vs. Ordinal — the decision rule</h3>
+          <table class="data-table">
+            <tr><th>question to ask</th><th>if yes → </th></tr>
+            <tr><td>Does the category have a genuine, meaningful rank?</td><td class="hl">Ordinal Encoding</td></tr>
+            <tr><td>Are the categories just distinct labels with no order?</td><td class="hl">One-Hot Encoding</td></tr>
+          </table>
+          <div class="callout warn">Using Ordinal on an un-ordered column (e.g. encoding carbody as sedan=0, wagon=1, hatchback=2...) invents a fake numeric distance the model will wrongly trust — it would imply "hatchback" is "twice as much" as "wagon" in some sense, which is meaningless. Always match the encoder to whether real order exists.</div>
+        </div>
+      </section>
+
+      <div class="optional-box" id="highcard">
+        <span class="opt-tag">⭐ Optional — mentioned for now, covered fully in a future class</span>
+        <h3 style="font-family:'Caveat',cursive; font-size:24px; margin:0 0 6px; color:var(--white-marker);">What if a feature has hundreds of categories?</h3>
+        <p class="lead" style="margin:0;">Our <code>car_company</code> column alone has 20+ brands — One-Hot would create 20+ new columns for that feature alone. Imagine a real-world "zip code" or "product SKU" column with 10,000+ unique values: One-Hot would explode into 10,000 columns, mostly zeros, and often overfits badly. Two techniques address this — <b>Frequency Encoding</b> (replace each category with how often it appears) and <b>Target Encoding</b> (replace each category with the average target value for that category, done carefully to avoid leakage). We'll cover both in detail, with worked examples, in a future class — for now, just know the problem exists and has a name: <b>high-cardinality categorical features</b>.</p>
+      </div>
+
+      <!-- ============ 3. SCALING ============ -->
+      <section class="block" id="whyscale">
+        <div class="section-eyebrow">Step 3 · Scaling</div>
+        <h2>Why scaling is <span class="underline">needed at all</span></h2>
+        <p class="lead">Look at two real columns from this dataset: <code>enginesize</code> ranges roughly 60–330, while <code>compressionratio</code> ranges roughly 7–23. Both matter for predicting price. So what goes wrong if we feed them in raw, unscaled?</p>
+        <div class="card">
+          <h3>The concrete problem</h3>
+          <blockquote class="story">Imagine Ridge regression with its penalty λΣw². Suppose <code>enginesize</code> genuinely needs a small coefficient (say w≈0.5) to have a sensible effect on price, because its raw values are already large (100s). Meanwhile <code>compressionratio</code> needs a much larger coefficient (say w≈50) to have any comparable effect, because its raw values are small (single/double digits). Ridge's penalty λΣw² squares every weight equally — it will punish compressionratio's w=50 far more harshly than enginesize's w=0.5, purely because of the units the data happened to arrive in, not because compressionratio is actually 100× less important.</blockquote>
+          <div class="callout bad">This is the core problem: <b>regularization penalizes the numeric size of a weight, but a weight's size is partly an artifact of what units/scale its feature happens to be measured in.</b> A feature measured in millimeters gets a naturally tiny coefficient; the same feature measured in kilometers would need a coefficient a million times larger for the identical real-world effect. Without scaling, Ridge/Lasso would unfairly punish whichever features happen to be measured in small units.</div>
+          <div class="callout warn">Same issue hits gradient descent directly: with wildly different feature scales, the loss surface becomes a long, thin, elongated bowl instead of a nice round one — gradient descent zig-zags slowly down the narrow direction instead of taking a direct path, needing far more iterations to converge. Distance-based methods (KNN, K-Means, SVM) are affected even more directly: Euclidean distance is dominated entirely by whichever feature has the largest raw numeric range, regardless of its actual importance.</div>
+        </div>
+      </section>
+
+      <section class="block" id="standard">
+        <h2>Standard Scaler — <span class="underline">Z-score normalization</span></h2>
+        <div class="card">
+          <h3>The formula</h3>
+          <div class="formula center">x_scaled = (x − μ) / σ</div>
+          <div class="formula-note">μ = mean of the column, σ = standard deviation of the column.</div>
+          <div class="callout">After scaling: the transformed column always has mean <b>0</b> and standard deviation <b>1</b> — it tells you "how many standard deviations away from average is this value," a unit-free, directly comparable number regardless of the original feature's units.</div>
+        </div>
+        <div class="card">
+          <h3>fit vs. transform — the train/test discipline, with numbers</h3>
+          <p class="lead" style="margin-top:0;">Say the training column <code>horsepower</code> = [100, 120, 140, 160, 180]. Mean μ=140, std σ≈28.28 (computed <b>only from these 5 training values</b>).</p>
+          <div class="step-card"><span class="step-tag">1</span> <code>.fit(X_train)</code> — computes and <i>stores</i> μ=140, σ=28.28 from training data only. No data is transformed yet.</div>
+          <div class="step-card"><span class="step-tag">2</span> <code>.transform(X_train)</code> — applies (x−140)/28.28 to each training value: 100→−1.41, 120→−0.71, 140→0, 160→0.71, 180→1.41.</div>
+          <div class="step-card"><span class="step-tag">3</span> <code>.transform(X_test)</code> — suppose the test set has horsepower=200. We reuse the <b>same stored μ=140, σ=28.28 from training</b>: (200−140)/28.28 = <b>2.12</b>.</div>
+          <div class="callout bad">Notice test value 2.12 is <i>outside</i> the ±1.41 range the training data occupied — and that's completely fine and expected. What would be wrong is recomputing a fresh mean/std from the test set itself — that's data leakage: it lets information about the test set's distribution quietly influence preprocessing, giving an overly optimistic, unrealistic sense of how the model will perform on truly new data.</div>
+          <div class="code"><span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> StandardScaler
+scaler = StandardScaler()
+scaler.<span class="fn">fit</span>(X_train)              <span class="c"># learns mean & std from TRAIN only</span>
+X_train_scaled = scaler.<span class="fn">transform</span>(X_train)
+X_test_scaled  = scaler.<span class="fn">transform</span>(X_test)   <span class="c"># reuses train's mean & std -- never refit</span>
+<span class="c"># shortcut for the training step only:
+# X_train_scaled = scaler.fit_transform(X_train)</span></div>
+        </div>
+      </section>
+
+      <section class="block" id="minmax">
+        <h2>Min-Max Scaler — <span class="underline">squeeze into a fixed range</span></h2>
+        <div class="card">
+          <h3>The formula</h3>
+          <div class="formula center">x_scaled = (x − min) / (max − min)</div>
+          <div class="formula-note">Result always lands in [0, 1] for the training data itself (test data can spill slightly outside if it has more extreme values).</div>
+          <div class="callout">Worked example: <code>wheelbase</code> training values [86.6, 95.7, 99.4, 102.4, 120.9] → min=86.6, max=120.9, range=34.3. Value 99.4 scales to (99.4−86.6)/34.3 = <b>0.373</b>. A future test value of 130 (higher than any training max!) would scale to (130−86.6)/34.3 = 1.27 — beyond 1, but the scaler doesn't clip it; it stays mathematically consistent with the stored train min/max.</div>
+        </div>
+      </section>
+
+      <section class="block" id="maxabs">
+        <h2>Max-Abs Scaler — <span class="underline">preserve sign, scale by magnitude only</span></h2>
+        <div class="card">
+          <h3>The formula</h3>
+          <div class="formula center">x_scaled = x / max(|x|)</div>
+          <div class="formula-note">Result always lands in [−1, 1]. Zero always stays exactly zero (this is the key difference from Min-Max — Max-Abs is "zero-centered" in the sense that it never shifts zero away from zero).</div>
+          <div class="callout">Worked example: <code>peakrpm</code> training values [4150, 5000, 5500, 6000]. max(|x|)=6000. So 4150→0.692, 5000→0.833, 5500→0.917, 6000→1.0. If a column had negative values too, e.g. [−10000, 5000, 10000], max(|x|)=10000, giving [−1, 0.5, 1] — negatives stay negative, positives stay positive, only magnitude is rescaled.</div>
+        </div>
+      </section>
+
+      <section class="block" id="whichscaler">
+        <h2>Which scaler, when? — <span class="underline">the decision table</span></h2>
+        <div class="card">
+          <table class="data-table">
+            <tr><th>scaler</th><th>use when</th><th>sensitive to outliers?</th></tr>
+            <tr><td class="hl">StandardScaler</td><td>Default choice for most linear models (Ridge/Lasso/Linear Regression), features are roughly bell-shaped, or the model assumes/benefits from Gaussian-ish inputs</td><td>Yes — one huge outlier drags the mean and inflates σ, compressing everything else toward 0</td></tr>
+            <tr><td class="hl">MinMaxScaler</td><td>Neural networks (many activation functions expect bounded input), image pixel data, or when you specifically need a bounded [0,1] range</td><td>Very yes — a single outlier as the max/min stretches the entire scale, crushing all other values into a tiny sub-range</td></tr>
+            <tr><td class="hl">MaxAbsScaler</td><td>Sparse data (lots of zeros — e.g. one-hot encoded or text/TF-IDF features), since it never shifts zero and won't destroy sparsity</td><td>Yes, similar to MinMax, but at least preserves zero and sign</td></tr>
+          </table>
+          <div class="callout warn">Rule of thumb for <i>this specific class's model</i>: our pipeline uses <code>StandardScaler</code> on the numeric columns feeding into Ridge — because Ridge/Lasso's penalty term compares coefficients directly against each other, and Standard Scaling puts every feature on the same "number of standard deviations" footing, which is exactly the comparison basis regularization needs.</div>
+        </div>
+      </section>
+
+      <div class="optional-box" id="robust">
+        <span class="opt-tag">⭐ Optional deep-dive</span>
+        <h3 style="font-family:'Caveat',cursive; font-size:24px; margin:0 0 6px; color:var(--white-marker);">Robust Scaler — when outliers are the whole problem</h3>
+        <div class="card">
+          <h3>The formula</h3>
+          <div class="formula center">x_scaled = (x − median) / IQR</div>
+          <div class="formula-note">IQR (Interquartile Range) = Q3 (75th percentile) − Q1 (25th percentile).</div>
+          <div class="callout">Why this resists outliers where the others don't: mean and standard deviation (used by StandardScaler) are both dragged around heavily by extreme values — a single outlier of 10,000 in a column of mostly 10–50 values massively distorts both. <b>Median and IQR completely ignore the tails</b> — the median doesn't care how extreme the largest value is, only what's in the middle, and IQR only looks at the middle 50% of the data, entirely excluding the top and bottom 25% where outliers live.</div>
+        </div>
+        <div class="card">
+          <h3>Worked example — same column, two scalers, one outlier added</h3>
+          <p class="lead" style="margin-top:0;">Column: [10, 12, 14, 16, 18, 500] (that last value is a data-entry error/outlier).</p>
+          <table class="data-table">
+            <tr><th>scaler</th><th>what happens</th></tr>
+            <tr><td>StandardScaler</td><td>mean≈95, std≈198 (both wildly dragged by 500) → the five real, normal values (10-18) all get squashed into a tiny range near −0.43, barely distinguishable from each other</td></tr>
+            <tr><td class="good">RobustScaler</td><td>median=15, IQR = Q3(16.5)−Q1(11.5) = 5 → the five normal values scale to roughly (10-15)/5=−1 through (18-15)/5=0.6, staying nicely spread out and interpretable; only 500 itself becomes a huge, clearly-flagged outlier value (≈97), rather than distorting everything else</td></tr>
+          </table>
+          <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);">Use RobustScaler when your EDA (the univariate histograms from Step 1!) shows real, meaningful outliers you can't simply drop — e.g. genuine luxury cars in a dataset of economy cars, not data-entry errors. It keeps the bulk of your data well-spread and informative instead of letting a handful of extreme rows compress everything else into a narrow band.</div>
+          <div class="code"><span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> RobustScaler
+scaler = RobustScaler()   <span class="c"># same .fit / .transform discipline as every other scaler</span></div>
+        </div>
+      </div>
+
+      <section class="block" id="samescale">
+        <h2>Does everything need the <span class="underline">same scale</span>?</h2>
+        <p class="lead">This is the question that trips almost everyone up at least once — let's settle it completely.</p>
+        <div class="card">
+          <h3>"If features are on different scales, is evaluation even valid?"</h3>
+          <p class="lead" style="margin-top:0;"><b>Yes, it's still completely valid</b> — as long as you're consistent. R², MSE, and every other evaluation metric are computed on the model's final numeric predictions vs. actual target values — they don't care what internal scale the features were on to get there. What actually breaks is not evaluation validity, but two other specific things:</p>
+          <table class="data-table">
+            <tr><th>what breaks without scaling</th><th>why</th></tr>
+            <tr><td>Regularization fairness (Ridge/Lasso)</td><td>penalizes larger-magnitude weights more, and a feature's weight magnitude is partly just a units artifact (see the earlier section)</td></tr>
+            <tr><td>Gradient descent's convergence speed</td><td>elongated, skewed loss surface → slow zig-zag convergence, more iterations needed</td></tr>
+            <tr><td>Distance-based methods (KNN, K-Means, SVM)</td><td>Euclidean distance gets dominated by whichever feature has the largest raw range</td></tr>
+          </table>
+          <div class="callout">Plain OLS Linear Regression with no regularization, evaluated by R² alone, is actually mathematically <b>scale-invariant</b> — you'd get the identical R² whether or not you scaled the inputs, because OLS just rescales the coefficients to compensate. Scaling becomes essential the moment any of these three things enter the picture: regularization, gradient-descent-based optimization, or distance-based computation.</div>
+        </div>
+        <div class="card">
+          <h3>"Should every feature use the same scaling method?"</h3>
+          <p class="lead" style="margin-top:0;">Not necessarily, but almost always yes in practice, and here's how to actually decide:</p>
+          <div class="step-card"><span class="step-tag">1</span> Look at each numeric column's distribution (back to univariate EDA!). Roughly symmetric, no wild outliers → StandardScaler is fine.</div>
+          <div class="step-card"><span class="step-tag">2</span> A specific column has known, legitimate outliers you want to keep → RobustScaler for that column specifically.</div>
+          <div class="step-card"><span class="step-tag">3</span> You're feeding into a neural network that expects bounded [0,1] inputs → MinMaxScaler across the board, for architecture reasons, not a per-feature decision.</div>
+          <div class="callout warn">Mixing scalers across different feature groups (as in today's mechanics demo) is technically possible via <code>ColumnTransformer</code> — and there are legitimate cases for it (e.g. one group of features has outliers, another doesn't) — but it adds complexity and makes coefficients harder to compare directly in a linear model. For our actual Ridge model today, we deliberately used <b>one consistent StandardScaler across all numeric columns</b> — simpler, and directly supports fair regularization comparison across every coefficient.</div>
+        </div>
+        <div class="card">
+          <h3>"How do I know it actually worked?"</h3>
+          <p class="lead" style="margin-top:0;">After fitting any scaler on your training data, sanity-check it directly:</p>
+          <div class="code">X_train_scaled.<span class="fn">mean</span>()   <span class="c"># should be ~0 for StandardScaler</span>
+X_train_scaled.<span class="fn">std</span>()    <span class="c"># should be ~1 for StandardScaler</span>
+X_train_scaled.<span class="fn">min</span>(), X_train_scaled.<span class="fn">max</span>()  <span class="c"># should be ~0, ~1 for MinMaxScaler</span></div>
+          <div class="callout good">If these numbers don't come out as expected, the most common cause is fitting the scaler <i>after</i> the split was done incorrectly, or fitting on the wrong subset of columns — always re-check which exact DataFrame/columns actually went into <code>.fit()</code>.</div>
+        </div>
+      </section>
+
+      <!-- ============ 4. ASSEMBLING ============ -->
+      <section class="block" id="coltrans">
+        <div class="section-eyebrow">Step 4 · Assembling it into one object</div>
+        <h2>ColumnTransformer — <span class="underline">different transforms, different columns, one object</span></h2>
+        <p class="lead">By now we need: OneHot on some columns, Ordinal on others, StandardScaler on the numeric ones — all applied to <i>different subsets</i> of the same DataFrame, then glued back together side by side. Doing this by hand (slice → transform → concat) is exactly the kind of manual bookkeeping that quietly breaks the moment you cross-validate or deploy. <code>ColumnTransformer</code> solves this once, declaratively.</p>
+        <div class="card">
+          <h3>The shape of it</h3>
+          <div class="code">ColumnTransformer(transformers=[
+    (<span class="s">'name1'</span>, transformer1, [list_of_columns_1]),
+    (<span class="s">'name2'</span>, transformer2, [list_of_columns_2]),
+    ...
+], <span class="fn">remainder</span>=<span class="s">'drop'</span> | <span class="s">'passthrough'</span>)</div>
+          <div class="step-card"><span class="step-tag">1</span> Each tuple = (a label you choose, a transformer instance, the list of columns it applies to).</div>
+          <div class="step-card"><span class="step-tag">2</span> All listed transformers run <b>in parallel</b> on their own column subset, and results are concatenated side by side.</div>
+          <div class="step-card"><span class="step-tag">3</span> <code>remainder='drop'</code> throws away any column not explicitly listed; <code>remainder='passthrough'</code> keeps unlisted columns unchanged and appends them.</div>
+          <div class="step-card"><span class="step-tag">4</span> <code>.set_output(transform='pandas')</code> (sklearn ≥1.2) returns a readable DataFrame with real column names, instead of a bare numpy array.</div>
+        </div>
+        <div class="card">
+          <h3>Real code from today's dataset — encoding half</h3>
+          <div class="code">OE_categories_list = [
+    [<span class="num">-2</span>,<span class="num">-1</span>,<span class="num">0</span>,<span class="num">1</span>,<span class="num">2</span>,<span class="num">3</span>],                                    <span class="c"># symboling</span>
+    [<span class="s">'two'</span>,<span class="s">'three'</span>,<span class="s">'four'</span>,<span class="s">'five'</span>,<span class="s">'six'</span>,<span class="s">'eight'</span>,<span class="s">'twelve'</span>]  <span class="c"># cylindernumber</span>
+]
+
+encoding_demo = ColumnTransformer(
+    transformers=[
+        (<span class="s">'ordinal'</span>, OrdinalEncoder(<span class="fn">categories</span>=OE_categories_list), [<span class="s">'symboling'</span>,<span class="s">'cylindernumber'</span>]),
+        (<span class="s">'onehot'</span>, OneHotEncoder(<span class="fn">sparse_output</span>=<span class="kw">False</span>, <span class="fn">handle_unknown</span>=<span class="s">'ignore'</span>),
+         [<span class="s">'fueltype'</span>,<span class="s">'aspiration'</span>,<span class="s">'doornumber'</span>,<span class="s">'carbody'</span>,<span class="s">'drivewheel'</span>,
+          <span class="s">'enginelocation'</span>,<span class="s">'enginetype'</span>,<span class="s">'fuelsystem'</span>,<span class="s">'car_company'</span>]),
+    ], <span class="fn">remainder</span>=<span class="s">'drop'</span>
+).set_output(<span class="fn">transform</span>=<span class="s">'pandas'</span>)</div>
+          <div class="callout">Why bother with this instead of column-by-column pandas code? Because <code>ColumnTransformer</code> is itself a proper scikit-learn transformer — it has <code>.fit()</code>/<code>.transform()</code> — so it can be dropped straight into a <code>Pipeline</code> and cross-validated correctly (fit only on training folds, applied to validation folds) — something manual pandas code can't safely do without you personally rewriting the fit/transform split every single time.</div>
+        </div>
+      </section>
+
+      <section class="block" id="pipeunion">
+        <h2>Pipeline vs. FeatureUnion — <span class="underline">chaining vs. combining</span></h2>
+        <p class="lead">These solve two genuinely different problems and are very easy to mix up.</p>
+        <div class="grid-2">
+          <div class="card">
+            <h3>Pipeline — sequence</h3>
+            <p class="lead" style="margin-top:0;">Runs steps <b>one after another</b> — each step's output feeds directly into the next step's input.</p>
+            <div class="flowbox">
+              <div class="fbox hl">raw X</div><div class="farrow">→</div>
+              <div class="fbox">Step A</div><div class="farrow">→</div>
+              <div class="fbox">Step B</div><div class="farrow">→</div>
+              <div class="fbox hl">output</div>
+            </div>
+            <div class="callout bad">A common mistake: <code>Pipeline(steps=[('encode', encoder), ('scale', scaler)])</code> would try to run the scaler on the <i>already-encoded</i> output — scaling one-hot 0/1 columns is usually pointless, and if encoder and scaler were meant for different original columns, this breaks entirely.</div>
+          </div>
+          <div class="card">
+            <h3>FeatureUnion — parallel</h3>
+            <p class="lead" style="margin-top:0;">Runs multiple transformers <b>in parallel on the same original input</b>, and glues their outputs side by side into one wider table.</p>
+            <div class="flowbox">
+              <div class="fbox hl">raw X</div>
+              <div class="farrow">↗</div>
+            </div>
+            <div class="flowbox" style="margin-top:-14px;">
+              <div class="fbox">Encoder (A)</div><div class="fbox">Scaler (B)</div>
+            </div>
+            <div class="flowbox" style="margin-top:-4px;">
+              <div class="farrow">↘</div><div class="farrow">↙</div>
+            </div>
+            <div class="flowbox" style="margin-top:-14px;"><div class="fbox hl">concat(A, B)</div></div>
+            <div class="callout good">This is what we actually want here: encode the categorical columns <b>and</b> scale the numeric columns, both starting from the <i>same</i> raw <code>cars</code> DataFrame, then combined side by side — that's exactly parallel, not sequential.</div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Code: both, side by side</h3>
+          <div class="code"><span class="c"># Pipeline: sequential, output of step 1 -> input of step 2</span>
+Pipeline(steps=[(<span class="s">'preprocess'</span>, preprocessor), (<span class="s">'model'</span>, Ridge(<span class="fn">alpha</span>=<span class="num">10</span>))])
+
+<span class="c"># FeatureUnion: parallel, both fed the SAME original input, results concatenated</span>
+FeatureUnion(transformer_list=[
+    (<span class="s">'encoder'</span>, encoding_demo),
+    (<span class="s">'scaler'</span>, scaling_demo),
+]).set_output(<span class="fn">transform</span>=<span class="s">'pandas'</span>)</div>
+          <div class="callout info">In practice, for our actual model, we don't even need a separate <code>FeatureUnion</code> — a single <code>ColumnTransformer</code> already runs its listed transformers in parallel on column subsets of the same input and concatenates them, which is the FeatureUnion behavior we need, built in. <code>FeatureUnion</code> becomes genuinely necessary when combining two entirely different <i>pipelines</i> (e.g. one whole preprocessing pipeline plus a separate feature-engineering pipeline) rather than simple column-subset transformers.</div>
+        </div>
+      </section>
+
+      <section class="block" id="fitscore">
+        <h2>fit_transform vs. transform — <span class="underline">and why modeling only calls .fit / .score</span></h2>
+        <div class="card">
+          <h3>The three methods every transformer has</h3>
+          <table class="data-table">
+            <tr><th>method</th><th>what it does</th><th>use on...</th></tr>
+            <tr><td><code>fit(X)</code></td><td>Learns parameters from X (mean/std, min/max, categories seen, etc.) and stores them internally. Does <b>not</b> transform anything.</td><td>Never call alone in practice — usually via fit_transform</td></tr>
+            <tr><td><code>fit_transform(X)</code></td><td>Learns parameters from X <i>and</i> immediately applies the transform to X, in one call. A convenience shortcut for fit(X) then transform(X).</td><td class="hl">X_train only</td></tr>
+            <tr><td><code>transform(X)</code></td><td>Applies the <i>already-learned</i> parameters (from a prior fit) to new data X. Learns nothing new.</td><td class="hl">X_test (and validation folds)</td></tr>
+          </table>
+          <div class="callout bad">Calling <code>fit_transform(X_test)</code> instead of <code>transform(X_test)</code> is one of the most common, most silent bugs in ML code — it re-learns mean/std/min/max/categories from the test set itself, meaning the test set's own distribution leaks into preprocessing. The model still "runs," scores can even look fine or better, but the reported performance no longer honestly reflects how it would do on genuinely new, unseen data.</div>
+        </div>
+        <div class="card">
+          <h3>So why, once wrapped in a Pipeline, do we only ever call .fit() and .score()?</h3>
+          <p class="lead" style="margin-top:0;">This is the elegant part — the Pipeline object hides the fit_transform/transform distinction from you entirely, and gets it right automatically:</p>
+          <div class="code">ridge_pipeline = Pipeline(steps=[
+    (<span class="s">'preprocess'</span>, preprocessor),
+    (<span class="s">'model'</span>, Ridge(<span class="fn">alpha</span>=<span class="num">10</span>))
+])
+
+ridge_pipeline.<span class="fn">fit</span>(X_train, y_train)
+<span class="c"># internally this does:
+#   preprocessor.fit_transform(X_train)   -> learns + transforms training data
+#   Ridge().fit(transformed_X_train, y_train)   -> fits the model on the transformed output</span>
+
+train_score = ridge_pipeline.<span class="fn">score</span>(X_train, y_train)
+test_score  = ridge_pipeline.<span class="fn">score</span>(X_test, y_test)
+<span class="c"># internally .score(X_test, y_test) does:
+#   preprocessor.transform(X_test)   -> REUSES the already-learned train statistics, no relearning
+#   Ridge().predict(transformed_X_test)   -> then compares predictions to y_test for R^2</span></div>
+          <div class="callout good">This is the entire point of wrapping everything in one <code>Pipeline</code>: calling <code>.fit()</code> once on the whole pipeline correctly fits the preprocessor with <code>fit_transform</code> on training data <i>and</i> fits the model on that transformed output, in the right order, automatically. Calling <code>.score()</code> or <code>.predict()</code> afterward automatically uses <code>.transform()</code> (never refitting) on whatever new data you pass in. You never manually have to remember "was this fit_transform or transform" again — the Pipeline object enforces the correct discipline structurally, which is exactly why it's the safe default for real projects, and why cross-validation tools like <code>GridSearchCV(estimator=ridge_pipeline, param_grid=..., cv=5)</code> can wrap the entire thing and repeat this fit/transform discipline correctly, fresh, inside every single fold.</div>
+        </div>
+      </section>
+
+      <section class="block" id="whenpipe">
+        <h2>When to use — and <span class="underline">not</span> use — a pipeline</h2>
+        <div class="card">
+          <div class="grid-2">
+            <div>
+              <h3 style="color:var(--green);">Use a Pipeline when...</h3>
+              <ul style="font-size:13px; color:#cdd8de; padding-left:18px;">
+                <li>You have any preprocessing step at all (encoding, scaling, imputing) before a model</li>
+                <li>You plan to cross-validate or grid-search — Pipeline is the only safe way to avoid leakage across folds automatically</li>
+                <li>You're deploying the model — a saved Pipeline bundles preprocessing + model into one shippable object, so production code doesn't need to separately remember every preprocessing step</li>
+                <li>Multiple team members / notebooks need to reproduce the exact same preprocessing consistently</li>
+              </ul>
+            </div>
+            <div>
+              <h3 style="color:var(--pink);">Skip it (or simplify) when...</h3>
+              <ul style="font-size:13px; color:#cdd8de; padding-left:18px;">
+                <li>You're doing quick, one-off, exploratory EDA plots — the ceremony isn't worth it for a histogram</li>
+                <li>Your data already arrives fully numeric, clean, and pre-scaled from an upstream source you control</li>
+                <li>You genuinely need to inspect intermediate transformed data interactively at every step (though <code>pipeline.named_steps['preprocess'].transform(X)</code> can still get you this without abandoning the pipeline)</li>
+              </ul>
+            </div>
+          </div>
+          <div class="callout warn">A pipeline is not "more correct" in some abstract sense — it's a discipline-enforcement tool. If you're careful and consistent by hand, you could avoid leakage without one. In practice, almost nobody stays that careful across dozens of experiments and re-runs, which is exactly why Pipeline is treated as the default in real ML codebases.</div>
+        </div>
+      </section>
+
+      <!-- ============ OPTIONAL: CUSTOM TRANSFORMERS ============ -->
+      <div class="optional-box" id="customtrans">
+        <span class="opt-tag">⭐ Optional deep-dive</span>
+        <h3 style="font-family:'Caveat',cursive; font-size:26px; margin:0 0 6px; color:var(--white-marker);">Custom Transformers — when sklearn doesn't have the exact step you need</h3>
+        <p class="lead" style="margin:0 0 14px;">Sometimes the transformation you need isn't a scaler or encoder at all — it's a bit of custom logic (like our earlier <code>CarName</code> → <code>car_company</code> extraction). To make custom logic pipeline-compatible (so it gets the same safe fit/transform discipline as everything else), sklearn gives you two options.</p>
+
+        <div class="card">
+          <h3>Option 1 — FunctionTransformer (quick, stateless logic)</h3>
+          <p class="lead" style="margin-top:0;">For transformations that need no "learning" from training data (no stored mean/std/categories) — e.g. a log transform to fix skewed data.</p>
+          <div class="code"><span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> FunctionTransformer
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+
+<span class="c"># price is right-skewed (see the histogram from Step 1) -> log-transform to compress the long tail</span>
+log_transformer = FunctionTransformer(np.log1p, <span class="fn">inverse_func</span>=np.expm1)
+
+X_train_log = log_transformer.<span class="fn">fit_transform</span>(X_train[[<span class="s">'enginesize'</span>]])
+X_test_log  = log_transformer.<span class="fn">transform</span>(X_test[[<span class="s">'enginesize'</span>]])
+<span class="c"># np.log1p(x) = log(1+x) -- safely handles zero values, unlike plain log(x)</span></div>
+        </div>
+
+        <div class="card">
+          <h3>Option 2 — a full custom class (when you need to "learn" something from training data)</h3>
+          <p class="lead" style="margin-top:0;">Build your own transformer by inheriting sklearn's base classes, giving it real <code>fit</code>/<code>transform</code> methods:</p>
+          <div class="code"><span class="kw">from</span> sklearn.base <span class="kw">import</span> BaseEstimator, TransformerMixin
+
+<span class="kw">class</span> <span class="fn">CarNameExtractor</span>(BaseEstimator, TransformerMixin):
+    <span class="c">"""Extracts brand from 'CarName' and fixes known misspellings."""</span>
+    <span class="kw">def</span> <span class="fn">__init__</span>(self):
+        self.fixes = {
+            <span class="s">'vw'</span>: <span class="s">'volkswagen'</span>, <span class="s">'vokswagen'</span>: <span class="s">'volkswagen'</span>,
+            <span class="s">'porcshce'</span>: <span class="s">'porsche'</span>, <span class="s">'toyouta'</span>: <span class="s">'toyota'</span>,
+            <span class="s">'Nissan'</span>: <span class="s">'nissan'</span>, <span class="s">'maxda'</span>: <span class="s">'mazda'</span>,
+        }
+
+    <span class="kw">def</span> <span class="fn">fit</span>(self, X, y=<span class="kw">None</span>):
+        <span class="kw">return</span> self   <span class="c"># nothing to learn from data -- just needs to satisfy the transformer interface</span>
+
+    <span class="kw">def</span> <span class="fn">transform</span>(self, X):
+        X = X.copy()
+        brand = X[<span class="s">'CarName'</span>].str.split(<span class="s">' '</span>).str[<span class="num">0</span>].str.lower()
+        X[<span class="s">'car_company'</span>] = brand.replace(self.fixes)
+        <span class="kw">return</span> X.drop(columns=[<span class="s">'CarName'</span>])
+
+<span class="c"># now it behaves exactly like any built-in sklearn transformer:</span>
+extractor = CarNameExtractor()
+cars_cleaned = extractor.<span class="fn">fit_transform</span>(cars)</div>
+          <div class="callout good">Because it inherits <code>TransformerMixin</code>, this class automatically gets a working <code>.fit_transform()</code> (built from your <code>.fit()</code> + <code>.transform()</code>), and because it inherits <code>BaseEstimator</code>, it plays nicely with <code>GridSearchCV</code>'s parameter introspection. That means it can slot directly into a <code>ColumnTransformer</code> or <code>Pipeline</code> step exactly like <code>StandardScaler</code> or <code>OneHotEncoder</code> — sklearn has no idea (and doesn't care) that you wrote it yourself.</div>
+        </div>
+
+        <div class="card">
+          <h3>End-to-end: before → custom transformer → after</h3>
+          <table class="data-table">
+            <tr><th>stage</th><th>CarName / car_company</th></tr>
+            <tr><td>Before (raw)</td><td>"toyouta corona", "vw dasher", "porcshce panamera"</td></tr>
+            <tr><td class="hl">After .transform()</td><td class="good">"toyota", "volkswagen", "porsche"</td></tr>
+          </table>
+          <div class="callout">Slotting it into the full pipeline: <code>Pipeline(steps=[('clean', CarNameExtractor()), ('preprocess', preprocessor), ('model', Ridge())])</code> — cleaning now happens as a proper, leak-safe, cross-validation-compatible pipeline step, instead of a one-off script cell run manually before everything else.</div>
+        </div>
+      </div>
+
+      <section class="block" id="summary">
+        <div class="section-eyebrow">Wrapping up</div>
+        <h2>Class 6 summary</h2>
+        <div class="card">
+          <table class="data-table">
+            <tr><th>concept</th><th>one-line takeaway</th></tr>
+            <tr><td>EDA checklist</td><td>Nulls, duplicates, univariate, bivariate, correlation heatmap, cleaning — always before encoding/scaling.</td></tr>
+            <tr><td>One-Hot Encoding</td><td>One 0/1 column per category, for un-ordered categories; drop one column to avoid the dummy trap.</td></tr>
+            <tr><td>Ordinal Encoding</td><td>One column, ranked numbers, for genuinely ordered categories — always pass the explicit order.</td></tr>
+            <tr><td>Why scaling matters</td><td>Regularization, gradient descent, and distance-based methods are all sensitive to a feature's raw numeric scale — plain evaluation metrics are not, but the model training itself is.</td></tr>
+            <tr><td>StandardScaler</td><td>(x−μ)/σ → mean 0, std 1. Default for linear models with regularization.</td></tr>
+            <tr><td>MinMaxScaler</td><td>(x−min)/(max−min) → [0,1]. Good for neural nets, sensitive to outliers.</td></tr>
+            <tr><td>MaxAbsScaler</td><td>x/max(|x|) → [−1,1], zero stays zero. Good for sparse data.</td></tr>
+            <tr><td>RobustScaler</td><td>(x−median)/IQR — ignores outliers entirely, using median/IQR instead of mean/std.</td></tr>
+            <tr><td>ColumnTransformer</td><td>Different transforms on different column subsets, in parallel, glued into one object with proper fit/transform discipline.</td></tr>
+            <tr><td>Pipeline vs FeatureUnion</td><td>Pipeline = sequential (output feeds next step); FeatureUnion = parallel on the same input, concatenated.</td></tr>
+            <tr><td>fit_transform vs transform</td><td>fit_transform learns + applies (train only); transform only applies already-learned stats (test/validation) — Pipeline enforces this automatically.</td></tr>
+            <tr><td>Custom Transformers</td><td>FunctionTransformer for quick stateless logic; a BaseEstimator+TransformerMixin class when you need real fit/transform behavior — both slot directly into any Pipeline.</td></tr>
+          </table>
+        </div>
+        <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green); font-size:14px;">
+          The whole class in one sentence: <b>a model is only as trustworthy as the pipeline that fed it — encoding must match whether a category has real order, scaling must match what the model actually needs (regularization, gradient descent, or distance), and every single one of those steps must be learned only from training data and consistently replayed on new data, which is precisely the discipline a scikit-learn Pipeline enforces automatically.</b>
+        </div>
+      </section>
+
+      <div class="footnote-strip">
+        <span class="hand">— end of Class 6 —</span>
+        Sklearn Pipelines · 13 July 2026
+      </div>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>

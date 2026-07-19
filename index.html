@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Machine Learning Hub</title>
+    <!-- Use Inter font for a modern look -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-color: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.5);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            /* Subtle background glow effect */
+            background-image: radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.15), transparent 25%),
+                              radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.15), transparent 25%);
+            background-attachment: fixed;
+        }
+
+        header {
+            margin-top: 5rem;
+            text-align: center;
+            margin-bottom: 4rem;
+            padding: 0 1rem;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            /* Gradient text */
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.05em;
+        }
+
+        header p {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            font-weight: 300;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            padding: 0 2rem;
+            box-sizing: border-box;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 5rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 1.75rem;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Top accent line on hover */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(to right, var(--accent-color), #8b5cf6);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(45, 60, 84, 0.8);
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        .card-number {
+            font-size: 0.875rem;
+            color: var(--accent-color);
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .card-title {
+            font-size: 1.35rem;
+            font-weight: 600;
+            margin: 0 0 1.25rem 0;
+            line-height: 1.4;
+        }
+
+        .card-footer {
+            margin-top: auto;
+            display: flex;
+            align-items: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .card:hover .card-footer {
+            color: #cbd5e1;
+        }
+
+        .card-footer svg {
+            width: 18px;
+            height: 18px;
+            margin-left: 0.5rem;
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover .card-footer svg {
+            transform: translateX(6px);
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            header p {
+                font-size: 1.05rem;
+            }
+            .container {
+                grid-template-columns: 1fr;
+                padding: 0 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Machine Learning Hub</h1>
+        <p>Interactive notes and resources covering Machine Learning Engineering, Linear Regression, and Logistic Regression.</p>
+    </header>
+
+    <div class="container">
+        <!-- Card 1 -->
+        <a href="./L01_Intro_to_ML_Engineering_Interactive_Notes.html" class="card">
+            <div class="card-number">Lecture 01</div>
+            <h2 class="card-title">Intro to ML Engineering</h2>
+            <div class="card-footer">
+                View Notes
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </div>
+        </a>
+
+        <!-- Card 2 -->
+        <a href="./L02_Linear_Regression_Introduction_Interactive_Notes.html" class="card">
+            <div class="card-number">Lecture 02</div>
+            <h2 class="card-title">Linear Regression: Introduction</h2>
+            <div class="card-footer">
+                View Notes
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </div>
+        </a>
+
+        <!-- Card 3 -->
+        <a href="./L03_Linear_Regression_II_Interactive_Notes.html" class="card">
+            <div class="card-number">Lecture 03</div>
+            <h2 class="card-title">Linear Regression II</h2>
+            <div class="card-footer">
+                View Notes
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </div>
+        </a>
+
+        <!-- Card 4 -->
+        <a href="./L04_Linear_Regression_III_Interactive_Notes.html" class="card">
+            <div class="card-number">Lecture 04</div>
+            <h2 class="card-title">Linear Regression III</h2>
+            <div class="card-footer">
+                View Notes
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </div>
+        </a>
+
+        <!-- Card 5 -->
+        <a href="./L05_Model_Generalization_Interactive_Notes.html" class="card">
+            <div class="card-number">Lecture 05</div>
+            <h2 class="card-title">Model Generalization</h2>
+            <div class="card-footer">
+                View Notes
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </div>
+        </a>
+
+        <!-- Card 6 -->
+        <a href="./L06_Sklearn_Pipelines_Interactive_Notes.html" class="card">
+            <div class="card-number">Lecture 06</div>
+            <h2 class="card-title">Sklearn Pipelines</h2>
+            <div class="card-footer">
+                View Notes
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </div>
+        </a>
+
+        <!-- Card 7 -->
+        <a href="./L07_Logistic_Regression_I_Interaction_Notes.html" class="card">
+            <div class="card-number">Lecture 07</div>
+            <h2 class="card-title">Logistic Regression I</h2>
+            <div class="card-footer">
+                View Notes
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </div>
+        </a>
+
+        <!-- Card 8 -->
+        <a href="./L08_Logistic_Regression_II_Interactive_Notes.html" class="card">
+            <div class="card-number">Lecture 08</div>
+            <h2 class="card-title">Logistic Regression II</h2>
+            <div class="card-footer">
+                View Notes
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </div>
+        </a>
+    </div>
+
+</body>
+</html>

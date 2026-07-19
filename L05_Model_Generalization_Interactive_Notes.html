@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Model Generalization — Class 5 Notes</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Patrick+Hand&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --board:#0c1014; --board-2:#11161b; --card:#151b21; --card-line:#222b32;
+    --chalk:#e9eef2; --chalk-dim:#9fb0bb;
+    --cyan:#5fd8e0; --cyan-dim:#2c5a5e;
+    --pink:#f17fb0; --pink-dim:#5a2f42;
+    --yellow:#f4cf5e; --green:#8fe3a6; --green-dim:#2f4f3a;
+    --white-marker:#f5f5f0; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{ background:var(--board); color:var(--chalk); font-family:'Inter',sans-serif; line-height:1.55; -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width:1180px; margin:0 auto; padding:0 24px 120px; }
+  h1,h2,h3,.hand{ font-family:'Caveat',cursive; font-weight:700; }
+  .hero{ padding:60px 0 32px; text-align:center; }
+  .chip{
+    display:inline-block; font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1.5px;
+    text-transform:uppercase; color:var(--cyan); border:1px solid var(--cyan-dim);
+    background:rgba(95,216,224,0.06); padding:6px 14px; border-radius:999px; margin-bottom:16px;
+  }
+  .hero h1{ font-size:clamp(32px,6vw,58px); color:var(--white-marker); margin:0 0 8px; }
+  .hero h1 span{color:var(--pink);}
+  .hero p{ font-family:'Patrick Hand',cursive; color:var(--chalk-dim); font-size:18px; max-width:720px; margin:0 auto; }
+
+  .layout{ display:grid; grid-template-columns:250px 1fr; gap:36px; align-items:start; }
+  nav.toc{
+    position:sticky; top:24px; background:var(--card); border:1px solid var(--card-line);
+    border-radius:var(--radius); padding:18px 16px; font-family:'JetBrains Mono',monospace; font-size:11.5px;
+    max-height:calc(100vh - 48px); overflow-y:auto;
+  }
+  nav.toc .toc-title{ color:var(--chalk-dim); text-transform:uppercase; letter-spacing:1.2px; font-size:10.5px; margin-bottom:8px; margin-top:14px; }
+  nav.toc .toc-title:first-child{margin-top:0;}
+  nav.toc a{ display:block; color:var(--chalk-dim); text-decoration:none; padding:6px 8px; border-radius:8px; margin-bottom:1px; border-left:2px solid transparent; }
+  nav.toc a:hover{color:var(--chalk); background:rgba(255,255,255,0.04);}
+  main{min-width:0;}
+  section.block{ margin-bottom:50px; scroll-margin-top:24px; }
+  .section-eyebrow{ font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--pink); margin-bottom:6px; }
+  section.block h2{ font-size:32px; color:var(--white-marker); margin:0 0 12px; }
+  section.block h2 .underline{ text-decoration:underline; text-decoration-color:var(--cyan); text-decoration-thickness:3px; }
+  p.lead{ font-size:14.5px; color:#cdd8de; max-width:800px; }
+  .card{ background:var(--card); border:1px solid var(--card-line); border-radius:var(--radius); padding:20px 22px; margin:14px 0; }
+  .card h3{ font-family:'Inter',sans-serif; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.7px; color:var(--cyan); margin:0 0 10px; }
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  .grid-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;}
+  @media (max-width:900px){
+    .layout{grid-template-columns:1fr;} nav.toc{position:relative; top:0; margin-bottom:20px; max-height:none;}
+    .grid-2,.grid-3{grid-template-columns:1fr;}
+  }
+  table.data-table{ width:100%; border-collapse:collapse; font-family:'JetBrains Mono',monospace; font-size:12.5px; }
+  table.data-table th{ text-align:left; color:var(--chalk-dim); font-weight:500; padding:7px 10px; border-bottom:1px solid var(--card-line); text-transform:uppercase; font-size:10px; letter-spacing:0.4px; }
+  table.data-table td{ padding:7px 10px; border-bottom:1px solid rgba(255,255,255,0.04); }
+  table.data-table .num-x{color:var(--cyan);} table.data-table .num-y{color:var(--pink);} table.data-table .num-e{color:var(--yellow);}
+  table.data-table td.hl{color:var(--yellow); font-weight:700;}
+  table.data-table td.zero{color:var(--pink); font-weight:700; background:rgba(241,127,176,0.08);}
+  blockquote.story{
+    font-family:'Patrick Hand',cursive; font-size:16.5px; color:#dbe6ec; border-left:3px solid var(--yellow);
+    padding:6px 18px; margin:14px 0; background:rgba(244,207,94,0.04); border-radius:0 10px 10px 0;
+  }
+  .pipeline{ display:flex; align-items:center; gap:0; overflow-x:auto; padding:10px 0 18px; }
+  .pipe-step{ flex:0 0 auto; min-width:140px; background:var(--card); border:1px solid var(--card-line); border-radius:12px; padding:12px 14px; text-align:center; }
+  .pipe-step .n{ font-family:'JetBrains Mono',monospace; color:var(--cyan); font-size:10.5px; margin-bottom:5px; }
+  .pipe-step .t{font-weight:700; font-size:13px; color:var(--white-marker);}
+  .pipe-step .d{font-size:10.5px; color:var(--chalk-dim); margin-top:3px;}
+  .pipe-arrow{ flex:0 0 auto; width:28px; text-align:center; color:var(--pink); font-size:16px; }
+  .formula{
+    font-family:'JetBrains Mono',monospace; background:#0a0d10; border:1px solid var(--card-line);
+    border-radius:10px; padding:14px 20px; margin:12px 0; font-size:15px; color:var(--white-marker); overflow-x:auto;
+  }
+  .formula.center{text-align:center;}
+  .formula .k{color:var(--yellow);} .formula .r{color:var(--cyan);} .formula .l{color:var(--pink);}
+  .formula-note{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--chalk-dim); margin-top:6px; }
+  .callout{
+    background:rgba(143,227,166,0.08); border:1px solid var(--green-dim); border-radius:10px;
+    padding:12px 16px; color:var(--green); font-size:13px; font-family:'JetBrains Mono',monospace; margin:12px 0; line-height:1.6;
+  }
+  .callout.warn{ background:rgba(244,207,94,0.08); border-color:#5a4f2f; color:var(--yellow); }
+  .callout.bad{ background:rgba(241,127,176,0.08); border-color:var(--pink-dim); color:var(--pink); }
+  .optional-box{ border:1.5px dashed var(--pink-dim); border-radius:14px; padding:20px 22px; margin:18px 0; background:rgba(241,127,176,0.04); }
+  .optional-box .opt-tag{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--pink); border:1px solid var(--pink-dim); padding:3px 10px; border-radius:999px; margin-bottom:10px; }
+  .optional-link{
+    display:inline-flex; align-items:center; gap:6px; margin-top:8px; font-family:'JetBrains Mono',monospace; font-size:11.5px;
+    color:var(--pink); text-decoration:none; border-bottom:1px dashed var(--pink-dim); padding-bottom:1px;
+  }
+  .optional-link::before{content:"📎";}
+  .step-card{ background:rgba(0,0,0,0.22); border-radius:10px; padding:14px 18px; margin:10px 0; border:1px solid var(--card-line); }
+  .step-tag{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--board); background:var(--cyan); padding:2px 8px; border-radius:6px; margin-right:8px; font-weight:700; }
+  .svg-card{ background:#fff; border:1px solid var(--card-line); border-radius:12px; padding:14px; }
+  .svg-caption{ text-align:center; font-family:'JetBrains Mono',monospace; font-size:11px; color:#555; margin-top:8px; }
+  .split{ display:flex; gap:20px; margin-top:14px; }
+  .split > div{ flex:1; }
+  .analogy-row{ display:flex; gap:14px; margin-top:12px; flex-wrap:wrap; }
+  .analogy{ flex:1; min-width:150px; background:var(--card); border:1px solid var(--card-line); border-radius:10px; padding:14px 16px; text-align:center; }
+  .analogy .icon{font-size:24px;}
+  .analogy h4{font-size:14px; margin:6px 0 4px; color:var(--white-marker);}
+  .analogy p{font-size:11.5px; color:var(--chalk-dim); margin:0;}
+  .cheat th{background:var(--board);color:#fff;}
+  .footnote-strip{ margin-top:60px; border-top:1px dashed var(--card-line); padding-top:22px; text-align:center; color:var(--chalk-dim); font-family:'JetBrains Mono',monospace; font-size:12px; }
+  .footnote-strip .hand{color:var(--cyan); font-size:22px; display:block; margin-bottom:6px;}
+  .badge{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:10.5px; padding:2px 9px; border-radius:6px; margin-left:6px;}
+  .badge.ridge{background:rgba(95,216,224,0.15); color:var(--cyan);}
+  .badge.lasso{background:rgba(241,127,176,0.15); color:var(--pink);}
+  .kfold-table td.val{background:rgba(244,207,94,0.15); color:var(--yellow); font-weight:700;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="chip">10-07-2026 · Module: Supervised Learning</div>
+    <h1>Model <span>Generalization</span></h1>
+    <div class="chip" style="background:none; border-color:var(--pink-dim); color:var(--pink); margin-top:0;">📘 Class 5 · Overfitting, Underfitting, Bias–Variance, Ridge, Lasso, Elastic Net & Cross Validation</div>
+  </div>
+
+  <div class="layout">
+    <nav class="toc" id="toc">
+      <div class="toc-title">Start here</div>
+      <a href="#agenda">Agenda</a>
+
+      <div class="toc-title">1 · Foundations</div>
+      <a href="#poly">Polynomial regression</a>
+      <a href="#occam">Occam's razor</a>
+
+      <div class="toc-title">2 · The core problem</div>
+      <a href="#underfit">Underfitting</a>
+      <a href="#overfit">Overfitting</a>
+      <a href="#biasvar">Bias–variance trade-off</a>
+
+      <div class="toc-title">3 · The fix</div>
+      <a href="#regconcept">Why big weights hurt</a>
+      <a href="#ridge">Ridge regression (L2)</a>
+      <a href="#lasso">Lasso regression (L1)</a>
+      <a href="#optional">⭐ Optional: why Lasso zeros out</a>
+      <a href="#elastic">Elastic Net</a>
+
+      <div class="toc-title">4 · Picking λ</div>
+      <a href="#validation">Train / Validation / Test</a>
+      <a href="#kfold">K-Fold cross validation</a>
+
+      <div class="toc-title">Wrap-up</div>
+      <a href="#summary">Class summary</a>
+    </nav>
+
+    <main>
+
+      <section class="block" id="agenda">
+        <div class="section-eyebrow">Where we're headed today</div>
+        <h2>Agenda for <span class="underline">Class 5</span></h2>
+        <p class="lead">Last class we fit lines and curves to data. Today we ask the harder question: <b>a model that fits your training data perfectly — is that actually a good thing?</b> We'll see why the answer is "not always," meet the bias–variance trade-off, and learn the two most common fixes: Ridge and Lasso regression. We'll finish by asking how you'd actually choose the regularization strength, which leads us into cross-validation.</p>
+        <div class="pipeline">
+          <div class="pipe-step"><div class="n">01</div><div class="t">Polynomial features</div><div class="d">degree 1 → higher</div></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step"><div class="n">02</div><div class="t">Under / Overfitting</div><div class="d">too simple vs too complex</div></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step"><div class="n">03</div><div class="t">Bias–Variance</div><div class="d">the trade-off</div></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step"><div class="n">04</div><div class="t">Regularization</div><div class="d">Ridge, Lasso, Elastic Net</div></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step"><div class="n">05</div><div class="t">Cross Validation</div><div class="d">picking λ properly</div></div>
+        </div>
+      </section>
+
+      <!-- ============ 1. POLYNOMIAL REGRESSION ============ -->
+      <section class="block" id="poly">
+        <div class="section-eyebrow">Step 1 · Foundations</div>
+        <h2>Polynomial regression — <span class="underline">transformed features</span></h2>
+        <p class="lead">So far our model has looked like ŷ = w₀ + w₁x — a straight line. But real relationships are often curved. Polynomial regression's trick is simple: <b>we don't change the model, we change the input.</b> We create new columns out of x, and then fit an ordinary (still linear!) equation on top of those new columns.</p>
+
+        <div class="card">
+          <h3>Step-by-step: turning one feature into many</h3>
+          <div class="step-card"><span class="step-tag">1</span> Start with a single feature x, with values 1, 2, 3, 4.</div>
+          <div class="step-card"><span class="step-tag">2</span> Create a new column x² by squaring every value: 1, 4, 9, 16.</div>
+          <div class="step-card"><span class="step-tag">3</span> Create another new column x³ by cubing every value: 1, 8, 27, 64.</div>
+          <div class="step-card"><span class="step-tag">4</span> Now treat x, x², x³ as <b>three separate, ordinary input columns</b> and fit a normal linear regression on top of them.</div>
+          <table class="data-table" style="margin-top:10px;">
+            <tr><th>x</th><th>x²</th><th>x³</th></tr>
+            <tr><td class="num-x">1</td><td class="num-y">1</td><td class="num-e">1</td></tr>
+            <tr><td class="num-x">2</td><td class="num-y">4</td><td class="num-e">8</td></tr>
+            <tr><td class="num-x">3</td><td class="num-y">9</td><td class="num-e">27</td></tr>
+            <tr><td class="num-x">4</td><td class="num-y">16</td><td class="num-e">64</td></tr>
+          </table>
+          <div class="formula center">ŷ = w₀ + w₁x + w₂x² + w₃x³ + ...</div>
+          <div class="formula-note">This still looks exactly like ordinary multiple linear regression — because it is one! We simply feed it engineered columns instead of raw ones. That's the whole trick behind "polynomial" regression: the *model* stays linear in its weights, only the *features* get curvier.</div>
+        </div>
+
+        <div class="card">
+          <h3>Degree 1 → higher degree: what actually changes</h3>
+          <p class="lead" style="margin-top:0;">"Degree" just means: how many of these power-columns (x, x², x³, ... xᵈ) you include.</p>
+          <div class="grid-3">
+            <div class="analogy"><div class="icon">📏</div><h4>Degree 1</h4><p>ŷ = w₀+w₁x — a straight line. Can only ever tilt, never bend.</p></div>
+            <div class="analogy"><div class="icon">〰️</div><h4>Degree 2–4</h4><p>ŷ = w₀+w₁x+w₂x²+... — can bend once or twice, like a gentle hill or valley.</p></div>
+            <div class="analogy"><div class="icon">🐍</div><h4>Degree 15+</h4><p>Can wiggle back and forth many times — enough to snake through every single training point.</p></div>
+          </div>
+          <div class="callout" style="margin-top:14px;">In your notes: a 10-feature dataset expanded to degree 8 stops being "10 features" — it balloons into every power and cross-term up to degree 8. More degree = more columns = more weights = a hugely more flexible (and hungrier) model.</div>
+        </div>
+      </section>
+
+      <section class="block" id="occam">
+        <h2>Occam's razor — <span class="underline">simplicity as a tie-breaker</span></h2>
+        <p class="lead">Occam's razor is an old philosophical idea, and it turns out to be exactly the right instinct for machine learning too: <b>"among models that explain the data roughly equally well, prefer the simpler one."</b></p>
+        <div class="card">
+          <h3>Why this matters for degree-choice</h3>
+          <p class="lead" style="margin-top:0;">Concretely: from your notes, comparing a degree-2 model against a degree-8 model on the same data —</p>
+          <table class="data-table">
+            <tr><th>model</th><th>degree</th><th>score</th></tr>
+            <tr><td>M₁</td><td>2</td><td>74%</td></tr>
+            <tr><td>M₂</td><td>8</td><td class="hl">78%</td></tr>
+          </table>
+          <div class="callout warn">M₂ scores a bit higher — but is 4 extra points of accuracy worth 6 extra degrees of complexity (many more weights, far more ways to memorize noise)? Occam's razor says: not necessarily. A slightly-lower-scoring simple model is often the wiser real-world choice, because — as we're about to see — the complex one's high score can be an illusion.</div>
+        </div>
+      </section>
+
+      <!-- ============ 2. UNDER/OVERFITTING ============ -->
+      <section class="block" id="underfit">
+        <div class="section-eyebrow">Step 2 · The core problem</div>
+        <h2>Underfitting — <span class="underline">the model is too lazy</span></h2>
+        <p class="lead">Underfitting happens when the model is <b>too simple</b> to capture the real pattern in the data. Think of it as a student who barely skimmed the textbook — they do badly even on the practice questions they've already seen.</p>
+        <div class="card">
+          <h3>A self-learn example</h3>
+          <blockquote class="story">Suppose the true relationship between x and y is actually a curve: y = x². But you train a plain straight line, ŷ = mx + b, on this data. No matter how you rotate that line, it can never bend to match a curve — so it does poorly even on the training points themselves.</blockquote>
+          <div class="callout bad">Tell-tale sign of underfitting: <b>training error is already high.</b> The model fails the "practice test" too, not just the real one. If your training accuracy itself is disappointing, don't reach for regularization — reach for a more expressive model (higher degree, more features) instead.</div>
+        </div>
+      </section>
+
+      <section class="block" id="overfit">
+        <h2>Overfitting — <span class="underline">the model is memorizing, not learning</span></h2>
+        <p class="lead">Overfitting is the opposite failure: the model is <b>so flexible</b> that instead of learning the general pattern, it bends itself to pass through every single training point — including the random noise and outliers that shouldn't matter.</p>
+        <div class="card">
+          <h3>A self-learn example, with real numbers from class</h3>
+          <p class="lead" style="margin-top:0;">A high-degree model was fit on training data, and scored:</p>
+          <table class="data-table">
+            <tr><th>metric</th><th>R² score</th></tr>
+            <tr><td>Train R²</td><td class="hl">0.99</td></tr>
+            <tr><td>Test R²</td><td class="zero">0.72</td></tr>
+          </table>
+          <div class="callout bad">This gap is the fingerprint of overfitting: <b>training error is very low, but test error is much higher.</b> The model looks brilliant on data it has already memorized, and mediocre on new data it hasn't seen — exactly like a student who memorized last year's question paper word-for-word, but can't solve a rephrased version of the same question.</div>
+          <div class="callout" style="margin-top:10px;">Visually (from the board): the green wiggly curve threads tightly through every noisy training dot — that's overfitting in action. A much smoother curve would miss a few training points slightly, but track the true underlying pattern far better.</div>
+        </div>
+        <div class="card">
+          <h3>Underfitting vs. good fit vs. overfitting, side by side</h3>
+          <p class="lead" style="margin-top:0;">Same 10 noisy training points in all three panels below — only the fitted curve changes.</p>
+          <div class="grid-3">
+            <div>
+              <div class="svg-card">
+                <svg viewBox="0 0 220 150" width="100%" height="auto">
+                  <line x1="15" y1="130" x2="210" y2="130" stroke="#ccc" stroke-width="1"/>
+                  <line x1="15" y1="15" x2="15" y2="130" stroke="#ccc" stroke-width="1"/>
+                  <path d="M20,82 L210,73" fill="none" stroke="#f17fb0" stroke-width="2.5"/>
+                  <circle cx="20" cy="95" r="3" fill="#16221C"/><circle cx="40" cy="55" r="3" fill="#16221C"/>
+                  <circle cx="60" cy="45" r="3" fill="#16221C"/><circle cx="80" cy="75" r="3" fill="#16221C"/>
+                  <circle cx="100" cy="115" r="3" fill="#16221C"/><circle cx="120" cy="95" r="3" fill="#16221C"/>
+                  <circle cx="140" cy="55" r="3" fill="#16221C"/><circle cx="160" cy="30" r="3" fill="#16221C"/>
+                  <circle cx="180" cy="60" r="3" fill="#16221C"/><circle cx="200" cy="90" r="3" fill="#16221C"/>
+                </svg>
+              </div>
+              <div class="svg-caption" style="color:#f17fb0;">Underfitting — a straight line can't bend, misses almost every point</div>
+            </div>
+            <div>
+              <div class="svg-card">
+                <svg viewBox="0 0 220 150" width="100%" height="auto">
+                  <line x1="15" y1="130" x2="210" y2="130" stroke="#ccc" stroke-width="1"/>
+                  <line x1="15" y1="15" x2="15" y2="130" stroke="#ccc" stroke-width="1"/>
+                  <path d="M20,88 C50,40 70,38 100,112 C130,52 150,28 180,62 C192,74 202,82 210,80" fill="none" stroke="#2f8f5e" stroke-width="2.5"/>
+                  <circle cx="20" cy="95" r="3" fill="#16221C"/><circle cx="40" cy="55" r="3" fill="#16221C"/>
+                  <circle cx="60" cy="45" r="3" fill="#16221C"/><circle cx="80" cy="75" r="3" fill="#16221C"/>
+                  <circle cx="100" cy="115" r="3" fill="#16221C"/><circle cx="120" cy="95" r="3" fill="#16221C"/>
+                  <circle cx="140" cy="55" r="3" fill="#16221C"/><circle cx="160" cy="30" r="3" fill="#16221C"/>
+                  <circle cx="180" cy="60" r="3" fill="#16221C"/><circle cx="200" cy="90" r="3" fill="#16221C"/>
+                </svg>
+              </div>
+              <div class="svg-caption" style="color:#2f8f5e;">Good fit — tracks the real wave, brushes past the noise</div>
+            </div>
+            <div>
+              <div class="svg-card">
+                <svg viewBox="0 0 220 150" width="100%" height="auto">
+                  <line x1="15" y1="130" x2="210" y2="130" stroke="#ccc" stroke-width="1"/>
+                  <line x1="15" y1="15" x2="15" y2="130" stroke="#ccc" stroke-width="1"/>
+                  <polyline points="20,95 30,145 40,55 50,15 60,45 70,125 80,75 90,138 100,115 110,15 120,95 130,138 140,55 150,15 160,30 170,138 180,60 190,15 200,90" fill="none" stroke="#B24C33" stroke-width="2"/>
+                  <circle cx="20" cy="95" r="3" fill="#16221C"/><circle cx="40" cy="55" r="3" fill="#16221C"/>
+                  <circle cx="60" cy="45" r="3" fill="#16221C"/><circle cx="80" cy="75" r="3" fill="#16221C"/>
+                  <circle cx="100" cy="115" r="3" fill="#16221C"/><circle cx="120" cy="95" r="3" fill="#16221C"/>
+                  <circle cx="140" cy="55" r="3" fill="#16221C"/><circle cx="160" cy="30" r="3" fill="#16221C"/>
+                  <circle cx="180" cy="60" r="3" fill="#16221C"/><circle cx="200" cy="90" r="3" fill="#16221C"/>
+                </svg>
+              </div>
+              <div class="svg-caption" style="color:#B24C33;">Overfitting — wild swings between points just to touch every single one</div>
+            </div>
+          </div>
+          <div class="callout" style="margin-top:12px;">The dots are identical in all three panels. What changes is only how "eager" the fitted curve is to touch every point exactly — a straight line can't, a smooth curve doesn't need to, and a high-degree curve insists on it, even if that means wild detours between points.</div>
+        </div>
+      </section>
+
+      <section class="block" id="biasvar">
+        <h2>The Bias–Variance trade-off — <span class="underline">made simple</span></h2>
+        <p class="lead">This is just a more precise vocabulary for the same underfitting/overfitting story. Two words, two very different kinds of "being wrong":</p>
+        <div class="analogy-row">
+          <div class="analogy"><div class="icon">🎯</div><h4>Bias</h4><p>How far off, <i>on average</i>, the model's assumptions are from reality. A straight line assuming a curved world = high bias.</p></div>
+          <div class="analogy"><div class="icon">🌪️</div><h4>Variance</h4><p>How much the model's predictions <i>swing around</i> if you retrain it on a slightly different sample of data. A model that memorizes noise = high variance.</p></div>
+        </div>
+        <div class="card" style="margin-top:16px;">
+          <h3>The dartboard picture — the easiest way to remember this</h3>
+          <p class="lead" style="margin-top:0;">Imagine throwing darts at a bullseye, many times over. Bias = how far off-center the darts land <i>on average</i>. Variance = how spread out the darts are from each other.</p>
+          <div class="grid-2">
+            <div>
+              <div class="svg-card">
+                <svg viewBox="0 0 130 130" width="100%" height="auto">
+                  <circle cx="65" cy="65" r="55" fill="#f2f2f2" stroke="#ccc"/>
+                  <circle cx="65" cy="65" r="40" fill="#fff" stroke="#ccc"/>
+                  <circle cx="65" cy="65" r="25" fill="#F5E6CB" stroke="#ccc"/>
+                  <circle cx="65" cy="65" r="10" fill="#B24C33"/>
+                  <circle cx="63" cy="67" r="2.6" fill="#16221C"/><circle cx="67" cy="63" r="2.6" fill="#16221C"/>
+                  <circle cx="66" cy="68" r="2.6" fill="#16221C"/><circle cx="62" cy="63" r="2.6" fill="#16221C"/>
+                  <circle cx="65" cy="65" r="2.6" fill="#16221C"/>
+                </svg>
+              </div>
+              <div class="svg-caption" style="color:var(--green);">Low bias + Low variance — tight cluster, right on the bullseye. The goal.</div>
+            </div>
+            <div>
+              <div class="svg-card">
+                <svg viewBox="0 0 130 130" width="100%" height="auto">
+                  <circle cx="65" cy="65" r="55" fill="#f2f2f2" stroke="#ccc"/>
+                  <circle cx="65" cy="65" r="40" fill="#fff" stroke="#ccc"/>
+                  <circle cx="65" cy="65" r="25" fill="#F5E6CB" stroke="#ccc"/>
+                  <circle cx="65" cy="65" r="10" fill="#B24C33"/>
+                  <circle cx="35" cy="45" r="2.6" fill="#16221C"/><circle cx="95" cy="85" r="2.6" fill="#16221C"/>
+                  <circle cx="48" cy="95" r="2.6" fill="#16221C"/><circle cx="88" cy="38" r="2.6" fill="#16221C"/>
+                  <circle cx="65" cy="20" r="2.6" fill="#16221C"/><circle cx="25" cy="75" r="2.6" fill="#16221C"/>
+                  <circle cx="100" cy="65" r="2.6" fill="#16221C"/><circle cx="60" cy="108" r="2.6" fill="#16221C"/>
+                </svg>
+              </div>
+              <div class="svg-caption" style="color:var(--pink);">Low bias + High variance <span class="badge lasso">overfitting</span> — scattered, but centered on average</div>
+            </div>
+            <div>
+              <div class="svg-card">
+                <svg viewBox="0 0 130 130" width="100%" height="auto">
+                  <circle cx="65" cy="65" r="55" fill="#f2f2f2" stroke="#ccc"/>
+                  <circle cx="65" cy="65" r="40" fill="#fff" stroke="#ccc"/>
+                  <circle cx="65" cy="65" r="25" fill="#F5E6CB" stroke="#ccc"/>
+                  <circle cx="65" cy="65" r="10" fill="#B24C33"/>
+                  <circle cx="30" cy="30" r="2.6" fill="#16221C"/><circle cx="34" cy="27" r="2.6" fill="#16221C"/>
+                  <circle cx="31" cy="34" r="2.6" fill="#16221C"/><circle cx="27" cy="30" r="2.6" fill="#16221C"/>
+                  <circle cx="32" cy="31" r="2.6" fill="#16221C"/>
+                </svg>
+              </div>
+              <div class="svg-caption" style="color:var(--yellow);">High bias + Low variance <span class="badge ridge">underfitting</span> — tight cluster, but off-target</div>
+            </div>
+            <div>
+              <div class="svg-card">
+                <svg viewBox="0 0 130 130" width="100%" height="auto">
+                  <circle cx="65" cy="65" r="55" fill="#f2f2f2" stroke="#ccc"/>
+                  <circle cx="65" cy="65" r="40" fill="#fff" stroke="#ccc"/>
+                  <circle cx="65" cy="65" r="25" fill="#F5E6CB" stroke="#ccc"/>
+                  <circle cx="65" cy="65" r="10" fill="#B24C33"/>
+                  <circle cx="12" cy="18" r="2.6" fill="#16221C"/><circle cx="45" cy="42" r="2.6" fill="#16221C"/>
+                  <circle cx="20" cy="52" r="2.6" fill="#16221C"/><circle cx="38" cy="12" r="2.6" fill="#16221C"/>
+                  <circle cx="52" cy="28" r="2.6" fill="#16221C"/><circle cx="16" cy="38" r="2.6" fill="#16221C"/>
+                </svg>
+              </div>
+              <div class="svg-caption" style="color:#e0895b;">High bias + High variance — scattered <i>and</i> off-target. Worst of both.</div>
+            </div>
+          </div>
+          <div class="callout" style="margin-top:14px;">A simple model = darts clustered tightly, but clustered in the <b>wrong spot</b> (high bias, low variance = underfitting). A complex model = darts scattered <b>around the right spot</b> (low bias, high variance = overfitting). We want both errors small at once — top-left target — that's the trade-off.</div>
+        </div>
+        <div class="card">
+          <h3>Why it's called a "trade-off"</h3>
+          <p class="lead" style="margin-top:0;">As you move from a simple model (degree 1) to a very complex one (degree 15):</p>
+          <table class="data-table">
+            <tr><th>model complexity</th><th>bias</th><th>variance</th></tr>
+            <tr><td>Low (degree 1)</td><td class="hl">High</td><td>Low</td></tr>
+            <tr><td>Medium (degree ~4)</td><td>Balanced</td><td>Balanced</td></tr>
+            <tr><td>High (degree 15)</td><td>Low</td><td class="hl">High</td></tr>
+          </table>
+          <div class="formula center">Total Error = Bias² + Variance + Noise</div>
+          <div class="formula-note">"Noise" is the irreducible error — randomness in the real world that no model, however good, can ever predict away (e.g. outliers, measurement error).</div>
+          <div class="callout warn">As model complexity increases, bias keeps falling but variance keeps rising. Total error is shaped like a U — it's minimized somewhere in the <b>middle</b>, not at either extreme. Finding that sweet spot is the entire goal of this class.</div>
+        </div>
+      </section>
+
+      <!-- ============ 3. REGULARIZATION ============ -->
+      <section class="block" id="regconcept">
+        <div class="section-eyebrow">Step 3 · The fix</div>
+        <h2>Why big weights are the actual villain</h2>
+        <p class="lead">Here's the missing link: <i>why</i> does a high-degree polynomial overfit? Concretely, because it's allowed to assign huge, wild weights to the higher-power columns (x⁵, x⁸, ...) in order to bend and twist through every noisy point. Large weights = large sensitivity = tiny changes in input swing the prediction wildly. That sensitivity <i>is</i> variance.</p>
+        <div class="card">
+          <h3>What Is Regularization?</h3>
+          <p class="lead" style="margin-top:0;">The idea: add a penalty to the loss function that punishes large weights, so the model has two competing goals instead of one.</p>
+          <div class="formula">Loss (plain MSE) = (1/n) × Σ (yᵢ − ŷᵢ)²</div>
+          <div class="formula">Regularized Loss = MSE + <span class="l">λ</span> × Penalty(weights)</div>
+          <div class="grid-2" style="margin-top:10px;">
+            <div class="analogy"><h4>Goal 1</h4><p>Minimize prediction error — fit the training data.</p></div>
+            <div class="analogy"><h4>Goal 2</h4><p>Keep all weights small — stay simple, don't memorise.</p></div>
+          </div>
+          <div class="callout">λ (lambda) is a <b>hyperparameter</b> — you set it, the model doesn't learn it by itself. It controls how much you care about goal 2 relative to goal 1. λ = 0 → the penalty vanishes and the model learns entirely on its own (can overfit freely). λ → very large → the penalty dominates so much that weights get crushed toward zero regardless of the data (underfitting).</div>
+        </div>
+        <div class="card">
+          <h3>Two ways to define "Penalty(weights)"</h3>
+          <div class="grid-2">
+            <div class="analogy" style="text-align:left;"><h4><span class="badge ridge">L2 · Ridge</span></h4><p>Penalty = Σ wᵢ² (sum of squared weights)</p></div>
+            <div class="analogy" style="text-align:left;"><h4><span class="badge lasso">L1 · Lasso</span></h4><p>Penalty = Σ |wᵢ| (sum of absolute weights)</p></div>
+          </div>
+          <div class="callout" style="margin-top:12px;">Squaring vs. taking absolute value sounds like a tiny detail — it is actually the entire reason these two behave completely differently, which is exactly what we derive next.</div>
+        </div>
+      </section>
+
+      <section class="block" id="ridge">
+        <h2>Ridge Regression <span class="badge ridge">L2</span></h2>
+        <p class="lead">Ridge adds λ·w² to the loss for every weight. Let's watch the weight actually update during gradient descent, with one concrete weight.</p>
+        <div class="card">
+          <h3>The full Ridge loss, and its gradient</h3>
+          <div class="formula">L<sub>ridge</sub>(w) = MSE(w) + <span class="l">λ</span>·w²</div>
+          <div class="step-card"><span class="step-tag">1</span> Differentiate the penalty term alone: d/dw[λw²] = <b>2λw</b>. (Ordinary power rule — bring the 2 down, drop the power by one.)</div>
+          <div class="step-card"><span class="step-tag">2</span> So the full gradient of the regularized loss is: (gradient of plain MSE) <b>+ 2λw</b>.</div>
+          <div class="step-card"><span class="step-tag">3</span> Gradient descent's weight-update rule stays exactly the same shape as always:</div>
+          <div class="formula center">w<sub>new</sub> = w<sub>old</sub> − η · [ gradient of MSE + 2λw<sub>old</sub> ]</div>
+          <div class="formula-note">η (eta) is the learning rate — how big a step we take at each round.</div>
+          <div class="callout good" style="background:rgba(95,216,224,0.08); border-color:var(--cyan-dim); color:var(--cyan);">Read the extra term <b>2λw</b> as a constant "tax" proportional to the current weight itself. The bigger w already is, the bigger the pull back toward 0 — but the pull <i>shrinks</i> as w shrinks. This is exactly a spring's restoring force (Hooke's law: force ∝ displacement). It gets weaker and weaker near 0, but mathematically it never becomes exactly zero for a finite w. That's why Ridge shrinks weights smoothly, but essentially never lands exactly on 0.</div>
+        </div>
+        <div class="card">
+          <h3>Worked numeric example</h3>
+          <p class="lead" style="margin-top:0;">Data: x=1→y=5, x=2→y=10 (so unpenalized fit gives exactly w=5). Full derivation:</p>
+          <div class="formula">L(w) = (5−w)² + (10−2w)² = 125 − 50w + 5w²</div>
+          <div class="formula">L<sub>ridge</sub>(w) = 125 − 50w + 5w² + <span class="l">λ</span>w² = 125 − 50w + (5+<span class="l">λ</span>)w²</div>
+          <div class="formula">L′(w) = −50 + 2(5+<span class="l">λ</span>)w = 0 &nbsp;→&nbsp; <span class="r">w = 25 / (5+λ)</span></div>
+          <table class="data-table">
+            <tr><th>λ</th><th>w</th></tr>
+            <tr><td>0</td><td>5.00</td></tr>
+            <tr><td>5</td><td>2.50</td></tr>
+            <tr><td>20</td><td>1.00</td></tr>
+            <tr><td>100</td><td>0.24</td></tr>
+            <tr><td>1000</td><td>0.025</td></tr>
+          </table>
+          <div class="callout warn">Notice: however large λ gets, w = (something) ÷ (a positive number) — it can get microscopically close to 0, but a finite λ can never make it land <i>exactly</i> on 0. That's the spring never fully letting go.</div>
+        </div>
+      </section>
+
+      <section class="block" id="lasso">
+        <h2>Lasso Regression <span class="badge lasso">L1</span></h2>
+        <p class="lead">Lasso adds λ·|w| instead. The moment you switch from w² to |w|, the derivative stops being smooth — and that single change is what allows Lasso to push weights to <i>exactly</i> zero (and thereby do automatic feature selection).</p>
+        <div class="card">
+          <h3>The gradient of the penalty term</h3>
+          <div class="formula">L<sub>lasso</sub>(w) = MSE(w) + <span class="l">λ</span>·|w|</div>
+          <div class="step-card"><span class="step-tag">1</span> For w &gt; 0: |w| = w, so its slope is a constant <b>+1</b>.</div>
+          <div class="step-card"><span class="step-tag">2</span> For w &lt; 0: |w| = −w, so its slope is a constant <b>−1</b>.</div>
+          <div class="step-card"><span class="step-tag">3</span> So the penalty's gradient is always ±λ — a <b>fixed size</b>, regardless of how big or small w currently is.</div>
+          <div class="formula center">w<sub>new</sub> = w<sub>old</sub> − η · [ gradient of MSE ± <span class="l">λ</span> ]</div>
+          <div class="callout" style="background:rgba(241,127,176,0.08); border-color:var(--pink-dim); color:var(--pink);">Read ±λ as a <b>constant friction force</b> — same strength whether w is huge or tiny, always pushing toward 0. Unlike a spring, friction doesn't taper off as you approach zero — so once the data's own pull is weaker than friction's pull, the weight gets stuck exactly at 0 and stays there. That's the wall Ridge never has.</div>
+        </div>
+      </section>
+
+      <div class="optional-box" id="optional">
+        <span class="opt-tag">⭐ Optional deep-dive</span>
+        <h3 style="font-family:'Caveat',cursive; font-size:26px; margin:0 0 6px; color:var(--white-marker);">Why does Lasso actually hit exactly 0, while Ridge never does?</h3>
+        <p class="lead" style="margin:0 0 14px;">This section is optional but highly recommended — it's the full worked proof behind the one-liner above, using the same x=1→y=5, x=2→y=10 example.</p>
+
+        <div class="card">
+          <h3>The physical picture to hold in your head</h3>
+          <div class="analogy-row">
+            <div class="analogy"><h4>Ridge = a spring</h4><p>Pull force ∝ distance from zero. Strong pull far away, gentle pull close in — but never fully "runs out" of pull. Force = 2λw.</p></div>
+            <div class="analogy"><h4>Lasso = friction against a wall</h4><p>A constant resistance force, same size no matter the distance — until the weight reaches the wall (zero) and gets stuck there. Force = λ·sign(w).</p></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Setting up the exact same loss</h3>
+          <div class="formula">L<sub>lasso</sub>(w) = 125 − 50w + 5w² + <span class="l">λ</span>|w|</div>
+          <p class="lead" style="margin:6px 0 0;">Because |w| behaves differently depending on the sign of w, we must check <b>three separate cases</b> — we can't just differentiate through the corner.</p>
+        </div>
+
+        <div class="card">
+          <h3>Case 1 — assume w &gt; 0</h3>
+          <div class="formula">L(w) = 125 − 50w + 5w² + <span class="l">λ</span>w</div>
+          <div class="formula">L′(w) = −50 + 10w + <span class="l">λ</span> = 0 &nbsp;→&nbsp; <span class="r">w = 5 − λ/10</span></div>
+          <div class="callout warn">Only valid while this comes out positive (matching our assumption): 5 − λ/10 &gt; 0 → <b>λ &lt; 50</b>.</div>
+        </div>
+
+        <div class="card">
+          <h3>Case 2 — assume w &lt; 0</h3>
+          <div class="formula">L(w) = 125 − (50+<span class="l">λ</span>)w + 5w² &nbsp;→&nbsp; L′(w)=0 &nbsp;→&nbsp; w = 5 + λ/10</div>
+          <div class="callout bad">Only valid if this is negative: 5+λ/10 &lt; 0 → λ &lt; −50. Since λ (a penalty strength) can never be negative, <b>this case never triggers for this data</b> — the data itself already wants a positive weight (+5), and the penalty can only pull toward zero, never manufacture a pull the data never asked for.</div>
+        </div>
+
+        <div class="card">
+          <h3>Case 3 — the tricky one: w = 0</h3>
+          <p class="lead" style="margin-top:0;">At exactly w=0, |w| has no single slope. Instead of differentiating, we ask: <b>is there some legal slope, from the allowed range [−1, +1], that makes the total slope exactly zero?</b></p>
+          <div class="step-card"><span class="step-tag">1</span> Smooth part's own slope at w=0: differentiate 125−50w+5w² → −50+10w → at w=0, this is simply <b>−50</b>.</div>
+          <div class="step-card"><span class="step-tag">2</span> The corner part's slope at w=0 can be any value <b>s</b> in [−1,+1] — call it the "wildcard" slope.</div>
+          <div class="step-card"><span class="step-tag">3</span> λ is just a constant multiplier, so it rides straight through differentiation untouched: derivative of λ|w| at w=0 is λ·s.</div>
+          <div class="step-card"><span class="step-tag">4</span> Add both pieces, set the total to zero (the flat condition every minimum needs):</div>
+          <div class="formula center">−50 + <span class="l">λ</span>·s = 0 &nbsp;→&nbsp; s = 50/λ</div>
+          <div class="step-card"><span class="step-tag">5</span> This s is only legal if it stays inside [−1, +1]:</div>
+          <div class="formula center">50/λ ≤ 1 &nbsp;→&nbsp; <span class="l">λ ≥ 50</span></div>
+          <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);">
+            <b>Sanity check via left/right slopes directly (no subgradient trick needed):</b><br>
+            Right side (w→0⁺): slope = −50+λ. For the loss to not decrease moving right, need −50+λ ≥ 0 → λ ≥ 50.<br>
+            Left side (w→0⁻): slope = −50−λ, which is always negative for λ≥0 — so moving left never helps, no constraint needed there.<br>
+            Both routes agree: <b>λ ≥ 50 is exactly when w=0 stops being "downhill" in every direction</b> — i.e. exactly when 0 truly is the minimum.
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>All three cases, together</h3>
+          <table class="data-table">
+            <tr><th>case</th><th>condition</th><th>result</th></tr>
+            <tr><td>w &gt; 0</td><td>λ &lt; 50</td><td>w = 5 − λ/10</td></tr>
+            <tr><td class="zero">w = 0</td><td class="zero">λ ≥ 50</td><td class="zero">w = 0</td></tr>
+            <tr><td>w &lt; 0</td><td>impossible (λ≥0 always)</td><td>never happens here</td></tr>
+          </table>
+          <div class="callout">Check the handoff at λ=50: Case 1 gives w = 5−50/10 = 0 exactly, matching Case 3's boundary perfectly — no gap, no contradiction.</div>
+        </div>
+
+        <div class="card">
+          <h3>Collapsing the two live cases into one formula: max()</h3>
+          <p class="lead" style="margin-top:0;">Push λ past 50 in Case 1's raw formula anyway: at λ=60, "5−λ/10" = −1. But we proved w can never actually be negative for this data. So the raw formula becomes "wrong" past λ=50 — the real answer just freezes at 0 instead of following it down. <b>"Never let a number go below 0"</b> is exactly what max(x, 0) means:</p>
+          <div class="formula center">w<sub>lasso</sub> = max(5 − λ/10, 0)</div>
+          <table class="data-table">
+            <tr><th>λ</th><th>raw: 5−λ/10</th><th>true w (with max)</th></tr>
+            <tr><td>0</td><td>5</td><td>5.00</td></tr>
+            <tr><td>20</td><td>3</td><td>3.00</td></tr>
+            <tr><td>49</td><td>0.1</td><td>0.10</td></tr>
+            <tr><td class="zero">50</td><td>0</td><td class="zero">0.00</td></tr>
+            <tr><td class="zero">60</td><td>−1</td><td class="zero">0.00</td></tr>
+            <tr><td class="zero">100</td><td>−5</td><td class="zero">0.00</td></tr>
+          </table>
+        </div>
+
+        <div class="card">
+          <h3>Same result, mirrored data (proving it wasn't a one-off)</h3>
+          <p class="lead" style="margin-top:0;">Flip the data: x=1→y=−5, x=2→y=−10. Now the data itself wants a <i>negative</i> weight (unpenalized fit gives w=−5). Redo Case 3 at w=0: the smooth part's slope flips sign to <b>+50</b>, giving:</p>
+          <div class="formula center">50 + <span class="l">λ</span>·s = 0 &nbsp;→&nbsp; s = −50/λ &nbsp;&nbsp;needs |s|≤1&nbsp;→&nbsp; <span class="l">λ ≥ 50</span></div>
+          <div class="callout good">Same threshold, λ≥50 — only the <i>sign</i> of the required "friction" (s) flips to match which way the data is pulling. |−50/λ| ≤ 1 is the same size-check as |50/λ| ≤ 1: absolute value only cares about magnitude, not direction, because friction can push either way with up to λ of force.</div>
+          <table class="data-table">
+            <tr><th>λ</th><th>ridge: −25/(5+λ)</th><th>lasso: max(−5+λ/10... → 0)</th></tr>
+            <tr><td>0</td><td>−5.00</td><td>−5.00</td></tr>
+            <tr><td>40</td><td>−0.56</td><td>−1.00</td></tr>
+            <tr><td class="zero">50</td><td>−0.45</td><td class="zero">0.00</td></tr>
+            <tr><td>100</td><td>−0.24</td><td class="zero">0.00</td></tr>
+          </table>
+          <div class="callout warn">Ridge still just approaches zero, never touching it. Lasso still lands exactly on zero at λ=50, and stays — regardless of which direction the data was originally pulling.</div>
+        </div>
+
+        <div class="card">
+          <h3>The one line to remember</h3>
+          <div class="callout good" style="font-size:14px;"><b>Ridge is a spring — always some pull left, so it shrinks weights forever without fully deleting them. Lasso is friction against a wall — a constant pull that can fully stop a weight exactly at zero, and once stopped, it stays stopped.</b> Same goal (discourage large weights), opposite behavior, purely from the shape of the penalty: smooth curve (w²) vs. sharp corner (|w|).</div>
+        </div>
+      </div>
+
+      <section class="block" id="elastic">
+        <h2>Elastic Net — <span class="underline">why choose, when you can blend?</span></h2>
+        <p class="lead">Ridge is great at handling correlated features smoothly, but never eliminates any. Lasso is great at automatic feature selection, but can behave erratically when features are highly correlated (it tends to arbitrarily pick just one of them and zero the rest). Elastic Net's idea: <b>use both penalties at once</b>, with a knob to control the mix.</p>
+        <div class="card">
+          <h3>The formula</h3>
+          <div class="formula">L<sub>elastic</sub>(w) = MSE(w) + <span class="l">λ₁</span>·|w| + <span class="r">λ₂</span>·w²</div>
+          <div class="formula-note">Some libraries write this with one λ for overall strength and a mixing ratio α ∈ [0,1]: L = MSE + λ[ α·|w| + (1−α)·w² ]. α=1 is pure Lasso, α=0 is pure Ridge, anything in between is a blend.</div>
+          <div class="grid-2" style="margin-top:10px;">
+            <div class="analogy"><h4>α close to 1</h4><p>Mostly Lasso behavior — sparser, more weights hit exactly 0.</p></div>
+            <div class="analogy"><h4>α close to 0</h4><p>Mostly Ridge behavior — smoother shrinkage, few or no exact zeros.</p></div>
+          </div>
+          <div class="callout">Intuition: Lasso's "friction" gives you sparsity (some weights truly gone — useful when you suspect only a handful of features actually matter). Ridge's "spring" gives you stability with correlated features (it spreads the penalty across all of them instead of arbitrarily picking one). Elastic Net lets you dial in some of both, instead of being forced to pick a single extreme.</div>
+        </div>
+      </section>
+
+      <!-- ============ 4. CROSS VALIDATION ============ -->
+      <section class="block" id="validation">
+        <div class="section-eyebrow">Step 4 · Picking λ properly</div>
+        <h2>So... how do we actually choose λ?</h2>
+        <p class="lead">We now know λ controls the whole story — too small and we overfit, too large and we underfit. But λ is a hyperparameter: <b>the model can't learn it from the training data</b> (training data will always "prefer" λ=0, since that lets it fit itself best!). We need a fair, honest way to test different λ values. That's what validation data is for.</p>
+        <div class="card">
+          <h3>The Three-Way Split</h3>
+          <p class="lead" style="margin-top:0;">Every ML project divides its data into three non-overlapping sets:</p>
+          <div class="grid-3">
+            <div class="analogy"><h4>Training Set<br>(60–70%)</h4><p>The model sees this data and adjusts its weights to minimise error. This is where all the "learning" happens.</p></div>
+            <div class="analogy"><h4>Validation Set<br>(10–20%)</h4><p>Used to tune hyperparameters like λ. The model never trains on this — but you use it to decide which λ works best.</p></div>
+            <div class="analogy"><h4>Test Set<br>(10–20%)</h4><p>The final, honest evaluation. Touched exactly once, at the very end. Tells you how the model will really perform.</p></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Worked example, matching class numbers</h3>
+          <p class="lead" style="margin-top:0;">Say we have 1000 rows total. A common split: 700 for training, 100 for validation, 200 held back for testing.</p>
+          <table class="data-table">
+            <tr><th>split</th><th>rows</th><th>job</th></tr>
+            <tr><td>Train</td><td>700</td><td>fit the model's weights, for a given λ</td></tr>
+            <tr><td class="val">Validation</td><td>100</td><td>evaluate + compare across λ values, pick the winner</td></tr>
+            <tr><td>Test</td><td>200</td><td>final honest score, used only once, at the end</td></tr>
+          </table>
+          <div class="step-card"><span class="step-tag">1</span> Try λ = 0.01 → train on the 700, check score on the 100 validation rows.</div>
+          <div class="step-card"><span class="step-tag">2</span> Try λ = 0.1, then 1, then 10, then 100 → same routine each time.</div>
+          <div class="step-card"><span class="step-tag">3</span> Whichever λ scores best <b>on validation</b> (not training!) is your chosen λ.</div>
+          <div class="step-card"><span class="step-tag">4</span> Only now do you touch the 200 test rows — once — to report the model's real-world performance.</div>
+          <div class="callout warn">Why not just pick λ using the test set directly? Because if you peek at test performance while tuning, you're indirectly "training" on the test set through your own choices — and your final reported score becomes overly optimistic and untrustworthy. The test set's entire value comes from never being used for decisions.</div>
+        </div>
+      </section>
+
+      <section class="block" id="kfold">
+        <h2>K-Fold Cross Validation — <span class="underline">making validation more reliable</span></h2>
+        <p class="lead">A single train/validation split has a weakness: what if, by pure luck, an easy or unusually hard chunk of data ended up in your one validation set? Your λ-comparison could be misleading. K-Fold cross-validation fixes this by validating <b>multiple times, on different slices</b>, and averaging the results.</p>
+        <div class="card">
+          <h3>How 5-fold cross-validation works, step by step</h3>
+          <p class="lead" style="margin-top:0;">Take your training+validation pool (say 1000 rows) and split it into 5 equal chunks: D₁, D₂, D₃, D₄, D₅.</p>
+          <table class="data-table kfold-table">
+            <tr><th>round</th><th>fold 1</th><th>fold 2</th><th>fold 3</th><th>fold 4</th><th>fold 5</th></tr>
+            <tr><td>Round 1</td><td class="val">VAL</td><td>train</td><td>train</td><td>train</td><td>train</td></tr>
+            <tr><td>Round 2</td><td>train</td><td class="val">VAL</td><td>train</td><td>train</td><td>train</td></tr>
+            <tr><td>Round 3</td><td>train</td><td>train</td><td class="val">VAL</td><td>train</td><td>train</td></tr>
+            <tr><td>Round 4</td><td>train</td><td>train</td><td>train</td><td class="val">VAL</td><td>train</td></tr>
+            <tr><td>Round 5</td><td>train</td><td>train</td><td>train</td><td>train</td><td class="val">VAL</td></tr>
+          </table>
+          <div class="formula center">Final Score = (Score₁ + Score₂ + Score₃ + Score₄ + Score₅) / 5</div>
+          <div class="callout">Every single row gets used for validation <b>exactly once</b>, and for training <b>4 times</b>, across the 5 rounds. This means your final score reflects performance averaged over the whole dataset, not just whichever chunk happened to land in "the" validation set.</div>
+        </div>
+        <div class="card">
+          <h3>How much does the model actually execute? (the cost of doing this properly)</h3>
+          <p class="lead" style="margin-top:0;">This is the detail that trips people up: cross-validation multiplies your training runs by however many λ values you're testing.</p>
+          <div class="step-card"><span class="step-tag">1</span> Say you want to test 3 candidate λ values: 0.1, 1, 10.</div>
+          <div class="step-card"><span class="step-tag">2</span> For <b>each</b> λ, you run the <b>full</b> 5-fold routine — that's 5 separate training runs.</div>
+          <div class="step-card"><span class="step-tag">3</span> Total training runs = (number of λ values) × (number of folds) = 3 × 5 = <b>15</b>.</div>
+          <div class="step-card"><span class="step-tag">4</span> If you instead used K=10 folds: 3 × 10 = <b>30</b> total runs — twice the compute, for a more reliable (larger, more stable) average per λ.</div>
+          <table class="data-table" style="margin-top:10px;">
+            <tr><th>value of K</th><th>best for</th><th>trade-off</th></tr>
+            <tr><td>K = 5</td><td>Default choice, most common</td><td>Good balance of speed and reliability</td></tr>
+            <tr><td>K = 10</td><td>Smaller datasets</td><td>~2× slower than K=5, but more reliable</td></tr>
+            <tr><td>K = N (Leave-One-Out)</td><td>Very small datasets (&lt;50 rows)</td><td>Trains N separate models — extremely slow for large N</td></tr>
+            <tr><td>Stratified K-Fold</td><td>Imbalanced classification datasets</td><td>Preserves the class ratio in every fold — always use for classification</td></tr>
+          </table>
+          <div class="callout warn">Whichever λ has the best <i>average</i> score across all folds is your winner. Then — and only then — you retrain one final model (using that λ) on all of your training+validation data combined, and evaluate it once on the untouched test set.</div>
+        </div>
+      </section>
+
+      <section class="block" id="summary">
+        <div class="section-eyebrow">Wrapping up</div>
+        <h2>Class 5 summary</h2>
+        <div class="card">
+          <table class="data-table">
+            <tr><th>concept</th><th>one-line takeaway</th></tr>
+            <tr><td>Polynomial regression</td><td>Engineer x, x², x³... as new columns; the model itself stays linear in its weights.</td></tr>
+            <tr><td>Occam's razor</td><td>Between similarly-scoring models, prefer the simpler one — complexity has a hidden cost.</td></tr>
+            <tr><td>Underfitting</td><td>Model too simple; even training error is high.</td></tr>
+            <tr><td>Overfitting</td><td>Model too complex; training error tiny, test error much bigger.</td></tr>
+            <tr><td>Bias–Variance trade-off</td><td>Total error = Bias² + Variance + Noise; minimized somewhere in the middle, not at either extreme.</td></tr>
+            <tr><td>Regularization</td><td>Add λ·Penalty(weights) to the loss to discourage large, memorizing weights.</td></tr>
+            <tr><td>Ridge (L2)</td><td>Penalty = w². Pull ∝ w, like a spring — shrinks weights smoothly, but never exactly to 0.</td></tr>
+            <tr><td>Lasso (L1)</td><td>Penalty = |w|. Pull = constant λ, like friction — can push weights exactly to 0 and hold them there.</td></tr>
+            <tr><td>Elastic Net</td><td>Blends both penalties (λ₁|w| + λ₂w²) — sparsity from Lasso, stability from Ridge.</td></tr>
+            <tr><td>Train/Val/Test split</td><td>Train fits weights; validation tunes hyperparameters like λ; test gives one final, honest score.</td></tr>
+            <tr><td>K-Fold CV</td><td>Rotate the validation fold K times and average, so the λ-comparison isn't a fluke of one split.</td></tr>
+          </table>
+        </div>
+        <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green); font-size:14px;">
+          The whole class in one sentence: <b>a model that's too simple can't learn the pattern, a model that's too complex memorizes noise instead of the pattern — regularization is how we deliberately hold a model back from doing the latter, and cross-validation is how we honestly measure how much to hold it back.</b>
+        </div>
+      </section>
+
+      <div class="footnote-strip">
+        <span class="hand">— end of Class 5 —</span>
+        Model Generalization · 10 July 2026
+      </div>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>

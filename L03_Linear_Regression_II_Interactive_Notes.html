@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Linear Regression II — Lecture 3 Notes</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Patrick+Hand&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --board:#0c1014;
+    --board-2:#11161b;
+    --card:#151b21;
+    --card-line:#222b32;
+    --chalk:#e9eef2;
+    --chalk-dim:#9fb0bb;
+    --cyan:#5fd8e0;
+    --cyan-dim:#2c5a5e;
+    --pink:#f17fb0;
+    --pink-dim:#5a2f42;
+    --yellow:#f4cf5e;
+    --green:#8fe3a6;
+    --green-dim:#2f4f3a;
+    --white-marker:#f5f5f0;
+    --orange:#f0a868;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--board);
+    color:var(--chalk);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    line-height:1.55;
+  }
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(255,255,255,0.025), transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(255,255,255,0.02), transparent 45%);
+    pointer-events:none;
+    z-index:0;
+  }
+  .wrap{
+    position:relative;
+    z-index:1;
+    max-width:1180px;
+    margin:0 auto;
+    padding:0 24px 120px;
+  }
+  h1,h2,h3,.hand{
+    font-family:'Caveat',cursive;
+    font-weight:700;
+    letter-spacing:0.3px;
+  }
+  .hero{ padding:64px 0 36px; text-align:center; position:relative; }
+  .chip{
+    display:inline-block; font-family:'JetBrains Mono',monospace; font-size:12px;
+    letter-spacing:1.5px; text-transform:uppercase; color:var(--cyan);
+    border:1px solid var(--cyan-dim); background:rgba(95,216,224,0.06);
+    padding:6px 14px; border-radius:999px; margin-bottom:18px;
+  }
+  .hero h1{ font-size:clamp(36px,6vw,66px); color:var(--white-marker); margin:0 0 8px; text-shadow:0 0 22px rgba(245,245,240,0.15); }
+  .hero h1 span{color:var(--pink);}
+  .hero p{ font-family:'Patrick Hand',cursive; color:var(--chalk-dim); font-size:19px; max-width:640px; margin:0 auto; }
+  .hero .session-time{
+    margin-top:22px; display:inline-flex; align-items:center; gap:10px;
+    font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--yellow);
+    border:1.5px dashed var(--yellow); padding:8px 16px; border-radius:999px;
+  }
+  .layout{ display:grid; grid-template-columns:230px 1fr; gap:40px; align-items:start; }
+  nav.toc{
+    position:sticky; top:24px; background:var(--card); border:1px solid var(--card-line);
+    border-radius:var(--radius); padding:18px 16px; font-family:'JetBrains Mono',monospace; font-size:12px;
+  }
+  nav.toc .toc-title{ color:var(--chalk-dim); text-transform:uppercase; letter-spacing:1.2px; font-size:11px; margin-bottom:10px; }
+  nav.toc a{ display:block; color:var(--chalk-dim); text-decoration:none; padding:6px 8px; border-radius:8px; margin-bottom:2px; transition:all .15s ease; border-left:2px solid transparent; }
+  nav.toc a:hover{color:var(--chalk); background:rgba(255,255,255,0.04);}
+  nav.toc a.active{ color:var(--cyan); background:rgba(95,216,224,0.08); border-left:2px solid var(--cyan); }
+  main{min-width:0;}
+  section.block{ margin-bottom:54px; scroll-margin-top:24px; }
+  .section-eyebrow{ font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--pink); margin-bottom:6px; }
+  section.block h2{ font-size:36px; color:var(--white-marker); margin:0 0 14px; }
+  section.block h2 .underline{ text-decoration:underline; text-decoration-color:var(--cyan); text-decoration-thickness:3px; }
+  p.lead{ font-size:16px; color:#cdd8de; max-width:760px; }
+  .card{ background:var(--card); border:1px solid var(--card-line); border-radius:var(--radius); padding:22px 24px; margin:18px 0; }
+  .card h3{ font-family:'Inter',sans-serif; font-weight:700; font-size:14px; text-transform:uppercase; letter-spacing:0.8px; color:var(--cyan); margin:0 0 12px; }
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
+  .grid-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px;}
+  @media (max-width:900px){
+    .layout{grid-template-columns:1fr;}
+    nav.toc{position:relative; top:0; margin-bottom:20px;}
+    .grid-2,.grid-3{grid-template-columns:1fr;}
+  }
+  table.data-table{ width:100%; border-collapse:collapse; font-family:'JetBrains Mono',monospace; font-size:13px; }
+  table.data-table th{ text-align:left; color:var(--chalk-dim); font-weight:500; padding:8px 12px; border-bottom:1px solid var(--card-line); text-transform:uppercase; font-size:11px; letter-spacing:0.5px; }
+  table.data-table td{ padding:8px 12px; border-bottom:1px solid rgba(255,255,255,0.04); }
+  table.data-table .num-x{color:var(--cyan);}
+  table.data-table .num-y{color:var(--pink);}
+  table.data-table .num-e{color:var(--yellow);}
+  table.data-table tr.total td{ border-top:1px solid var(--card-line); font-weight:700; color:var(--white-marker); }
+  blockquote.story{
+    font-family:'Patrick Hand',cursive; font-size:17px; color:#dbe6ec; border-left:3px solid var(--yellow);
+    padding:6px 18px; margin:18px 0; background:rgba(244,207,94,0.04); border-radius:0 10px 10px 0;
+  }
+  .qa-tag{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--board); background:var(--yellow); padding:2px 8px; border-radius:6px; margin-right:8px; }
+  .pipeline{ display:flex; align-items:center; gap:0; overflow-x:auto; padding:10px 0 18px; }
+  .pipe-step{ flex:0 0 auto; min-width:150px; background:var(--card); border:1px solid var(--card-line); border-radius:12px; padding:14px 16px; text-align:center; }
+  .pipe-step .n{ font-family:'JetBrains Mono',monospace; color:var(--cyan); font-size:11px; margin-bottom:6px; }
+  .pipe-step .t{font-weight:700; font-size:14px; color:var(--white-marker);}
+  .pipe-step .d{font-size:11.5px; color:var(--chalk-dim); margin-top:4px;}
+  .pipe-arrow{ flex:0 0 auto; width:34px; text-align:center; color:var(--pink); font-size:18px; }
+  .task-card{ border-radius:12px; padding:16px 18px; border:1px solid var(--card-line); background:var(--card); }
+  .task-card .icon{font-size:22px; margin-bottom:8px; display:block;}
+  .task-card h4{margin:0 0 4px; font-size:15px; color:var(--white-marker);}
+  .task-card p{margin:0; font-size:12.5px; color:var(--chalk-dim);}
+  .footnote-strip{ margin-top:70px; border-top:1px dashed var(--card-line); padding-top:24px; text-align:center; color:var(--chalk-dim); font-family:'JetBrains Mono',monospace; font-size:12px; }
+  .footnote-strip .hand{color:var(--cyan); font-size:22px; display:block; margin-bottom:6px;}
+  ::selection{background:rgba(95,216,224,0.3);}
+  ::-webkit-scrollbar{width:10px; height:10px;}
+  ::-webkit-scrollbar-track{background:var(--board);}
+  ::-webkit-scrollbar-thumb{background:#2a333b; border-radius:6px;}
+
+  .math-block{
+    font-family:'JetBrains Mono',monospace;
+    background:#0a0d10;
+    border:1px solid var(--card-line);
+    border-radius:10px;
+    padding:18px 22px;
+    margin:16px 0;
+    font-size:16px;
+    color:var(--white-marker);
+    overflow-x:auto;
+    letter-spacing:0.3px;
+  }
+  .math-block.center{text-align:center;}
+  .math-block .key{color:var(--yellow);}
+  .math-block .accent{color:var(--cyan);}
+  .formula-note{ font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--chalk-dim); margin-top:8px; }
+  sub{font-size:0.68em;}
+  sup{font-size:0.65em;}
+  .sigma{
+    display:inline-flex; flex-direction:column; align-items:center;
+    font-family:'JetBrains Mono',monospace; line-height:1; margin:0 5px; vertical-align:middle; position:relative; top:5px;
+  }
+  .sigma .lim{font-size:10px; color:var(--chalk-dim);}
+  .sigma .sym{font-size:24px; color:var(--yellow); line-height:0.85; margin:1px 0;}
+  .callout{
+    background:rgba(143,227,166,0.08); border:1px solid var(--green-dim); border-radius:10px;
+    padding:12px 16px; color:var(--green); font-size:13.5px; font-family:'JetBrains Mono',monospace; margin:14px 0;
+  }
+  .callout.warn{ background:rgba(244,207,94,0.08); border-color:#5a4f2f; color:var(--yellow); }
+  .callout.bad{ background:rgba(241,127,176,0.08); border-color:var(--pink-dim); color:var(--pink); }
+  .step-tag{
+    display:inline-block; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--board);
+    background:var(--cyan); padding:2px 9px; border-radius:6px; margin-right:8px; font-weight:700;
+  }
+  .step-card{ background:rgba(0,0,0,0.22); border-radius:10px; padding:14px 18px; margin:10px 0; border:1px solid var(--card-line); }
+  .step-card .why{ font-size:12px; color:var(--chalk-dim); margin-top:6px; }
+  .bar-chart{ display:flex; align-items:flex-end; gap:26px; height:190px; padding:10px 10px 0; }
+  .bar-col{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; max-width:140px; margin:0 auto;}
+  .bar{ width:70%; border-radius:8px 8px 0 0; display:flex; align-items:flex-start; justify-content:center; padding-top:6px; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:14px; transition:height .35s ease; }
+  .bar-label{ margin-top:8px; font-size:11.5px; color:var(--chalk-dim); font-family:'JetBrains Mono',monospace; text-align:center; }
+  .svg-card{ background:var(--board-2); border:1px solid var(--card-line); border-radius:14px; padding:14px; }
+  .svg-caption{ text-align:center; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--chalk-dim); margin-top:8px; }
+  .legend{ display:flex; gap:16px; flex-wrap:wrap; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--chalk-dim); margin-top:6px; }
+  .legend span.dot{ display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:5px; vertical-align:middle; }
+
+  .code-block{
+    background:#0a0d10; border:1px solid var(--card-line); border-radius:10px;
+    padding:16px 20px; margin:14px 0; font-family:'JetBrains Mono',monospace;
+    font-size:13px; line-height:1.75; overflow-x:auto; color:var(--chalk);
+  }
+  .code-block .kw{color:var(--pink);}
+  .code-block .fn{color:var(--cyan);}
+  .code-block .str{color:var(--yellow);}
+  .code-block .cm{color:var(--chalk-dim); font-style:italic;}
+  .code-block .num{color:var(--green);}
+  .code-block .out{color:var(--chalk-dim);}
+
+  .lab{
+    background:var(--board-2); border:1px solid var(--cyan-dim); border-radius:var(--radius);
+    padding:20px 22px; margin:18px 0;
+  }
+  .lab .lab-tag{
+    font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:1.2px; text-transform:uppercase;
+    color:var(--cyan); margin-bottom:12px; display:flex; align-items:center; gap:8px;
+  }
+  .lab .lab-tag::before{ content:"⟡"; }
+  input[type=range]{
+    -webkit-appearance:none; width:100%; height:6px; border-radius:4px;
+    background:var(--card-line); outline:none; margin:6px 0;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:20px; height:20px; border-radius:50%;
+    background:var(--cyan); cursor:pointer; border:3px solid var(--board);
+    box-shadow:0 0 0 2px var(--cyan);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:20px; height:20px; border-radius:50%; background:var(--cyan); cursor:pointer;
+    border:3px solid var(--board); box-shadow:0 0 0 2px var(--cyan);
+  }
+  .slider-row{ display:flex; align-items:center; gap:14px; }
+  .slider-row label{ font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--chalk-dim); white-space:nowrap; }
+  .slider-row .live-val{ font-family:'JetBrains Mono',monospace; font-size:15px; font-weight:700; color:var(--yellow); min-width:52px; text-align:right; }
+  .stat-row{ display:flex; gap:14px; margin-top:16px; flex-wrap:wrap; }
+  .stat-chip{ flex:1; min-width:110px; background:var(--card); border:1px solid var(--card-line); border-radius:10px; padding:10px 14px; }
+  .stat-chip .k{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--chalk-dim); text-transform:uppercase; letter-spacing:0.5px; }
+  .stat-chip .v{ font-family:'JetBrains Mono',monospace; font-size:19px; font-weight:700; color:var(--white-marker); margin-top:2px; }
+  .toggle-row{ display:flex; gap:10px; margin-bottom:16px; }
+  .toggle-btn{
+    font-family:'JetBrains Mono',monospace; font-size:12.5px; padding:8px 16px; border-radius:999px;
+    border:1px solid var(--card-line); background:var(--card); color:var(--chalk-dim); cursor:pointer;
+    transition:all .15s ease;
+  }
+  .toggle-btn.active{ border-color:var(--cyan); color:var(--cyan); background:rgba(95,216,224,0.08); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="hero">
+    <div class="chip">06-07-2026 · Module: Supervised Learning</div>
+    <h1>Linear Regression <span>II</span></h1>
+    <div class="session-time">📘 Lecture 3 &nbsp;·&nbsp; Reading the fit, splitting the data, and fixing feature importance</div>
+  </div>
+
+  <div class="layout">
+    <nav class="toc" id="toc">
+      <div class="toc-title">On this board</div>
+      <a href="#agenda">Agenda</a>
+      <a href="#r2-baseline">R² — compared to what?</a>
+      <a href="#r2-formula">R² — the formula</a>
+      <a href="#r2-lab">R² — the live lab</a>
+      <a href="#train-test">Train-test split</a>
+      <a href="#random-state">random_state, explained</a>
+      <a href="#feature-importance">Feature importance</a>
+      <a href="#scaling-why">Why scaling matters</a>
+      <a href="#scaling-methods">Scaling methods</a>
+      <a href="#scaling-lab">Feature importance — after scaling</a>
+      <a href="#summary">Summary &amp; up next</a>
+    </nav>
+
+    <main>
+
+      <section class="block" id="agenda">
+        <div class="section-eyebrow">Where we're headed</div>
+        <h2>Today's <span class="underline">agenda</span></h2>
+        <p class="lead">Last time we derived how a line gets fit. Today: how to grade that fit honestly, how to test it on data it's never seen, and why the raw coefficients can flat-out lie to you until you scale the features first.</p>
+
+        <div class="pipeline">
+          <div class="pipe-step"><div class="n">01</div><div class="t">R² Score</div><div class="d">Reading the fit, compared to a baseline</div></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step"><div class="n">02</div><div class="t">Train-Test Split</div><div class="d">Why, and what random_state really does</div></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step"><div class="n">03</div><div class="t">Feature Importance</div><div class="d">What the weights are really saying</div></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step"><div class="n">04</div><div class="t">Scaling</div><div class="d">Why it matters, and how it fixes importance</div></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step" style="opacity:0.55; border-style:dashed;"><div class="n">05</div><div class="t">Code Walkthrough</div><div class="d">Predicting mileage, start to finish</div></div>
+        </div>
+      </section>
+
+      <section class="block" id="r2-baseline">
+        <div class="section-eyebrow">A model is only "good" relative to something</div>
+        <h2>R² — compared to <span class="underline">what</span>?</h2>
+        <p class="lead">You fit a line. It makes predictions. "The errors are small" isn't a number you can compare across models — you need an actual baseline to measure against.</p>
+
+        <div class="card">
+          <h3>The simplest possible baseline</h3>
+          <blockquote class="story">"If I knew nothing about x at all, my best guess for every single y would just be the average — ȳ. Any real model, using real information from x, should beat that."</blockquote>
+          <div class="callout">R² measures exactly how much better than that "just guess the mean" baseline your model actually is.</div>
+        </div>
+      </section>
+
+      <section class="block" id="r2-formula">
+        <div class="section-eyebrow">The mechanics</div>
+        <h2>R² — the <span class="underline">formula</span></h2>
+
+        <div class="math-block center">R<sup>2</sup> = 1 − <span class="key">SS<sub>res</sub></span> / <span class="accent">SS<sub>tot</sub></span></div>
+        <div class="grid-2">
+          <div class="card">
+            <h3>SS<sub>res</sub> — unexplained</h3>
+            <div class="math-block" style="font-size:14px;">
+              <span class="sigma"><span class="lim">n</span><span class="sym">Σ</span><span class="lim">i=1</span></span>(y<sub>i</sub> − ŷ<sub>i</sub>)<sup>2</sup>
+            </div>
+            <p style="font-size:12.5px; color:var(--chalk-dim); margin:0;">Your model's own squared errors — this is just SSE, from Lecture 2.</p>
+          </div>
+          <div class="card">
+            <h3>SS<sub>tot</sub> — total</h3>
+            <div class="math-block" style="font-size:14px;">
+              <span class="sigma"><span class="lim">n</span><span class="sym">Σ</span><span class="lim">i=1</span></span>(y<sub>i</sub> − ȳ)<sup>2</sup>
+            </div>
+            <p style="font-size:12.5px; color:var(--chalk-dim); margin:0;">The baseline's squared errors — always predicting the mean. Unnormalized variance.</p>
+          </div>
+        </div>
+        <div class="callout">R² = 1 → perfect fit &nbsp;·&nbsp; R² = 0 → exactly as good as guessing the mean &nbsp;·&nbsp; R² &lt; 0 → worse than guessing the mean</div>
+      </section>
+
+      <section class="block" id="r2-lab">
+        <div class="section-eyebrow">Explained vs. unexplained, live</div>
+        <h2>R² — the <span class="underline">live lab</span></h2>
+        <p class="lead">Same 8 students as Lecture 2. Pick a line, drag a score, and watch the vertical bar at student 7 split into two stacked pieces: green = explained by the line, pink = left over as residual.</p>
+
+        <div class="lab">
+          <div class="lab-tag">Interactive · try a different line</div>
+          <div class="toggle-row">
+            <button class="toggle-btn" id="btnFlat">Line 1 — too flat</button>
+            <button class="toggle-btn active" id="btnGood">Line 2 — good fit</button>
+            <button class="toggle-btn" id="btnSteep">Line 3 — too steep</button>
+          </div>
+
+          <div class="slider-row">
+            <label for="r2Slider">actual y, student 7</label>
+            <input type="range" id="r2Slider" min="20" max="140" step="1" value="80">
+            <span class="live-val" id="r2SliderVal">80</span>
+          </div>
+
+          <div class="svg-card" style="margin-top:16px;">
+            <svg viewBox="0 0 520 260" width="100%" height="auto">
+              <line x1="50" y1="20" x2="50" y2="240" stroke="#222b32" stroke-width="1"/>
+              <line x1="50" y1="240" x2="500" y2="240" stroke="#222b32" stroke-width="1"/>
+              <text x="8" y="24" font-family="JetBrains Mono" font-size="11" fill="#9fb0bb">score</text>
+              <text x="465" y="256" font-family="JetBrains Mono" font-size="11" fill="#9fb0bb">hours</text>
+
+              <line id="meanLine" x1="50" y1="196.4" x2="500" y2="196.4" stroke="#f4cf5e" stroke-width="1.5" stroke-dasharray="5,4"/>
+              <text id="meanLabel" x="360" y="192" font-family="JetBrains Mono" font-size="11" fill="#f4cf5e">mean ȳ</text>
+
+              <line id="fitLine" x1="50" y1="207.7" x2="500" y2="135" stroke="#5fd8e0" stroke-width="2.5"/>
+              <text id="fitLabel" x="405" y="128" font-family="JetBrains Mono" font-size="11" fill="#5fd8e0">ŷ = 5x + 35</text>
+
+              <circle cx="100" cy="196.4" r="5" fill="#5fd8e0"/>
+              <circle cx="150" cy="183.5" r="5" fill="#5fd8e0"/>
+              <circle cx="200" cy="175.4" r="5" fill="#5fd8e0"/>
+              <circle cx="250" cy="165.7" r="5" fill="#5fd8e0"/>
+              <circle cx="300" cy="154.4" r="5" fill="#5fd8e0"/>
+              <circle cx="350" cy="147.9" r="5" fill="#5fd8e0"/>
+              <circle cx="450" cy="126.9" r="5" fill="#5fd8e0"/>
+
+              <line id="explainedSeg" x1="400" y1="196.4" x2="400" y2="151.2" stroke="#8fe3a6" stroke-width="6" stroke-linecap="round"/>
+              <line id="unexplainedSeg" x1="400" y1="151.2" x2="400" y2="196.4" stroke="#f17fb0" stroke-width="6" stroke-linecap="round"/>
+              <circle id="lineRefPoint" cx="400" cy="151.2" r="4" fill="#0c1014" stroke="#5fd8e0" stroke-width="2"/>
+              <circle id="dragPoint" cx="400" cy="196.4" r="7" fill="#f17fb0" stroke="#0c1014" stroke-width="1.5"/>
+              <text id="dragLabel" x="408" y="200" font-family="JetBrains Mono" font-size="12" fill="#f17fb0" font-weight="700">student 7</text>
+            </svg>
+            <div class="legend">
+              <span><span class="dot" style="background:#f4cf5e;"></span>mean ȳ</span>
+              <span><span class="dot" style="background:#8fe3a6;"></span>explained (mean → line)</span>
+              <span><span class="dot" style="background:#f17fb0;"></span>unexplained (line → actual)</span>
+            </div>
+          </div>
+
+          <div class="stat-row">
+            <div class="stat-chip"><div class="k">explained (ŷ−ȳ)</div><div class="v" id="explainedValOut" style="color:var(--green);">−16.1</div></div>
+            <div class="stat-chip"><div class="k">unexplained (y−ŷ)</div><div class="v" id="residOut" style="color:var(--pink);">+10</div></div>
+            <div class="stat-chip"><div class="k">SS res / SS tot</div><div class="v" id="ssFracOut">403 / 1547</div></div>
+            <div class="stat-chip"><div class="k">R²</div><div class="v" id="r2Out">0.74</div></div>
+          </div>
+          <div class="formula-note" id="r2Verdict" style="text-align:center; font-size:12.5px; margin-top:10px;">total deviation (y−ȳ) always splits into exactly these two pieces: (ŷ−ȳ) + (y−ŷ)</div>
+        </div>
+
+      </section>
+
+      <section class="block" id="train-test">
+        <div class="section-eyebrow">Testing on data the model already saw proves nothing</div>
+        <h2><span class="underline">Train-test</span> split</h2>
+        <p class="lead">If you fit on every row you have, then check error on those same rows, you're measuring memorization, not generalization.</p>
+
+        <div class="grid-2">
+          <div class="card" style="border-color:var(--cyan-dim);">
+            <h3>Training set</h3>
+            <p style="font-size:13px; color:var(--chalk-dim); margin:0;">What the model learns from — every weight comes only from these rows.</p>
+          </div>
+          <div class="card" style="border-color:var(--pink-dim);">
+            <h3>Test set</h3>
+            <p style="font-size:13px; color:var(--chalk-dim); margin:0;">Held back, untouched during fitting — used only afterward to check real performance.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>In code — predicting selling price</h3>
+          <div class="code-block">
+<span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> <span class="fn">train_test_split</span>
+
+X = data.<span class="fn">drop</span>(columns=<span class="str">'selling_price'</span>)   <span class="cm"># features</span>
+y = data[<span class="str">'selling_price'</span>]              <span class="cm"># target</span>
+
+X_train, X_test, y_train, y_test = <span class="fn">train_test_split</span>(
+    X,
+    y,
+    test_size=<span class="num">0.2</span>,
+    random_state=<span class="num">10</span>
+)
+          </div>
+          <div class="callout">80% trains the model, 20% is held back purely to grade it afterward — untouched during fitting.</div>
+        </div>
+      </section>
+
+      <section class="block" id="random-state">
+        <div class="section-eyebrow">Is it actually random?</div>
+        <h2><span class="underline">random_state</span>, explained</h2>
+        <p class="lead">Yes, by default — until you fix the seed. Then it's "the same randomness every time," not "no randomness."</p>
+
+        <div class="card">
+          <h3>Without a fixed seed</h3>
+          <div class="code-block">
+train_test_split(X, y, test_size=<span class="num">0.2</span>)
+<span class="cm"># run 1: rows [3, 17, 42, ...] end up in test</span>
+<span class="cm"># run 2: rows [8, 21, 55, ...] end up in test  — different!</span>
+          </div>
+          <p style="font-size:13px; color:var(--chalk-dim);">Two runs, two different splits, two slightly different trained models, two different scores. Not reproducible.</p>
+        </div>
+
+        <div class="card">
+          <h3>random_state=10 fixes this</h3>
+          <p style="font-size:13px; color:var(--chalk-dim); margin-top:0;">It's a seed number — any integer works, 10 is just this notebook's choice, nothing special about it. The same seed always reproduces the <b style="color:var(--chalk)">exact</b> same split.</p>
+          <div class="callout">This isn't "no randomness" — it's "the same randomness, every time." The split is still effectively random relative to the data; fixing the seed just makes it repeatable, so results are comparable across runs.</div>
+        </div>
+
+        <div class="card" style="border-style:dashed; border-color:#5a4f2f;">
+          <h3 style="color:var(--yellow);">One exception worth knowing</h3>
+          <p style="font-size:13px; color:var(--chalk-dim); margin:0;">If rows represent a sequence over time, don't shuffle — use <code style="color:var(--cyan)">shuffle=False</code> and split chronologically instead. Random shuffling would leak the future into training.</p>
+        </div>
+      </section>
+
+      <section class="block" id="feature-importance">
+        <div class="section-eyebrow">What the weights are really saying</div>
+        <h2>Feature <span class="underline">importance</span></h2>
+        <p class="lead">A fitted model hands back one coefficient per feature. The tempting read: bigger number, more important feature. Let's test that properly.</p>
+
+        <div class="card">
+          <h3>Predicting selling price — raw coefficients</h3>
+          <div class="math-block center">price ($1,000s) = 500 − 20·age − 0.002·km_driven + 0.05·engine_cc</div>
+          <table class="data-table">
+            <tr><th>feature</th><th>raw weight</th><th>meaning</th></tr>
+            <tr><td class="num-x">age (years)</td><td class="num-e">−20</td><td>+1 year old → price drops $20k, holding others fixed</td></tr>
+            <tr><td class="num-x">km_driven</td><td class="num-e">−0.002</td><td>+1 km → price drops $2, holding others fixed</td></tr>
+            <tr><td class="num-x">engine_cc</td><td class="num-e">+0.05</td><td>+1 cc → price rises $50, holding others fixed</td></tr>
+          </table>
+          <div class="bar-chart" style="height:110px;">
+            <div class="bar-col"><div class="bar" style="height:80%; background:var(--pink);">20</div><div class="bar-label">age</div></div>
+            <div class="bar-col"><div class="bar" style="height:2%; background:var(--cyan);">0.002</div><div class="bar-label">km_driven</div></div>
+            <div class="bar-col"><div class="bar" style="height:12%; background:var(--green);">0.05</div><div class="bar-label">engine_cc</div></div>
+          </div>
+          <div class="callout bad">plotted raw, age looks 400× bigger than km_driven — but "1 year" and "1 km" are wildly different-sized steps. This is an illusion of units, not of importance.</div>
+        </div>
+      </section>
+
+      <section class="block" id="scaling-why">
+        <div class="section-eyebrow">The actual ranges these features live in</div>
+        <h2>Why <span class="underline">scaling</span> matters</h2>
+        <div class="grid-3">
+          <div class="task-card">
+            <span class="icon">📅</span>
+            <h4>age</h4>
+            <p>Ranges roughly 0–15 years — a total spread of about 15.</p>
+          </div>
+          <div class="task-card">
+            <span class="icon">🛣️</span>
+            <h4>km_driven</h4>
+            <p>Ranges roughly 5,000–150,000 km — a spread in the hundreds of thousands.</p>
+          </div>
+          <div class="task-card">
+            <span class="icon">⚙️</span>
+            <h4>engine_cc</h4>
+            <p>Ranges roughly 800–2,500 cc — a spread in the thousands.</p>
+          </div>
+        </div>
+        <div class="card">
+          <h3>What happens with no scaling</h3>
+          <p style="font-size:13px; color:var(--chalk-dim); margin:0 0 8px;">Any calculation combining these raw values — comparing coefficients, computing distances, running gradient descent — lets km_driven's sheer numeric size dominate, purely because its units happen to be hundreds of thousands, not tens. The same learning rate that's sensible for age is wildly wrong for km_driven — this is the exact elongated-bowl problem from Lecture 2's gradient descent.</p>
+          <div class="callout warn">no scaling → unstable gradient steps, and coefficients you can't honestly compare to each other.</div>
+        </div>
+      </section>
+
+      <section class="block" id="scaling-methods">
+        <div class="section-eyebrow">Two ways to put every feature on the same footing</div>
+        <h2>Scaling <span class="underline">methods</span></h2>
+        <div class="grid-2">
+          <div class="card">
+            <h3>Min-Max scaling</h3>
+            <div class="math-block center" style="font-size:15px;">x′ = (x − min) / (max − min)</div>
+            <p style="font-size:12.5px; color:var(--chalk-dim); margin:0;">Forces every value into a fixed 0-to-1 range.</p>
+          </div>
+          <div class="card">
+            <h3>Standard (z-score) scaling</h3>
+            <div class="math-block center" style="font-size:15px;">x′ = (x − mean) / std</div>
+            <p style="font-size:12.5px; color:var(--chalk-dim); margin:0;">Recenters to mean 0, rescales to a spread of 1 std deviation.</p>
+          </div>
+        </div>
+        <div class="card">
+          <h3>In code</h3>
+          <div class="code-block">
+<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> <span class="fn">StandardScaler</span>
+
+scaler = <span class="fn">StandardScaler</span>()
+X_train_scaled = scaler.<span class="fn">fit_transform</span>(X_train)
+X_test_scaled  = scaler.<span class="fn">transform</span>(X_test)
+<span class="cm"># fit on train only — test uses train's mean &amp; std, never its own</span>
+          </div>
+          <div class="callout">Notice: <code style="color:var(--cyan);">.fit_transform()</code> on train, plain <code style="color:var(--cyan);">.transform()</code> on test — the scaler learns its mean/std from training data only, exactly like the model itself.</div>
+        </div>
+      </section>
+
+      <section class="block" id="scaling-lab">
+        <div class="section-eyebrow">Same model, same data — just rescaled first</div>
+        <h2>Feature importance — <span class="underline">after scaling</span></h2>
+        <p class="lead">A coefficient on a standardized feature equals the original coefficient × that feature's own std — because standardizing simply undoes the scale the coefficient was fighting against.</p>
+
+        <div class="lab">
+          <div class="lab-tag">Interactive · toggle the view</div>
+          <div class="toggle-row">
+            <button class="toggle-btn active" id="btnRaw">Raw coefficients</button>
+            <button class="toggle-btn" id="btnStd">Standardized coefficients</button>
+          </div>
+          <div class="bar-chart" style="height:140px;">
+            <div class="bar-col"><div class="bar" id="bar1" style="background:var(--pink);"></div><div class="bar-label">age</div></div>
+            <div class="bar-col"><div class="bar" id="bar2" style="background:var(--cyan);"></div><div class="bar-label">km_driven</div></div>
+            <div class="bar-col"><div class="bar" id="bar3" style="background:var(--green);"></div><div class="bar-label">engine_cc</div></div>
+          </div>
+          <div class="formula-note" id="labCaption" style="text-align:center; font-size:12.5px; margin-top:10px;"></div>
+        </div>
+
+        <table class="data-table" style="margin-top:16px;">
+          <tr><th>feature</th><th>raw weight</th><th>× std</th><th>standardized weight</th></tr>
+          <tr><td class="num-x">age</td><td class="num-e">−20</td><td>× 3 yrs</td><td class="num-y">−60</td></tr>
+          <tr><td class="num-x">km_driven</td><td class="num-e">−0.002</td><td>× 25,000 km</td><td class="num-y">−50</td></tr>
+          <tr><td class="num-x">engine_cc</td><td class="num-e">+0.05</td><td>× 400 cc</td><td class="num-y">+20</td></tr>
+        </table>
+        <div class="callout">The reversal, made concrete: raw weights said km_driven (0.002) barely registers next to age (20) — almost a 10,000-to-1 gap. Standardized, km_driven (−50) is nearly as influential as age (−60), and engine_cc turns out more important than its tiny raw coefficient (0.05) ever suggested.</div>
+      </section>
+
+      <section class="block" id="summary">
+        <div class="section-eyebrow">Everything, in one place</div>
+        <h2><span class="underline">Summary</span> &amp; up next</h2>
+
+        <div class="card">
+          <h3>Reference table</h3>
+          <table class="data-table">
+            <tr><th>Term</th><th>Symbol</th><th>Plain meaning</th></tr>
+            <tr><td>R²</td><td>1 − SS<sub>res</sub>/SS<sub>tot</sub></td><td>fraction of variance explained, vs. the mean baseline</td></tr>
+            <tr><td>train_test_split</td><td>test_size, random_state</td><td>holds out data to test on what the model never learned from</td></tr>
+            <tr><td>random_state</td><td>seed</td><td>makes the "random" split reproducible — same split, every run</td></tr>
+            <tr><td>raw coefficient</td><td>w<sub>j</sub></td><td>change in ŷ per unit of x<sub>j</sub> — not directly comparable across features</td></tr>
+            <tr><td>standardized coefficient</td><td>w<sub>j</sub> × std<sub>j</sub></td><td>the fair way to compare feature importance</td></tr>
+          </table>
+        </div>
+
+        <div class="card" style="border-style:dashed; border-color:var(--cyan-dim);">
+          <h3 style="color:var(--cyan);">🔭 Next: code walkthrough — predicting mileage</h3>
+          <p style="font-size:13.5px; color:var(--chalk-dim); margin:0;">Everything above — R², the split, scaling, feature importance — comes together in one real dataset. Next session, we predict a car's mileage end to end: load the data, split it, scale it, fit it, and read the coefficients honestly.</p>
+        </div>
+      </section>
+
+      <div class="footnote-strip">
+        <span class="hand">— that's the board, cleaned up.</span>
+        From "is this fit any good" to "which feature actually matters" — same dataset, sharper questions.
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+const sections = document.querySelectorAll('section.block');
+const links = document.querySelectorAll('nav.toc a');
+function onScroll(){
+  let current = sections[0].id;
+  for(const s of sections){
+    const r = s.getBoundingClientRect();
+    if(r.top < 140) current = s.id;
+  }
+  links.forEach(l=>l.classList.toggle('active', l.getAttribute('href') === '#'+current));
+}
+document.addEventListener('scroll', onScroll);
+onScroll();
+
+const fixed = [
+  {x:1,y:42},{x:2,y:50},{x:3,y:55},{x:4,y:61},
+  {x:5,y:68},{x:6,y:72},{x:8,y:85}
+];
+const LINES = {
+  flat:  { w1:3, w0:32, x1:50,y1:212.5, x2:500,y2:168.9, label:'ŷ = 3x + 32' },
+  good:  { w1:5, w0:35, x1:50,y1:207.7, x2:500,y2:135,   label:'ŷ = 5x + 35' },
+  steep: { w1:9, w0:10, x1:50,y1:248.1, x2:500,y2:117.3, label:'ŷ = 9x + 10' }
+};
+let currentKey = 'good';
+
+function yToPixel(y){
+  return 240 - (y - 15) * 1.615;
+}
+function computeR2(y7, line){
+  const pts = fixed.concat([{x:7,y:y7}]);
+  const yhat = p => line.w1*p.x + line.w0;
+  const n = pts.length;
+  const mean = pts.reduce((a,p)=>a+p.y,0)/n;
+  const ssres = pts.reduce((a,p)=>a+(p.y-yhat(p))**2,0);
+  const sstot = pts.reduce((a,p)=>a+(p.y-mean)**2,0);
+  const r2 = 1 - ssres/sstot;
+  const yhat7 = line.w1*7 + line.w0;
+  return { ssres, sstot, r2, mean, yhat7, resid: y7-yhat7, explained: yhat7-mean };
+}
+function setLine(key){
+  currentKey = key;
+  const line = LINES[key];
+  document.getElementById('fitLine').setAttribute('x1', line.x1);
+  document.getElementById('fitLine').setAttribute('y1', line.y1);
+  document.getElementById('fitLine').setAttribute('x2', line.x2);
+  document.getElementById('fitLine').setAttribute('y2', line.y2);
+  document.getElementById('fitLabel').textContent = line.label;
+  document.getElementById('btnFlat').classList.toggle('active', key==='flat');
+  document.getElementById('btnGood').classList.toggle('active', key==='good');
+  document.getElementById('btnSteep').classList.toggle('active', key==='steep');
+  renderR2();
+}
+function renderR2(){
+  const y7 = Number(document.getElementById('r2Slider').value);
+  document.getElementById('r2SliderVal').textContent = y7;
+  const line = LINES[currentKey];
+  const res = computeR2(y7, line);
+
+  document.getElementById('explainedValOut').textContent = (res.explained>=0?'+':'') + res.explained.toFixed(1);
+  document.getElementById('residOut').textContent = (res.resid>=0?'+':'') + res.resid.toFixed(1);
+  document.getElementById('ssFracOut').textContent = res.ssres.toFixed(0) + ' / ' + res.sstot.toFixed(0);
+  document.getElementById('r2Out').textContent = res.r2.toFixed(2);
+
+  const meanPx = yToPixel(res.mean);
+  const linePx = yToPixel(res.yhat7);
+  const dragPx = yToPixel(y7);
+
+  document.getElementById('meanLine').setAttribute('y1', meanPx);
+  document.getElementById('meanLine').setAttribute('y2', meanPx);
+  document.getElementById('meanLabel').setAttribute('y', meanPx - 6);
+
+  document.getElementById('lineRefPoint').setAttribute('cy', linePx);
+  document.getElementById('dragPoint').setAttribute('cy', dragPx);
+  document.getElementById('dragLabel').setAttribute('y', dragPx + 4);
+
+  document.getElementById('explainedSeg').setAttribute('y1', meanPx);
+  document.getElementById('explainedSeg').setAttribute('y2', linePx);
+  document.getElementById('unexplainedSeg').setAttribute('y1', linePx);
+  document.getElementById('unexplainedSeg').setAttribute('y2', dragPx);
+
+  const verdict = document.getElementById('r2Verdict');
+  if(res.r2 < 0){ verdict.textContent = 'R² is negative with this line — worse than just guessing the average.'; }
+  else if(res.r2 > 0.9){ verdict.textContent = 'excellent fit — almost all the variance is explained.'; }
+  else { verdict.textContent = 'total deviation (y−ȳ) always splits into exactly these two pieces: (ŷ−ȳ) + (y−ŷ)'; }
+}
+document.getElementById('r2Slider').addEventListener('input', renderR2);
+document.getElementById('btnFlat').addEventListener('click', ()=>setLine('flat'));
+document.getElementById('btnGood').addEventListener('click', ()=>setLine('good'));
+document.getElementById('btnSteep').addEventListener('click', ()=>setLine('steep'));
+renderR2();
+
+const rawVals = {age:20, km:0.002, cc:0.05};
+const stdVals = {age:60, km:50, cc:20};
+function renderBars(useStd){
+  const vals = useStd ? stdVals : rawVals;
+  const maxV = Math.max(vals.age, vals.km, vals.cc);
+  const pct = v => Math.max(6, v/maxV*100);
+  document.getElementById('bar1').style.height = pct(vals.age)+'%';
+  document.getElementById('bar1').textContent = useStd ? '−60' : '20';
+  document.getElementById('bar2').style.height = pct(vals.km)+'%';
+  document.getElementById('bar2').textContent = useStd ? '−50' : '0.002';
+  document.getElementById('bar3').style.height = pct(vals.cc)+'%';
+  document.getElementById('bar3').textContent = useStd ? '20' : '0.05';
+  document.getElementById('labCaption').textContent = useStd
+    ? 'standardized: age and km_driven are nearly equally important — the raw view hid this completely.'
+    : 'raw: age looks like it overwhelmingly dominates km_driven and engine_cc.';
+  document.getElementById('btnRaw').classList.toggle('active', !useStd);
+  document.getElementById('btnStd').classList.toggle('active', useStd);
+}
+document.getElementById('btnRaw').addEventListener('click', ()=>renderBars(false));
+document.getElementById('btnStd').addEventListener('click', ()=>renderBars(true));
+renderBars(false);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Logistic Regression I — Class 07 Notes</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Patrick+Hand&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --board:#0c1014; --card:#151b21; --card-line:#222b32;
+    --chalk:#e9eef2; --chalk-dim:#9fb0bb;
+    --cyan:#5fd8e0; --cyan-dim:#2c5a5e;
+    --pink:#f17fb0; --pink-dim:#5a2f42;
+    --yellow:#f4cf5e; --green:#8fe3a6; --green-dim:#2f4f3a;
+    --white-marker:#f5f5f0; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{ background:var(--board); color:var(--chalk); font-family:'Inter',sans-serif; line-height:1.55; -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width:1180px; margin:0 auto; padding:0 24px 120px; }
+  h1,h2,h3,.hand{ font-family:'Caveat',cursive; font-weight:700; }
+  .hero{ padding:56px 0 30px; text-align:center; }
+  .chip{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--cyan); border:1px solid var(--cyan-dim); background:rgba(95,216,224,0.06); padding:6px 14px; border-radius:999px; margin-bottom:16px; }
+  .hero h1{ font-size:clamp(30px,6vw,54px); color:var(--white-marker); margin:0 0 8px; }
+  .hero h1 span{color:var(--pink);}
+  .hero p{ font-family:'Patrick Hand',cursive; color:var(--chalk-dim); font-size:18px; max-width:720px; margin:0 auto; }
+  .layout{ display:grid; grid-template-columns:250px 1fr; gap:36px; align-items:start; }
+  nav.toc{ position:sticky; top:24px; background:var(--card); border:1px solid var(--card-line); border-radius:var(--radius); padding:18px 16px; font-family:'JetBrains Mono',monospace; font-size:11.5px; max-height:calc(100vh - 48px); overflow-y:auto; }
+  nav.toc .toc-title{ color:var(--chalk-dim); text-transform:uppercase; letter-spacing:1.2px; font-size:10.5px; margin-bottom:8px; margin-top:14px; }
+  nav.toc .toc-title:first-child{margin-top:0;}
+  nav.toc a{ display:block; color:var(--chalk-dim); text-decoration:none; padding:6px 8px; border-radius:8px; margin-bottom:1px; }
+  nav.toc a:hover{color:var(--chalk); background:rgba(255,255,255,0.04);}
+  main{min-width:0;}
+  section.block{ margin-bottom:50px; scroll-margin-top:24px; }
+  .section-eyebrow{ font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--pink); margin-bottom:6px; }
+  section.block h2{ font-size:32px; color:var(--white-marker); margin:0 0 12px; }
+  section.block h2 .underline{ text-decoration:underline; text-decoration-color:var(--cyan); text-decoration-thickness:3px; }
+  p.lead{ font-size:14.5px; color:#cdd8de; max-width:820px; }
+  .card{ background:var(--card); border:1px solid var(--card-line); border-radius:var(--radius); padding:20px 22px; margin:14px 0; }
+  .card h3{ font-family:'Inter',sans-serif; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.7px; color:var(--cyan); margin:0 0 10px; }
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  .grid-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;}
+  @media (max-width:900px){ .layout{grid-template-columns:1fr;} nav.toc{position:relative; top:0; margin-bottom:20px; max-height:none;} .grid-2,.grid-3{grid-template-columns:1fr;} }
+  table.data-table{ width:100%; border-collapse:collapse; font-family:'JetBrains Mono',monospace; font-size:12.5px; }
+  table.data-table th{ text-align:left; color:var(--chalk-dim); font-weight:500; padding:7px 10px; border-bottom:1px solid var(--card-line); text-transform:uppercase; font-size:10px; letter-spacing:0.4px; }
+  table.data-table td{ padding:7px 10px; border-bottom:1px solid rgba(255,255,255,0.04); }
+  table.data-table td.hl{color:var(--yellow); font-weight:700;}
+  table.data-table td.zero{color:var(--pink); font-weight:700; background:rgba(241,127,176,0.08);}
+  table.data-table td.good{color:var(--green); font-weight:700; background:rgba(143,227,166,0.08);}
+  blockquote.story{ font-family:'Patrick Hand',cursive; font-size:16.5px; color:#dbe6ec; border-left:3px solid var(--yellow); padding:6px 18px; margin:14px 0; background:rgba(244,207,94,0.04); border-radius:0 10px 10px 0; }
+  .pipeline{ display:flex; align-items:center; gap:0; overflow-x:auto; padding:10px 0 18px; }
+  .pipe-step{ flex:0 0 auto; min-width:130px; background:var(--card); border:1px solid var(--card-line); border-radius:12px; padding:12px 14px; text-align:center; }
+  .pipe-step .n{ font-family:'JetBrains Mono',monospace; color:var(--cyan); font-size:10.5px; margin-bottom:5px; }
+  .pipe-step .t{font-weight:700; font-size:12.5px; color:var(--white-marker);}
+  .pipe-step .d{font-size:10px; color:var(--chalk-dim); margin-top:3px;}
+  .pipe-arrow{ flex:0 0 auto; width:24px; text-align:center; color:var(--pink); font-size:16px; }
+  .formula{ font-family:'JetBrains Mono',monospace; background:#0a0d10; border:1px solid var(--card-line); border-radius:10px; padding:14px 20px; margin:12px 0; font-size:14.5px; color:var(--white-marker); overflow-x:auto; }
+  .formula.center{text-align:center;}
+  .formula .k{color:var(--yellow);} .formula .r{color:var(--cyan);} .formula .l{color:var(--pink);}
+  .formula-note{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--chalk-dim); margin-top:6px; }
+  .callout{ background:rgba(143,227,166,0.08); border:1px solid var(--green-dim); border-radius:10px; padding:12px 16px; color:var(--green); font-size:13px; font-family:'JetBrains Mono',monospace; margin:12px 0; line-height:1.6; }
+  .callout.warn{ background:rgba(244,207,94,0.08); border-color:#5a4f2f; color:var(--yellow); }
+  .callout.bad{ background:rgba(241,127,176,0.08); border-color:var(--pink-dim); color:var(--pink); }
+  .callout.info{ background:rgba(95,216,224,0.08); border-color:var(--cyan-dim); color:var(--cyan); }
+  .optional-box{ border:1.5px dashed var(--pink-dim); border-radius:14px; padding:20px 22px; margin:18px 0; background:rgba(241,127,176,0.04); }
+  .optional-box .opt-tag{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--pink); border:1px solid var(--pink-dim); padding:3px 10px; border-radius:999px; margin-bottom:10px; }
+  .step-card{ background:rgba(0,0,0,0.22); border-radius:10px; padding:14px 18px; margin:10px 0; border:1px solid var(--card-line); }
+  .step-tag{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--board); background:var(--cyan); padding:2px 8px; border-radius:6px; margin-right:8px; font-weight:700; }
+  .analogy-row{ display:flex; gap:14px; margin-top:12px; flex-wrap:wrap; }
+  .analogy{ flex:1; min-width:150px; background:var(--card); border:1px solid var(--card-line); border-radius:10px; padding:14px 16px; text-align:center; }
+  .analogy .icon{font-size:24px;}
+  .analogy h4{font-size:14px; margin:6px 0 4px; color:var(--white-marker);}
+  .analogy p{font-size:11.5px; color:var(--chalk-dim); margin:0;}
+  .svg-card{ background:#fff; border:1px solid var(--card-line); border-radius:12px; padding:14px; }
+  .svg-caption{ text-align:center; font-family:'JetBrains Mono',monospace; font-size:11px; color:#555; margin-top:8px; }
+  .footnote-strip{ margin-top:60px; border-top:1px dashed var(--card-line); padding-top:22px; text-align:center; color:var(--chalk-dim); font-family:'JetBrains Mono',monospace; font-size:12px; }
+  .footnote-strip .hand{color:var(--cyan); font-size:22px; display:block; margin-bottom:6px;}
+  .badge{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:10.5px; padding:2px 9px; border-radius:6px; margin-left:6px;}
+  .badge.good{background:rgba(143,227,166,0.15); color:var(--green);}
+  .badge.bad{background:rgba(241,127,176,0.15); color:var(--pink);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="chip">15-07-2026 · Module: Supervised Learning</div>
+    <h1>Logistic <span>Regression I</span></h1>
+    <div class="chip" style="background:none; border-color:var(--pink-dim); color:var(--pink); margin-top:0;">📘 Class 07 · From lines to separators to the sigmoid</div>
+  </div>
+
+  <div class="layout">
+    <nav class="toc" id="toc">
+      <div class="toc-title">Start here</div>
+      <a href="#recap">Recap: predicting a number</a>
+      <a href="#newtask">Classification is different</a>
+      <a href="#linefails">Why fitting a line is bad</a>
+      <div class="toc-title">The geometric picture</div>
+      <a href="#regvsclass">Regression vs. Classification, visually</a>
+      <a href="#howline">The separating line — how do we get it?</a>
+      <a href="#margin">Maximize yᵢ·wᵀxᵢ — the conditions</a>
+      <a href="#failure">Failure case: outliers</a>
+      <a href="#sigmoidfix">The fix: apply sigmoid</a>
+      <div class="toc-title">Making sense of it</div>
+      <a href="#outputs">Output: regression vs. logistic regression</a>
+      <a href="#naming">Why "regression," why "logistic"</a>
+      <a href="#predictproba">predict() vs. predict_proba()</a>
+      <a href="#preview">⭐ Optional preview: odds &amp; log-odds</a>
+      <div class="toc-title">Wrap-up</div>
+      <a href="#summary">Class summary</a>
+    </nav>
+
+    <main>
+
+      <section class="block" id="recap">
+        <div class="section-eyebrow">Where we left off</div>
+        <h2>Recap: what we already know — <span class="underline">predicting a number</span></h2>
+        <div class="card">
+          <div class="formula center">ŷ = w₁x₁ + w₂x₂ + … + w₀</div>
+          <p class="lead" style="margin:10px 0 0;">This is the prediction itself — ŷ ("y-hat"). The target y was always a real number: price, temperature, salary — anywhere on the number line, and ŷ tried to land exactly on it. "Wrong" meant a numeric distance, measured with Mean Squared Error.</p>
+        </div>
+      </section>
+
+      <section class="block" id="newtask">
+        <h2>Today: the target is now a <span class="underline">category</span>, not a number</h2>
+        <p class="lead">Example: will a student pass an exam, based on hours studied? y ∈ {0, 1} — fail or pass, nothing in between. This is called <b>binary classification</b>.</p>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Plotted, the data only ever forms two flat bands — a cloud of 0s low down, a cloud of 1s up top. There's no numeric "value" to get close to anymore — only a label to get right or wrong.</p>
+        </div>
+      </section>
+
+      <section class="block" id="linefails">
+        <h2>Why fitting a line is <span class="underline">bad</span> here</h2>
+        <p class="lead">We want an output between 0 and 1 (something we can read as "how likely is pass"). A plain line doesn't give us that.</p>
+        <div class="card">
+          <div class="formula center">ŷ = −0.15 + 0.09h</div>
+          <table class="data-table">
+            <tr><th>hours (h)</th><th>ŷ</th><th>valid?</th></tr>
+            <tr><td>0</td><td>−0.15</td><td class="zero">✗ negative — meaningless</td></tr>
+            <tr><td>13</td><td>1.02</td><td class="zero">✗ above 1 — meaningless</td></tr>
+          </table>
+          <div class="callout bad">A straight line's output lives in (−∞, +∞). Our target only ever lives in {0, 1}. Wrong shape of function — before we even ask if it fits the pattern well.</div>
+        </div>
+      </section>
+
+      <!-- ============ GEOMETRIC PICTURE ============ -->
+      <section class="block" id="regvsclass">
+        <div class="section-eyebrow">The geometric picture</div>
+        <h2>Regression vs. Classification — <span class="underline">side by side</span></h2>
+        <div class="grid-2">
+          <div class="card">
+            <h3>Regression — 2D example</h3>
+            <p class="lead" style="margin-top:0;">Price of a car vs. its age. The best line is the one that <b>passes through (close to) as many points as possible</b> — minimizing vertical distance.</p>
+            <div class="svg-card">
+              <svg viewBox="0 0 260 170" width="100%" height="auto">
+                <line x1="20" y1="150" x2="240" y2="150" stroke="#ccc"/><line x1="20" y1="15" x2="20" y2="150" stroke="#ccc"/>
+                <text x="100" y="165" font-size="9" fill="#888" font-family="monospace">age</text>
+                <text x="4" y="80" font-size="9" fill="#888" font-family="monospace" transform="rotate(-90 4 80)">price</text>
+                <circle cx="40" cy="40" r="4" fill="#2f6fb0"/><circle cx="60" cy="55" r="4" fill="#2f6fb0"/>
+                <circle cx="85" cy="70" r="4" fill="#2f6fb0"/><circle cx="110" cy="90" r="4" fill="#2f6fb0"/>
+                <circle cx="140" cy="105" r="4" fill="#2f6fb0"/><circle cx="165" cy="115" r="4" fill="#2f6fb0"/>
+                <circle cx="190" cy="130" r="4" fill="#2f6fb0"/><circle cx="210" cy="140" r="4" fill="#2f6fb0"/>
+                <path d="M25,35 L225,142" stroke="#2f8f5e" stroke-width="2.5" fill="none"/>
+              </svg>
+            </div>
+            <div class="svg-caption" style="color:#2f8f5e;">Line runs THROUGH the cloud of points</div>
+          </div>
+          <div class="card">
+            <h3>Classification — 2D example</h3>
+            <p class="lead" style="margin-top:0;">Two classes of points. The best line <b>separates</b> class 1 from class 0 — it doesn't try to pass through anyone.</p>
+            <div class="svg-card">
+              <svg viewBox="0 0 260 170" width="100%" height="auto">
+                <line x1="20" y1="150" x2="240" y2="150" stroke="#ccc"/><line x1="20" y1="15" x2="20" y2="150" stroke="#ccc"/>
+                <circle cx="60" cy="40" r="4" fill="#c7437a"/><circle cx="80" cy="55" r="4" fill="#c7437a"/>
+                <circle cx="50" cy="65" r="4" fill="#c7437a"/><circle cx="95" cy="35" r="4" fill="#c7437a"/>
+                <circle cx="70" cy="80" r="4" fill="#c7437a"/><circle cx="110" cy="60" r="4" fill="#c7437a"/>
+                <text x="150" y="45" font-size="10" fill="#c7437a" font-family="monospace">class 1</text>
+                <path d="M40,110 L200,30" stroke="#2f8f5e" stroke-width="2.5" fill="none"/>
+                <path d="M130,130 L100,90" stroke="none"/>
+                <line x1="130" y1="140" x2="130" y2="140" stroke="none"/>
+                <circle cx="140" cy="120" r="4" fill="#3a86ff"/><circle cx="165" cy="135" r="4" fill="#3a86ff"/>
+                <circle cx="120" cy="130" r="4" fill="#3a86ff"/><circle cx="190" cy="110" r="4" fill="#3a86ff"/>
+                <circle cx="155" cy="105" r="4" fill="#3a86ff"/><circle cx="210" cy="130" r="4" fill="#3a86ff"/>
+                <text x="150" y="150" font-size="10" fill="#3a86ff" font-family="monospace">class 0</text>
+              </svg>
+            </div>
+            <div class="svg-caption" style="color:#2f8f5e;">Line SEPARATES the two clouds — separator, not a fit</div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>In 3D, the separator becomes a plane</h3>
+          <p class="lead" style="margin-top:0;">With two features, a line separates. With three features, a <b>plane</b> separates. With more features, it's a hyperplane — same idea, just more dimensions. The equation is always the same shape: z = w₁x₁ + w₂x₂ + …</p>
+          <div class="svg-card">
+            <svg viewBox="0 0 300 170" width="100%" height="auto">
+              <path d="M60,140 L280,140 L260,20 L40,20 Z" fill="none" stroke="#bbb" stroke-dasharray="3 3"/>
+              <polygon points="140,10 220,40 190,150 110,120" fill="#2f8f5e" opacity="0.35" stroke="#2f8f5e" stroke-width="1.5"/>
+              <circle cx="80" cy="60" r="5" fill="#e2445c"/><circle cx="95" cy="80" r="5" fill="#e2445c"/>
+              <circle cx="70" cy="95" r="5" fill="#e2445c"/><circle cx="100" cy="50" r="5" fill="#e2445c"/>
+              <circle cx="230" cy="60" r="5" fill="#7c4fd0"/><circle cx="245" cy="80" r="5" fill="#7c4fd0"/>
+              <circle cx="255" cy="55" r="5" fill="#7c4fd0"/><circle cx="240" cy="95" r="5" fill="#7c4fd0"/>
+            </svg>
+          </div>
+          <div class="svg-caption" style="color:#2f8f5e;">A separating plane between two clusters of points in 3D feature space</div>
+        </div>
+      </section>
+
+      <section class="block" id="howline">
+        <h2>The separating line is best for us — but <span class="underline">how do we get it?</span></h2>
+        <p class="lead">In regression, "good" meant small distance to every point. In classification, "good" means every class-1 point ends up on one side, every class-0 point on the other. That needs a completely different objective to optimize.</p>
+      </section>
+
+      <section class="block" id="margin">
+        <h2>The idea: maximize <span class="underline">yᵢ · wᵀxᵢ</span></h2>
+        <p class="lead">Encode labels as y ∈ {+1, −1} instead of {0,1}. Define the raw score z = wᵀx. Multiply the true label by the score — this single quantity tells us, in one number, whether a point is correctly classified.</p>
+
+        <div class="card">
+          <h3>Wait — wᵀx=0 AND x₁+x₂=3? Aren't those different equations?</h3>
+          <p class="lead" style="margin-top:0;">They look different, but they're <b>the exact same line</b> — one written generally, one written with our specific numbers plugged in. Here's exactly why.</p>
+          <div class="step-card"><span class="step-tag">the trick</span> To fit an intercept (w₀) inside a clean dot product, we quietly attach an extra "feature" that's always 1. So the weight vector and feature vector actually look like this:</div>
+          <div class="formula center">w = [w₀, w₁, w₂] = [−3, 1, 1] &nbsp;&nbsp;&nbsp; x = [1, x₁, x₂]</div>
+          <div class="step-card"><span class="step-tag">multiply it out</span> wᵀx = w₀·1 + w₁·x₁ + w₂·x₂ = −3(1) + 1(x₁) + 1(x₂) = −3 + x₁ + x₂</div>
+          <div class="step-card"><span class="step-tag">set it to zero</span> wᵀx = 0 &nbsp;⟺&nbsp; −3+x₁+x₂ = 0 &nbsp;⟺&nbsp; <b>x₁+x₂ = 3</b></div>
+          <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);">"wᵀx=0" is the <b>general, compact</b> way to write the boundary — it works no matter how many features or what weights you have. "x₁+x₂=3" is that exact same equation <b>after</b> we've plugged in our specific weights (w₀=−3, w₁=1, w₂=1) and simplified. Same line, two ways of writing it — not two different things.</div>
+        </div>
+
+        <div class="card">
+          <h3>What is a "plane," exactly?</h3>
+          <p class="lead" style="margin-top:0;">An equation like w₀+w₁x₁+w₂x₂+…=0 always carves up the feature space into two halves. What that boundary <i>looks like</i> just depends on how many features you have:</p>
+          <table class="data-table">
+            <tr><th>features</th><th>the equation w₀+w₁x₁+…=0 draws a…</th><th>picture</th></tr>
+            <tr><td>2 (x₁, x₂)</td><td>straight <b>line</b> in a flat 2D page</td><td>what we've been drawing</td></tr>
+            <tr><td>3 (x₁, x₂, x₃)</td><td>a flat <b>plane</b> slicing through 3D space</td><td>a flat sheet, like a tilted piece of paper floating in a room</td></tr>
+            <tr><td>4 or more</td><td>a "<b>hyperplane</b>"</td><td>same idea, just too many dimensions to draw</td></tr>
+          </table>
+          <div class="callout">It's always the same object playing the same role — split everything into "positive side" and "negative side." Only the name and the picture change as dimensions increase.</div>
+        </div>
+
+        <div class="card">
+          <h3>How do we check which side a point is on? (the actual procedure)</h3>
+          <p class="lead" style="margin-top:0;">There's only one step: <b>substitute the point's coordinates into w₀+w₁x₁+w₂x₂+… and compute the number.</b></p>
+          <table class="data-table">
+            <tr><th>result</th><th>meaning</th></tr>
+            <tr><td>exactly 0</td><td>the point lies exactly ON the line/plane</td></tr>
+            <tr><td>positive</td><td>the point is on the positive side</td></tr>
+            <tr><td>negative</td><td>the point is on the negative side</td></tr>
+          </table>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>Example 1 — a line in 2D</h3>
+            <p class="lead" style="margin-top:0;">w₀=−3, w₁=1, w₂=1 &nbsp;→&nbsp; z = −3+x₁+x₂</p>
+            <table class="data-table">
+              <tr><th>point</th><th>substitute</th><th>z</th><th>result</th></tr>
+              <tr><td>P=(1,2)</td><td>−3+1+2</td><td class="hl">0</td><td class="hl">exactly ON the line</td></tr>
+              <tr><td>Q=(4,4)</td><td>−3+4+4</td><td class="good">+5</td><td class="good">positive side</td></tr>
+              <tr><td>R=(0,0)</td><td>−3+0+0</td><td class="zero">−3</td><td class="zero">negative side</td></tr>
+            </table>
+            <div class="callout">Check P: x₁+x₂ = 1+2 = 3 — yes, that matches x₁+x₂=3 exactly. P really does sit on the line.</div>
+          </div>
+          <div class="card">
+            <h3>Example 2 — a plane in 3D</h3>
+            <p class="lead" style="margin-top:0;">w₀=−6, w₁=1, w₂=1, w₃=1 &nbsp;→&nbsp; z = −6+x₁+x₂+x₃</p>
+            <table class="data-table">
+              <tr><th>point</th><th>substitute</th><th>z</th><th>result</th></tr>
+              <tr><td>P=(2,2,2)</td><td>−6+2+2+2</td><td class="hl">0</td><td class="hl">exactly ON the plane</td></tr>
+              <tr><td>Q=(3,3,3)</td><td>−6+3+3+3</td><td class="good">+3</td><td class="good">positive side</td></tr>
+              <tr><td>R=(1,1,1)</td><td>−6+1+1+1</td><td class="zero">−3</td><td class="zero">negative side</td></tr>
+            </table>
+            <div class="callout">Same exact procedure as Example 1 — just one more number to add. Nothing about the method changes as dimensions grow.</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Seeing Example 1 on a graph</h3>
+          <p class="lead" style="margin-top:0;">The line wᵀx=0 (x₁+x₂=3) splits the plane into two halves. Every point on the coral side gives a <b>positive</b> wᵀx; every point on the blue side gives a <b>negative</b> wᵀx. The farther a point sits from the line, the larger |wᵀx| gets.</p>
+          <div class="svg-card">
+            <svg viewBox="0 0 320 220" width="100%" height="auto">
+              <polygon points="30,30 30,20 290,20 290,190 230,190" fill="#fbe4da"/>
+              <polygon points="30,30 230,190 30,190" fill="#e2edfb"/>
+              <line x1="30" y1="190" x2="290" y2="190" stroke="#999" stroke-width="1"/>
+              <line x1="30" y1="20" x2="30" y2="190" stroke="#999" stroke-width="1"/>
+              <line x1="30" y1="30" x2="230" y2="190" stroke="#222" stroke-width="2.5"/>
+              <text x="150" y="18" font-size="10.5" fill="#555" font-family="monospace">wᵀx = 0  (x₁+x₂=3)</text>
+              <text x="240" y="55" font-size="11" fill="#c7437a" font-family="monospace" font-weight="bold">wᵀx &gt; 0</text>
+              <text x="45" y="175" font-size="11" fill="#2f6fb0" font-family="monospace" font-weight="bold">wᵀx &lt; 0</text>
+
+              <circle cx="150" cy="62" r="5" fill="#c7437a"/>
+              <text x="158" y="59" font-size="10" fill="#333" font-family="monospace">A(2,3)  z=+2</text>
+              <circle cx="230" cy="94" r="5" fill="#c7437a"/>
+              <text x="238" y="91" font-size="10" fill="#333" font-family="monospace">B(4,2)  z=+3</text>
+              <circle cx="70" cy="126" r="5" fill="#2f6fb0"/>
+              <text x="78" y="123" font-size="10" fill="#333" font-family="monospace">C(0,1)  z=−2</text>
+              <circle cx="110" cy="158" r="5" fill="#2f6fb0"/>
+              <text x="118" y="155" font-size="10" fill="#333" font-family="monospace">D(1,0)  z=−2</text>
+            </svg>
+          </div>
+          <div class="callout">This is the whole picture behind the four cases below: <b>wᵀx's sign tells you which side of the line a point is on</b> — it says nothing yet about whether that's the "correct" side. To know if the model got it right, we still need to compare this sign against the point's actual label, yᵢ. That comparison is exactly yᵢ·wᵀxᵢ.</div>
+        </div>
+
+        <div class="card">
+          <h3>The four conditions</h3>
+          <table class="data-table">
+            <tr><th>case</th><th>yᵢ</th><th>wᵀxᵢ</th><th>yᵢ·wᵀxᵢ</th><th>meaning</th></tr>
+            <tr><td>1</td><td>+1</td><td>&gt; 0</td><td class="good">positive</td><td class="good">✓ correctly classified</td></tr>
+            <tr><td>2</td><td>+1</td><td>&lt; 0</td><td class="zero">negative</td><td class="zero">✗ misclassified</td></tr>
+            <tr><td>3</td><td>−1</td><td>&gt; 0</td><td class="zero">negative</td><td class="zero">✗ misclassified</td></tr>
+            <tr><td>4</td><td>−1</td><td>&lt; 0</td><td class="good">positive</td><td class="good">✓ correctly classified</td></tr>
+          </table>
+          <div class="callout">The pattern: yᵢ·wᵀxᵢ &gt; 0 exactly when the prediction agrees with the truth — regardless of which class. So the fitting goal becomes simple to state: <b>find w that makes yᵢ·wᵀxᵢ as large (as positive) as possible, for every point.</b></div>
+        </div>
+      </section>
+
+      <section class="block" id="failure">
+        <h2>Where this <span class="underline">breaks</span>: outliers</h2>
+        <p class="lead">Try to directly maximize the raw sum Σ yᵢ·wᵀxᵢ, with no bound on it, and two problems show up immediately.</p>
+        <div class="card">
+          <div class="step-card"><span class="step-tag">problem 1</span> This objective is <b>unbounded</b>. For any already-correctly-classified point, you can always make yᵢ·wᵀxᵢ even bigger just by scaling ‖w‖ up — with no limit. The "best" w keeps wanting to grow forever, not settle anywhere.</div>
+          <div class="step-card"><span class="step-tag">problem 2</span> A single <b>outlier</b> — a point sitting unusually far out in feature space — produces a huge |wᵀxᵢ|. If it's on the wrong side, it contributes a massive negative number to the sum; if it's on the right side, a massive positive one. Either way, one extreme point can <b>dominate and distort</b> the entire fit, dragging the line around to accommodate it at the expense of every other point.</div>
+          <div class="callout bad">Raw, unbounded wᵀx gives a single extreme point unlimited leverage over the line. That's the failure case.</div>
+        </div>
+      </section>
+
+      <section class="block" id="sigmoidfix">
+        <h2>The fix: pass z through the <span class="underline">sigmoid function</span></h2>
+        <p class="lead">Instead of working with the raw, unbounded score z = wᵀx, squash it through σ(z) = 1/(1+e⁻ᶻ) first.</p>
+        <div class="card">
+          <div class="svg-card">
+            <svg viewBox="0 0 400 160" width="100%" height="auto">
+              <line x1="30" y1="140" x2="380" y2="140" stroke="#ccc" stroke-width="1"/>
+              <line x1="30" y1="10" x2="30" y2="140" stroke="#ccc" stroke-width="1"/>
+              <path d="M30,135 C90,132 150,120 175,95 C195,72 205,75 215,55 C240,25 300,12 380,10" fill="none" stroke="#5fa8d8" stroke-width="2.5"/>
+              <text x="335" y="25" font-size="9" fill="#888" font-family="monospace">σ(z)→1</text>
+              <text x="35" y="132" font-size="9" fill="#888" font-family="monospace">σ(z)→0</text>
+            </svg>
+          </div>
+          <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);">Because σ is <b>bounded</b> between 0 and 1, no matter how extreme wᵀxᵢ gets for an outlier, its contribution <b>saturates</b> — it caps out near 0 or near 1 and can't grow any further. The outlier's leverage over the fit is eradicated, or at the very least reduced to a big extent, compared to working with the raw unbounded score.</div>
+        </div>
+      </section>
+
+      <!-- ============ MAKING SENSE OF IT ============ -->
+      <section class="block" id="outputs">
+        <div class="section-eyebrow">Making sense of it</div>
+        <h2>Output: <span class="underline">Regression</span> vs. <span class="underline">Logistic Regression</span></h2>
+        <div class="grid-2">
+          <div class="card">
+            <h3>Regression's output</h3>
+            <div class="formula center">ŷ = w₁x₁ + … + w₀</div>
+            <p class="lead" style="margin-top:0;">ŷ IS the prediction — a direct estimate of y itself, same units, same scale, unbounded (−∞ to +∞).</p>
+          </div>
+          <div class="card">
+            <h3>Logistic Regression's output</h3>
+            <div class="formula center">z = w₁x₁+…+w₀ &nbsp;→&nbsp; ŷ = σ(z)</div>
+            <p class="lead" style="margin-top:0;">z is just an intermediate score. ŷ = σ(z) is the actual prediction — a probability, bounded strictly between 0 and 1.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="block" id="naming">
+        <h2>Why "<span class="underline">regression</span>," why "<span class="underline">logistic</span>"</h2>
+        <div class="card">
+          <table class="data-table">
+            <tr><th>part of the name</th><th>why</th></tr>
+            <tr><td>"Regression"</td><td>We're still fitting a line (or plane) — z = w₁x₁+…+w₀ is exactly the same linear combination of weights and features as before. Geometrically, it's still a line/plane doing the work.</td></tr>
+            <tr><td>"Logistic"</td><td>Because we then pass that line's score through the <b>logistic (sigmoid) function</b> to turn it into a probability between 0 and 1, instead of leaving it as a raw, unbounded number.</td></tr>
+          </table>
+        </div>
+      </section>
+
+      <section class="block" id="predictproba">
+        <h2>In sklearn: <span class="underline">predict()</span> vs. <span class="underline">predict_proba()</span></h2>
+        <div class="card">
+          <table class="data-table">
+            <tr><th>method</th><th>returns</th></tr>
+            <tr><td><code>model.predict(X)</code></td><td>0 or 1 — the hard class label, using the default threshold of 0.5 on the probability</td></tr>
+            <tr><td><code>model.predict_proba(X)</code></td><td>the exact probability values themselves (e.g. 0.13, 0.87) — no thresholding applied</td></tr>
+          </table>
+          <div class="callout info">The 0.5 threshold is a default, not a law — you can use a custom threshold. We'll discuss exactly when and why you'd want to change it in a later class.</div>
+        </div>
+      </section>
+
+      <div class="optional-box" id="preview">
+        <span class="opt-tag">⭐ Optional preview — not required for today</span>
+        <h3 style="font-family:'Caveat',cursive; font-size:24px; margin:0 0 6px; color:var(--white-marker);">A question to sit with until next class</h3>
+        <p class="lead" style="margin:0 0 12px;">We now have: probability p lives strictly between 0 and 1. But our line's raw score z lives between −∞ and +∞. That's a mismatch — so what quantity, related to p, would actually live on the full −∞ to +∞ range, matching what a line naturally produces?</p>
+        <p class="lead" style="margin:0 0 12px;">The answer involves something called <b>odds</b>, and then <b>log-odds</b>. Quick preview only, no derivation yet:</p>
+        <div class="card" style="margin:0;">
+          <table class="data-table">
+            <tr><th>quantity</th><th>range</th></tr>
+            <tr><td>probability, p</td><td>[0, 1]</td></tr>
+            <tr><td>odds = p/(1−p)</td><td>[0, +∞)</td></tr>
+            <tr><td>log(odds)</td><td>(−∞, +∞) — matches z!</td></tr>
+          </table>
+        </div>
+        <p class="lead" style="margin:12px 0 0;">Next class: exactly how log-odds equals z, how we arrive at that equation properly, and how it all connects back to the sigmoid we used today. Held back deliberately — the full end-to-end flow won't click without deriving it properly, so we'll do that from scratch next time.</p>
+      </div>
+
+      <section class="block" id="summary">
+        <div class="section-eyebrow">Wrapping up</div>
+        <h2>Class 07 summary</h2>
+        <div class="card">
+          <table class="data-table">
+            <tr><th>concept</th><th>one-line takeaway</th></tr>
+            <tr><td>Classification vs. Regression</td><td>Target becomes a category, not a number — a line's unbounded output no longer fits.</td></tr>
+            <tr><td>Regression's "good" line</td><td>Passes through as many points as possible (small distance).</td></tr>
+            <tr><td>Classification's "good" line</td><td>Separates class 1 from class 0 — a separator, not a fit.</td></tr>
+            <tr><td>Margin idea</td><td>Maximize yᵢ·wᵀxᵢ (y∈{+1,−1}) — positive means correctly classified.</td></tr>
+            <tr><td>Why it fails raw</td><td>Unbounded — a single outlier with huge |wᵀx| can dominate and distort the line.</td></tr>
+            <tr><td>The fix</td><td>Squash z through sigmoid — bounded output caps any single point's leverage.</td></tr>
+            <tr><td>Output</td><td>Regression: ŷ is the value itself. Logistic Regression: ŷ=σ(z) is a probability.</td></tr>
+            <tr><td>Naming</td><td>"Regression" = still a line/plane underneath. "Logistic" = sigmoid turns it into probability.</td></tr>
+            <tr><td>sklearn</td><td>predict() → 0/1 via 0.5 default threshold. predict_proba() → exact probability values.</td></tr>
+            <tr><td>Optional preview</td><td>Odds and log-odds bridge p∈[0,1] to z∈(−∞,+∞) — full derivation next class.</td></tr>
+          </table>
+        </div>
+        <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green); font-size:14px;">
+          The whole class in one sentence: <b>logistic regression still fits a line, just like regression does — but instead of asking that line to pass through points, we ask it to separate classes, and instead of maximizing an unbounded margin (which outliers can hijack), we squash the score through a sigmoid so every point's influence stays bounded, and what comes out the other end is a genuine probability.</b>
+        </div>
+      </section>
+
+      <div class="footnote-strip">
+        <span class="hand">— end of Class 07 —</span>
+        Logistic Regression I · 15 July 2026 · odds &amp; log-odds properly derived next class
+      </div>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>
