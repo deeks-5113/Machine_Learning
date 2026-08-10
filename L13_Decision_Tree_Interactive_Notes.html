@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Decision Trees — Entropy, Information Gain & Beyond</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Patrick+Hand&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --board:#0c1014; --card:#151b21; --card-line:#222b32;
+    --chalk:#e9eef2; --chalk-dim:#9fb0bb;
+    --cyan:#5fd8e0; --cyan-dim:#2c5a5e;
+    --pink:#f17fb0; --pink-dim:#5a2f42;
+    --yellow:#f4cf5e; --green:#8fe3a6; --green-dim:#2f4f3a;
+    --purple:#b39ddb; --purple-dim:#4a3f6b;
+    --white-marker:#f5f5f0; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{ background:var(--board); color:var(--chalk); font-family:'Inter',sans-serif; line-height:1.55; -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width:1180px; margin:0 auto; padding:0 24px 120px; }
+  h1,h2,h3,.hand{ font-family:'Caveat',cursive; font-weight:700; }
+  .hero{ padding:56px 0 30px; text-align:center; }
+  .chip{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--cyan); border:1px solid var(--cyan-dim); background:rgba(95,216,224,0.06); padding:6px 14px; border-radius:999px; margin-bottom:16px; }
+  .hero h1{ font-size:clamp(28px,5.5vw,50px); color:var(--white-marker); margin:0 0 8px; }
+  .hero h1 span{color:var(--pink);}
+  .hero p{ font-family:'Patrick Hand',cursive; color:var(--chalk-dim); font-size:17px; max-width:780px; margin:0 auto; }
+  .layout{ display:grid; grid-template-columns:260px 1fr; gap:36px; align-items:start; }
+  nav.toc{ position:sticky; top:24px; background:var(--card); border:1px solid var(--card-line); border-radius:var(--radius); padding:18px 16px; font-family:'JetBrains Mono',monospace; font-size:11px; max-height:calc(100vh - 48px); overflow-y:auto; }
+  nav.toc .toc-title{ color:var(--chalk-dim); text-transform:uppercase; letter-spacing:1.2px; font-size:10px; margin-bottom:8px; margin-top:14px; }
+  nav.toc .toc-title:first-child{margin-top:0;}
+  nav.toc a{ display:block; color:var(--chalk-dim); text-decoration:none; padding:5px 8px; border-radius:8px; margin-bottom:1px; }
+  nav.toc a:hover{color:var(--chalk); background:rgba(255,255,255,0.04);}
+  main{min-width:0;}
+  section.block{ margin-bottom:50px; scroll-margin-top:24px; }
+  .section-eyebrow{ font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--pink); margin-bottom:6px; }
+  section.block h2{ font-size:30px; color:var(--white-marker); margin:0 0 12px; }
+  section.block h2 .underline{ text-decoration:underline; text-decoration-color:var(--cyan); text-decoration-thickness:3px; }
+  p.lead{ font-size:14.5px; color:#cdd8de; max-width:820px; }
+  .card{ background:var(--card); border:1px solid var(--card-line); border-radius:var(--radius); padding:20px 22px; margin:14px 0; }
+  .card h3{ font-family:'Inter',sans-serif; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.7px; color:var(--cyan); margin:0 0 10px; }
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  .grid-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;}
+  @media (max-width:900px){ .layout{grid-template-columns:1fr;} nav.toc{position:relative; top:0; margin-bottom:20px; max-height:none;} .grid-2,.grid-3{grid-template-columns:1fr;} }
+  table.data-table{ width:100%; border-collapse:collapse; font-family:'JetBrains Mono',monospace; font-size:12px; }
+  table.data-table th{ text-align:left; color:var(--chalk-dim); font-weight:500; padding:6px 9px; border-bottom:1px solid var(--card-line); text-transform:uppercase; font-size:9.5px; letter-spacing:0.4px; }
+  table.data-table td{ padding:6px 9px; border-bottom:1px solid rgba(255,255,255,0.04); }
+  table.data-table td.hl{color:var(--yellow); font-weight:700;}
+  table.data-table td.zero{color:var(--pink); font-weight:700; background:rgba(241,127,176,0.08);}
+  table.data-table td.good{color:var(--green); font-weight:700; background:rgba(143,227,166,0.08);}
+  blockquote.story{ font-family:'Patrick Hand',cursive; font-size:16.5px; color:#dbe6ec; border-left:3px solid var(--yellow); padding:6px 18px; margin:14px 0; background:rgba(244,207,94,0.04); border-radius:0 10px 10px 0; }
+  .pipeline{ display:flex; align-items:center; gap:0; overflow-x:auto; padding:10px 0 18px; }
+  .pipe-step{ flex:0 0 auto; min-width:115px; background:var(--card); border:1px solid var(--card-line); border-radius:12px; padding:12px 14px; text-align:center; }
+  .pipe-step .n{ font-family:'JetBrains Mono',monospace; color:var(--cyan); font-size:10.5px; margin-bottom:5px; }
+  .pipe-step .t{font-weight:700; font-size:12px; color:var(--white-marker);}
+  .pipe-step .d{font-size:9.5px; color:var(--chalk-dim); margin-top:3px;}
+  .pipe-arrow{ flex:0 0 auto; width:20px; text-align:center; color:var(--pink); font-size:16px; }
+  .formula{ font-family:'JetBrains Mono',monospace; background:#0a0d10; border:1px solid var(--card-line); border-radius:10px; padding:14px 20px; margin:12px 0; font-size:14px; color:var(--white-marker); overflow-x:auto; }
+  .formula.center{text-align:center;}
+  .formula .k{color:var(--yellow);} .formula .r{color:var(--cyan);} .formula .l{color:var(--pink);}
+  .formula-note{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--chalk-dim); margin-top:6px; }
+  .callout{ background:rgba(143,227,166,0.08); border:1px solid var(--green-dim); border-radius:10px; padding:12px 16px; color:var(--green); font-size:13px; font-family:'JetBrains Mono',monospace; margin:12px 0; line-height:1.6; }
+  .callout.warn{ background:rgba(244,207,94,0.08); border-color:#5a4f2f; color:var(--yellow); }
+  .callout.bad{ background:rgba(241,127,176,0.08); border-color:var(--pink-dim); color:var(--pink); }
+  .callout.info{ background:rgba(95,216,224,0.08); border-color:var(--cyan-dim); color:var(--cyan); }
+  .callout.purple{ background:rgba(179,157,219,0.08); border-color:var(--purple-dim); color:var(--purple); }
+  .step-card{ background:rgba(0,0,0,0.22); border-radius:10px; padding:14px 18px; margin:10px 0; border:1px solid var(--card-line); }
+  .step-tag{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--board); background:var(--cyan); padding:2px 8px; border-radius:6px; margin-right:8px; font-weight:700; }
+  .step-tag.p{background:var(--purple);}
+  .step-tag.y{background:var(--yellow);}
+  .step-tag.g{background:var(--green);}
+  .analogy-row{ display:flex; gap:14px; margin-top:12px; flex-wrap:wrap; }
+  .analogy{ flex:1; min-width:150px; background:var(--card); border:1px solid var(--card-line); border-radius:10px; padding:14px 16px; text-align:center; }
+  .analogy h4{font-size:14px; margin:6px 0 4px; color:var(--white-marker);}
+  .analogy p{font-size:11.5px; color:var(--chalk-dim); margin:0;}
+  .svg-card{ background:#fff; border:1px solid var(--card-line); border-radius:12px; padding:12px; }
+  .svg-caption{ text-align:center; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:#555; margin-top:8px; }
+  .footnote-strip{ margin-top:60px; border-top:1px dashed var(--card-line); padding-top:22px; text-align:center; color:var(--chalk-dim); font-family:'JetBrains Mono',monospace; font-size:12px; }
+  .footnote-strip .hand{color:var(--cyan); font-size:22px; display:block; margin-bottom:6px;}
+  .cm-table{ border-collapse:collapse; margin:14px auto; font-family:'JetBrains Mono',monospace; font-size:12.5px; }
+  .cm-table td, .cm-table th{ border:1px solid var(--card-line); padding:12px 18px; text-align:center; }
+  .cm-table .tp,.cm-table .tn{background:rgba(143,227,166,0.15); color:var(--green); font-weight:700;}
+  .cm-table .fp,.cm-table .fn{background:rgba(241,127,176,0.15); color:var(--pink); font-weight:700;}
+  .cm-table .lbl{background:#0a0d10; color:var(--chalk-dim); font-weight:700; font-size:10.5px;}
+  .matrix{ font-family:'JetBrains Mono',monospace; background:#0a0d10; border:1px solid var(--card-line); border-radius:10px; padding:16px 22px; display:inline-block; }
+
+  .num-hl{ color:var(--yellow); font-weight:700; }
+  .num-cool{ color:var(--cyan); font-weight:700; }
+  pre.code-block{ font-family:'JetBrains Mono',monospace; font-size:12.5px; line-height:1.55; background:#0a0d10; border:1px solid var(--card-line); border-radius:10px; padding:16px 18px; margin:12px 0; overflow-x:auto; color:#d8e2e8; white-space:pre; }
+  pre.code-block .kw{color:var(--pink);} pre.code-block .fn{color:var(--cyan);} pre.code-block .cm{color:var(--chalk-dim); font-style:italic;} pre.code-block .st{color:var(--yellow);}
+  .widget{ border:1.5px solid var(--amber-dim, var(--pink-dim)); border-radius:16px; background:#10160f; padding:22px; margin:18px 0; }
+  .widget-row{ display:flex; gap:18px; flex-wrap:wrap; align-items:center; margin:10px 0; }
+  .widget label{ font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--chalk-dim); display:block; margin-bottom:4px; }
+  .widget input[type=range]{ width:180px; accent-color:var(--cyan); }
+  .widget input[type=number]{ width:70px; background:#0a0d10; border:1px solid var(--card-line); color:var(--chalk); border-radius:6px; padding:4px 8px; font-family:'JetBrains Mono',monospace; }
+  .widget select{ background:#0a0d10; border:1px solid var(--card-line); color:var(--chalk); border-radius:6px; padding:5px 10px; font-family:'JetBrains Mono',monospace; }
+  .widget-stat{ background:var(--card); border:1px solid var(--card-line); border-radius:10px; padding:10px 16px; text-align:center; min-width:110px; }
+  .widget-stat .v{ font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:700; color:var(--cyan); }
+  .widget-stat .l{ font-size:9.5px; color:var(--chalk-dim); text-transform:uppercase; letter-spacing:0.5px; margin-top:2px; }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="chip">03-08-2026 &middot; Module: Supervised Learning</div>
+    <h1>Decision Trees <span>&mdash; Entropy, Information Gain &amp; Beyond</span></h1>
+    <div class="chip" style="background:none; border-color:var(--pink-dim); color:var(--pink); margin-top:0;">Complete class notes &middot; every number computed and verified below</div>
+  </div>
+
+  <div class="layout">
+    <nav class="toc" id="toc">
+      <div class="toc-title">The problem</div>
+      <a href="#problem">Why not Logistic Regression or KNN?</a>
+      <div class="toc-title">The core idea</div>
+      <a href="#visual">See it, then write if-else</a>
+      <a href="#automate">How do we automate this?</a>
+      <div class="toc-title">Entropy &amp; Gini</div>
+      <a href="#entropy">Entropy, explained</a>
+      <a href="#playground">Entropy/Gini playground</a>
+      <a href="#gini">Gini &mdash; the faster alternative</a>
+      <div class="toc-title">Information Gain</div>
+      <a href="#ig-level1">Level 1: Age&lt;35 vs Gender</a>
+      <a href="#ig-level2">Level 2: splitting again</a>
+      <a href="#ig-gini">Same thing, using Gini</a>
+      <a href="#max-ig">Maximum Information Gain</a>
+      <div class="toc-title">Numerical features</div>
+      <a href="#numerical">How numerical splits actually work</a>
+      <a href="#numerical-cost">Why this hurts at scale</a>
+      <div class="toc-title">Overfitting</div>
+      <a href="#overfit">Depth=1 vs unlimited depth</a>
+      <a href="#hyperparams">Other hyperparameters</a>
+      <div class="toc-title">Regression Trees</div>
+      <a href="#regression">MSE instead of entropy/Gini</a>
+      <a href="#class-vs-reg">Classification vs Regression, side by side</a>
+      <div class="toc-title">Wrap-up</div>
+      <a href="#nextclass">Coming next class</a>
+      <a href="#summary">Summary</a>
+    </nav>
+
+    <main>
+
+      <section class="block" id="problem">
+        <div class="section-eyebrow">The problem</div>
+        <h2>Why Not <span class="underline">Logistic Regression, or KNN?</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Employee attrition data, 2 features: Age and OverTime. Plot it first.</p>
+          <div class="svg-card"><svg viewBox="0 0 340 240" width="100%" height="auto">
+      <line x1="40" y1="210" x2="310" y2="210" stroke="#999" stroke-width="1"/>
+      <line x1="40" y1="20" x2="40" y2="210" stroke="#999" stroke-width="1"/>
+      <text x="150" y="228" font-size="10" fill="#555" font-family="monospace">Age</text>
+      <text x="10" y="120" font-size="10" fill="#555" font-family="monospace" transform="rotate(-90 10 120)">OverTime (hrs)</text>
+      
+      <path d="M67.75,77.33333333333334 l12,12 M79.75,77.33333333333334 l-12,12" stroke="#C0392B" stroke-width="2.4"/><path d="M93.0625,56.22222222222223 l12,12 M105.0625,56.22222222222223 l-12,12" stroke="#C0392B" stroke-width="2.4"/><path d="M59.3125,35.111111111111114 l12,12 M71.3125,35.111111111111114 l-12,12" stroke="#C0392B" stroke-width="2.4"/><path d="M101.5,68.88888888888889 l12,12 M113.5,68.88888888888889 l-12,12" stroke="#C0392B" stroke-width="2.4"/><circle cx="56.9" cy="167.8" r="5.5" fill="#1F7A56"/><circle cx="90.6" cy="188.9" r="5.5" fill="#1F7A56"/><circle cx="82.2" cy="146.7" r="5.5" fill="#1F7A56"/><circle cx="208.8" cy="41.1" r="5.5" fill="#1F7A56"/><circle cx="250.9" cy="167.8" r="5.5" fill="#1F7A56"/><circle cx="166.6" cy="83.3" r="5.5" fill="#1F7A56"/><circle cx="293.1" cy="188.9" r="5.5" fill="#1F7A56"/><circle cx="191.9" cy="49.6" r="5.5" fill="#1F7A56"/>
+      <text x="270" y="35" font-size="10" font-family="monospace" fill="#C0392B" font-weight="bold">&times; = Leave</text>
+      <text x="270" y="50" font-size="10" font-family="monospace" fill="#1F7A56" font-weight="bold">&#9679; = Stay</text>
+    </svg></div>
+          <div class="svg-caption">&times; = employees who left. &#9679; = employees who stayed.</div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <h3>Will Logistic Regression work?</h3>
+            <div class="callout bad"><b>No.</b> Logistic Regression is a linear model &mdash; it can only draw ONE straight boundary. Look at the plot: the "Leave" region is boxed in on two sides (young AND high overtime). No single straight line can carve out that box. Logistic Regression will underperform here, structurally.</div>
+          </div>
+          <div class="card">
+            <h3>Will KNN work?</h3>
+            <div class="callout warn"><b>It could classify this correctly</b> &mdash; KNN doesn't need a straight boundary, and this data satisfies KNN's core assumption (similar points cluster together). <b>But it can't be productionized well.</b> Every single prediction requires comparing the new employee against ALL stored training employees &mdash; O(n&middot;d) per prediction. At real HR-system scale (thousands of employees, checked constantly), that's too slow.</div>
+          </div>
+        </div>
+        <div class="callout purple">We need something that handles non-linear regions like Logistic Regression can't, AND predicts fast like KNN can't. That's a Decision Tree.</div>
+      </section>
+
+      <section class="block" id="visual">
+        <div class="section-eyebrow">The core idea</div>
+        <h2>See It, Then <span class="underline">Write If-Else</span></h2>
+        <div class="card screenshot">
+          <div class="svg-card"><svg viewBox="0 0 340 240" width="100%" height="auto">
+      <line x1="40" y1="210" x2="310" y2="210" stroke="#999" stroke-width="1"/>
+      <line x1="40" y1="20" x2="40" y2="210" stroke="#999" stroke-width="1"/>
+      <text x="150" y="228" font-size="10" fill="#555" font-family="monospace">Age</text>
+      <text x="10" y="120" font-size="10" fill="#555" font-family="monospace" transform="rotate(-90 10 120)">OverTime (hrs)</text>
+      <line x1="124.4" y1="20" x2="124.4" y2="210" stroke="#1D5FD1" stroke-width="1.6" stroke-dasharray="5,3"/><text x="128.4" y="32" font-size="9.5" fill="#1D5FD1" font-family="monospace">Age=30</text><line x1="40" y1="104.4" x2="124.4" y2="104.4" stroke="#f4a300" stroke-width="1.6" stroke-dasharray="5,3"/><text x="45" y="99.4" font-size="9.5" fill="#a97400" font-family="monospace">OT=2.5</text>
+      <path d="M67.75,77.33333333333334 l12,12 M79.75,77.33333333333334 l-12,12" stroke="#C0392B" stroke-width="2.4"/><path d="M93.0625,56.22222222222223 l12,12 M105.0625,56.22222222222223 l-12,12" stroke="#C0392B" stroke-width="2.4"/><path d="M59.3125,35.111111111111114 l12,12 M71.3125,35.111111111111114 l-12,12" stroke="#C0392B" stroke-width="2.4"/><path d="M101.5,68.88888888888889 l12,12 M113.5,68.88888888888889 l-12,12" stroke="#C0392B" stroke-width="2.4"/><circle cx="56.9" cy="167.8" r="5.5" fill="#1F7A56"/><circle cx="90.6" cy="188.9" r="5.5" fill="#1F7A56"/><circle cx="82.2" cy="146.7" r="5.5" fill="#1F7A56"/><circle cx="208.8" cy="41.1" r="5.5" fill="#1F7A56"/><circle cx="250.9" cy="167.8" r="5.5" fill="#1F7A56"/><circle cx="166.6" cy="83.3" r="5.5" fill="#1F7A56"/><circle cx="293.1" cy="188.9" r="5.5" fill="#1F7A56"/><circle cx="191.9" cy="49.6" r="5.5" fill="#1F7A56"/>
+      <text x="270" y="35" font-size="10" font-family="monospace" fill="#C0392B" font-weight="bold">&times; = Leave</text>
+      <text x="270" y="50" font-size="10" font-family="monospace" fill="#1F7A56" font-weight="bold">&#9679; = Stay</text>
+    </svg></div>
+          <div class="svg-caption">Two straight cuts (one vertical on Age, one horizontal only within the left region) perfectly separate Leave from Stay.</div>
+          <pre class="code-block"><span class="kw">if</span> Age &lt; <span class="st">30</span>:
+    <span class="kw">if</span> OverTime &gt;= <span class="st">2.5</span>:
+        predict <span class="cm"># Leave</span>
+    <span class="kw">else</span>:
+        predict <span class="cm"># Stay</span>
+<span class="kw">else</span>:
+    predict <span class="cm"># Stay</span></pre>
+        </div>
+        <div class="card">
+          <h3>The exact same logic, drawn as a tree</h3>
+          <div class="svg-card"><svg viewBox="0 0 500 320" width="100%" height="auto">
+      <rect x="190" y="20" width="120" height="50" rx="8" fill="#1D5FD1" opacity="0.12" stroke="#1D5FD1" stroke-width="1.5"/>
+      <text x="250" y="42" font-size="13" font-family="monospace" text-anchor="middle" fill="#1D5FD1" font-weight="bold">Age &lt; 30 ?</text>
+      <text x="250" y="60" font-size="10" font-family="monospace" text-anchor="middle" fill="#888">(root, 12 employees)</text>
+      <line x1="220" y1="70" x2="100" y2="130" stroke="#555" stroke-width="1.5"/>
+      <text x="140" y="95" font-size="11" font-family="monospace" fill="#1F7A56" font-weight="bold">Yes</text>
+      <line x1="280" y1="70" x2="400" y2="130" stroke="#555" stroke-width="1.5"/>
+      <text x="360" y="95" font-size="11" font-family="monospace" fill="#C0392B" font-weight="bold">No</text>
+      <rect x="35" y="130" width="130" height="50" rx="8" fill="#f4a300" opacity="0.12" stroke="#f4a300" stroke-width="1.5"/>
+      <text x="100" y="152" font-size="12.5" font-family="monospace" text-anchor="middle" fill="#a97400" font-weight="bold">OverTime &ge; 2.5 ?</text>
+      <text x="100" y="170" font-size="9.5" font-family="monospace" text-anchor="middle" fill="#888">(7 employees)</text>
+      <rect x="345" y="130" width="110" height="50" rx="8" fill="#C0392B" opacity="0.12" stroke="#C0392B" stroke-width="1.5"/>
+      <text x="400" y="152" font-size="13" font-family="monospace" text-anchor="middle" fill="#C0392B" font-weight="bold">Stay</text>
+      <text x="400" y="170" font-size="9.5" font-family="monospace" text-anchor="middle" fill="#888">(5 of 5, pure)</text>
+      <line x1="70" y1="180" x2="30" y2="230" stroke="#555" stroke-width="1.5"/>
+      <text x="20" y="205" font-size="11" font-family="monospace" fill="#1F7A56" font-weight="bold">Yes</text>
+      <line x1="130" y1="180" x2="180" y2="230" stroke="#555" stroke-width="1.5"/>
+      <text x="165" y="205" font-size="11" font-family="monospace" fill="#C0392B" font-weight="bold">No</text>
+      <rect x="0" y="230" width="110" height="50" rx="8" fill="#C0392B" opacity="0.15" stroke="#C0392B" stroke-width="1.5"/>
+      <text x="55" y="252" font-size="12.5" font-family="monospace" text-anchor="middle" fill="#C0392B" font-weight="bold">Leave</text>
+      <text x="55" y="270" font-size="9.5" font-family="monospace" text-anchor="middle" fill="#888">(4 of 4, pure)</text>
+      <rect x="125" y="230" width="120" height="50" rx="8" fill="#1F7A56" opacity="0.12" stroke="#1F7A56" stroke-width="1.5"/>
+      <text x="185" y="252" font-size="12.5" font-family="monospace" text-anchor="middle" fill="#1F7A56" font-weight="bold">Stay</text>
+      <text x="185" y="270" font-size="9.5" font-family="monospace" text-anchor="middle" fill="#888">(3 of 3, pure)</text>
+    </svg></div>
+        </div>
+      </section>
+
+      <section class="block" id="automate">
+        <h2>How Do We <span class="underline">Automate This?</span></h2>
+        <div class="card">
+          <div class="callout bad"><b>Manually writing if-else per feature does NOT scale.</b> With 2 features and 12 rows, we can eyeball it. Real data has dozens of features and millions of rows &mdash; nobody is hand-drawing boundaries on a 40-dimensional scatter plot.</div>
+          <div class="callout purple">We need 2 things: (1) a <b>feature</b> to split on, and (2) a <b>condition</b> to split it by &mdash; and we need to LEARN both automatically from the data, at every single node. That's what "training" means for a decision tree. Everything from here on is the math that makes this automatic.</div>
+        </div>
+      </section>
+
+      <section class="block" id="entropy">
+        <div class="section-eyebrow">Entropy &amp; Gini</div>
+        <h2>Entropy, <span class="underline">Explained</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Entropy measures how "mixed up" (impure) a node is. A node with only one class: entropy = 0 (totally predictable). A node split evenly between classes: entropy = maximum (a coin flip).</p>
+          <div class="formula center">H(y) = &minus; &Sigma; p(y<sub>i</sub>) &middot; log<sub>2</sub>( p(y<sub>i</sub>) )</div>
+        </div>
+        <div class="card">
+          <h3>A jar-of-balls intuition, in 3 steps</h3>
+          <table class="data-table">
+            <tr><th>Jar</th><th>Contents</th><th>Confidence picking Red?</th><th>Entropy</th></tr>
+            <tr><td>Jar 1</td><td>3 Red, 3 Blue</td><td>Total guess</td><td class="mono zero">1.00 (max)</td></tr>
+            <tr><td>Jar 2</td><td>5 Red, 1 Blue</td><td>Pretty confident</td><td class="mono">0.65</td></tr>
+            <tr><td>Jar 3</td><td>6 Red, 0 Blue</td><td>Certain</td><td class="mono good">0.00 (min)</td></tr>
+          </table>
+          <div class="callout info">Entropy is <b>maximum</b> when a node is impure (50/50), <b>minimum (0)</b> when pure, and always lies between 0 and 1 for a binary target.</div>
+        </div>
+      </section>
+
+      <section class="block" id="playground">
+        <h2>Entropy / Gini <span class="underline">Playground</span></h2>
+        <p class="lead">Change the number of classes, and how many points belong to each. Watch the impurity value and the exact computation update live.</p>
+
+        <div class="widget">
+          <div class="widget-row">
+            <div>
+              <label>Number of classes</label>
+              <select id="numClasses">
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+              </select>
+            </div>
+            <div>
+              <label>Metric</label>
+              <select id="metricSelect">
+                <option value="entropy">Entropy</option>
+                <option value="gini">Gini Impurity</option>
+              </select>
+            </div>
+          </div>
+          <div class="widget-row" id="classInputs"></div>
+
+          <div class="widget-row" style="margin-top:16px;">
+            <div class="widget-stat"><div class="v" id="statValue">-</div><div class="l">Value</div></div>
+            <div class="widget-stat"><div class="v" id="statTotal">-</div><div class="l">Total points</div></div>
+            <div class="widget-stat"><div class="v" id="statMax">-</div><div class="l">Max possible</div></div>
+          </div>
+
+          <div class="svg-card" style="margin-top:14px;">
+            <div id="barChart"></div>
+          </div>
+
+          <div class="formula center" id="formulaDisplay" style="margin-top:14px; text-align:left; overflow-x:auto;"></div>
+        </div>
+      </section>
+
+      <section class="block" id="gini">
+        <h2>Gini &mdash; <span class="underline">The Faster Alternative</span></h2>
+        <div class="card">
+          <h3>The problem with entropy</h3>
+          <div class="callout warn">Entropy needs a <code>log&#8322;</code> computation, for every feature, at every node, for every candidate split, across the whole tree-building process. That's a LOT of logarithms on real data.</div>
+          <h3>The fix: Gini Impurity</h3>
+          <div class="formula center">GI(y) = 1 &minus; &Sigma; p(y<sub>i</sub>)&sup2;</div>
+          <p class="lead" style="margin-top:0;">Same idea &mdash; 0 when pure, maximum when evenly split &mdash; but only needs squaring and subtraction. No logarithms anywhere.</p>
+          <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);"><b>Try it in the playground above</b> &mdash; switch the metric dropdown between Entropy and Gini for the same class counts. They rank splits almost identically; Gini is just cheaper to compute. This is why sklearn's <code>DecisionTreeClassifier</code> defaults to Gini.</div>
+        </div>
+      </section>
+
+      <section class="block" id="ig-level1">
+        <div class="section-eyebrow">Information Gain</div>
+        <h2>Level 1: <span class="underline">Age&lt;35 vs Gender</span></h2>
+        <p class="lead">100 employees, 60 Stay / 40 Leave. Two candidate features to split the root on: Age&lt;35, or Gender. Which one actually helps more?</p>
+        <div class="formula center">Information Gain = H(parent) &minus; Weighted Average of H(children)</div>
+
+        <div class="card screenshot">
+          <h3 style="color:var(--cyan);">Candidate A &mdash; Age &lt; 35</h3>
+          <div class="svg-card" style="max-width:280px; margin:0 auto;"><svg viewBox="0 0 260 180" width="100%" height="auto" style="border:2.5px solid #f4a300; border-radius:10px;">
+      <rect x="70" y="10" width="120" height="42" rx="7" fill="#1D5FD1" opacity="0.12" stroke="#1D5FD1" stroke-width="1.3"/>
+      <text x="130" y="28" font-size="10.5" font-family="monospace" text-anchor="middle" fill="#1D5FD1" font-weight="bold">Age &lt; 35?</text>
+      <text x="130" y="44" font-size="9" font-family="monospace" text-anchor="middle" fill="#555">60S,40L | H=0.971</text>
+      <line x1="105" y1="52" x2="55" y2="95" stroke="#555" stroke-width="1.3"/>
+      <line x1="155" y1="52" x2="205" y2="95" stroke="#555" stroke-width="1.3"/>
+      <rect x="5" y="95" width="105" height="42" rx="7" fill="#1F7A56" opacity="0.12" stroke="#1F7A56" stroke-width="1.3"/>
+      <text x="57" y="113" font-size="9.5" font-family="monospace" text-anchor="middle" fill="#1F7A56" font-weight="bold">Yes</text>
+      <text x="57" y="129" font-size="8.5" font-family="monospace" text-anchor="middle" fill="#555">50S,10L H=0.650</text>
+      <rect x="150" y="95" width="105" height="42" rx="7" fill="#C0392B" opacity="0.12" stroke="#C0392B" stroke-width="1.3"/>
+      <text x="202" y="113" font-size="9.5" font-family="monospace" text-anchor="middle" fill="#C0392B" font-weight="bold">No</text>
+      <text x="202" y="129" font-size="8.5" font-family="monospace" text-anchor="middle" fill="#555">10S,30L H=0.811</text>
+    </svg></div>
+          <div class="step-card"><span class="step-tag">1</span> Parent entropy = <span class="mono num-hl">0.971</span></div>
+          <div class="step-card"><span class="step-tag p">2</span> Left (Yes, n=60): H=<span class="mono num-hl">0.650</span> &nbsp;&nbsp; Right (No, n=40): H=<span class="mono num-hl">0.811</span></div>
+          <div class="step-card"><span class="step-tag y">3</span> Weighted children = 0.6&times;0.650 + 0.4&times;0.811 = <span class="mono num-hl">0.7145</span></div>
+          <div class="formula center">IG = 0.971 &minus; 0.7145 = <span class="k">0.257</span></div>
+        </div>
+
+        <div class="card screenshot">
+          <h3 style="color:var(--pink);">Candidate B &mdash; Gender</h3>
+          <div class="svg-card" style="max-width:280px; margin:0 auto;"><svg viewBox="0 0 260 180" width="100%" height="auto" style="border:1.3px solid #888; border-radius:10px;">
+      <rect x="70" y="10" width="120" height="42" rx="7" fill="#1D5FD1" opacity="0.12" stroke="#1D5FD1" stroke-width="1.3"/>
+      <text x="130" y="28" font-size="10.5" font-family="monospace" text-anchor="middle" fill="#1D5FD1" font-weight="bold">Gender?</text>
+      <text x="130" y="44" font-size="9" font-family="monospace" text-anchor="middle" fill="#555">60S,40L | H=0.971</text>
+      <line x1="105" y1="52" x2="55" y2="95" stroke="#555" stroke-width="1.3"/>
+      <line x1="155" y1="52" x2="205" y2="95" stroke="#555" stroke-width="1.3"/>
+      <rect x="5" y="95" width="105" height="42" rx="7" fill="#1F7A56" opacity="0.12" stroke="#1F7A56" stroke-width="1.3"/>
+      <text x="57" y="113" font-size="9.5" font-family="monospace" text-anchor="middle" fill="#1F7A56" font-weight="bold">Male</text>
+      <text x="57" y="129" font-size="8.5" font-family="monospace" text-anchor="middle" fill="#555">50S,20L H=0.863</text>
+      <rect x="150" y="95" width="105" height="42" rx="7" fill="#C0392B" opacity="0.12" stroke="#C0392B" stroke-width="1.3"/>
+      <text x="202" y="113" font-size="9.5" font-family="monospace" text-anchor="middle" fill="#C0392B" font-weight="bold">Female</text>
+      <text x="202" y="129" font-size="8.5" font-family="monospace" text-anchor="middle" fill="#555">10S,20L H=0.918</text>
+    </svg></div>
+          <div class="step-card"><span class="step-tag">1</span> Parent entropy = <span class="mono num-hl">0.971</span></div>
+          <div class="step-card"><span class="step-tag p">2</span> Male (n=70): H=<span class="mono num-hl">0.863</span> &nbsp;&nbsp; Female (n=30): H=<span class="mono num-hl">0.918</span></div>
+          <div class="step-card"><span class="step-tag y">3</span> Weighted children = 0.7&times;0.863 + 0.3&times;0.918 = <span class="mono num-hl">0.8797</span></div>
+          <div class="formula center">IG = 0.971 &minus; 0.8797 = <span class="k">0.091</span></div>
+        </div>
+
+        <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);"><b>Age&lt;35 wins clearly (IG=0.257 vs 0.091)</b> &mdash; the root splits on Age&lt;35.</div>
+      </section>
+
+      <section class="block" id="ig-level2">
+        <h2>Level 2: <span class="underline">Splitting Again, Inside Age&lt;35</span></h2>
+        <p class="lead">The Age&lt;35 branch (60 Stay, 10 Leave, H=0.650) still isn't pure. Compare two NEW candidate features for splitting it further: OverTime&ge;2.5, or Gender.</p>
+
+        <div class="card screenshot">
+          <h3 style="color:var(--cyan);">Candidate A &mdash; OverTime &ge; 2.5</h3>
+          <div class="svg-card" style="max-width:280px; margin:0 auto;"><svg viewBox="0 0 260 180" width="100%" height="auto" style="border:2.5px solid #f4a300; border-radius:10px;">
+      <rect x="70" y="10" width="120" height="42" rx="7" fill="#1D5FD1" opacity="0.12" stroke="#1D5FD1" stroke-width="1.3"/>
+      <text x="130" y="28" font-size="10.5" font-family="monospace" text-anchor="middle" fill="#1D5FD1" font-weight="bold">OverTime &ge; 2.5?</text>
+      <text x="130" y="44" font-size="9" font-family="monospace" text-anchor="middle" fill="#555">50S,10L | H=0.650</text>
+      <line x1="105" y1="52" x2="55" y2="95" stroke="#555" stroke-width="1.3"/>
+      <line x1="155" y1="52" x2="205" y2="95" stroke="#555" stroke-width="1.3"/>
+      <rect x="5" y="95" width="105" height="42" rx="7" fill="#1F7A56" opacity="0.12" stroke="#1F7A56" stroke-width="1.3"/>
+      <text x="57" y="113" font-size="9.5" font-family="monospace" text-anchor="middle" fill="#1F7A56" font-weight="bold">Yes</text>
+      <text x="57" y="129" font-size="8.5" font-family="monospace" text-anchor="middle" fill="#555">5S,10L H=0.918</text>
+      <rect x="150" y="95" width="105" height="42" rx="7" fill="#C0392B" opacity="0.12" stroke="#C0392B" stroke-width="1.3"/>
+      <text x="202" y="113" font-size="9.5" font-family="monospace" text-anchor="middle" fill="#C0392B" font-weight="bold">No</text>
+      <text x="202" y="129" font-size="8.5" font-family="monospace" text-anchor="middle" fill="#555">45S,0L H=0.000</text>
+    </svg></div>
+          <div class="step-card"><span class="step-tag">1</span> Parent entropy = <span class="mono num-hl">0.650</span></div>
+          <div class="step-card"><span class="step-tag p">2</span> Yes (n=15): H=<span class="mono num-hl">0.918</span> &nbsp;&nbsp; No (n=45): H=<span class="mono num-hl">0.000 (pure!)</span></div>
+          <div class="step-card"><span class="step-tag y">3</span> Weighted children = 0.25&times;0.918 + 0.75&times;0.000 = <span class="mono num-hl">0.230</span></div>
+          <div class="formula center">IG = 0.650 &minus; 0.230 = <span class="k">0.420</span></div>
+        </div>
+
+        <div class="card screenshot">
+          <h3 style="color:var(--pink);">Candidate B &mdash; Gender</h3>
+          <div class="svg-card" style="max-width:280px; margin:0 auto;"><svg viewBox="0 0 260 180" width="100%" height="auto" style="border:1.3px solid #888; border-radius:10px;">
+      <rect x="70" y="10" width="120" height="42" rx="7" fill="#1D5FD1" opacity="0.12" stroke="#1D5FD1" stroke-width="1.3"/>
+      <text x="130" y="28" font-size="10.5" font-family="monospace" text-anchor="middle" fill="#1D5FD1" font-weight="bold">Gender?</text>
+      <text x="130" y="44" font-size="9" font-family="monospace" text-anchor="middle" fill="#555">50S,10L | H=0.650</text>
+      <line x1="105" y1="52" x2="55" y2="95" stroke="#555" stroke-width="1.3"/>
+      <line x1="155" y1="52" x2="205" y2="95" stroke="#555" stroke-width="1.3"/>
+      <rect x="5" y="95" width="105" height="42" rx="7" fill="#1F7A56" opacity="0.12" stroke="#1F7A56" stroke-width="1.3"/>
+      <text x="57" y="113" font-size="9.5" font-family="monospace" text-anchor="middle" fill="#1F7A56" font-weight="bold">Male</text>
+      <text x="57" y="129" font-size="8.5" font-family="monospace" text-anchor="middle" fill="#555">36S,4L H=0.310</text>
+      <rect x="150" y="95" width="105" height="42" rx="7" fill="#C0392B" opacity="0.12" stroke="#C0392B" stroke-width="1.3"/>
+      <text x="202" y="113" font-size="9.5" font-family="monospace" text-anchor="middle" fill="#C0392B" font-weight="bold">Female</text>
+      <text x="202" y="129" font-size="8.5" font-family="monospace" text-anchor="middle" fill="#555">14S,6L H=0.881</text>
+    </svg></div>
+          <div class="step-card"><span class="step-tag">1</span> Parent entropy = <span class="mono num-hl">0.650</span></div>
+          <div class="step-card"><span class="step-tag p">2</span> Male (n=40): H=<span class="mono num-hl">0.310</span> &nbsp;&nbsp; Female (n=20): H=<span class="mono num-hl">0.881</span></div>
+          <div class="step-card"><span class="step-tag y">3</span> Weighted children = 0.667&times;0.310 + 0.333&times;0.881 = <span class="mono num-hl">0.500</span></div>
+          <div class="formula center">IG = 0.650 &minus; 0.500 = <span class="k">0.150</span></div>
+        </div>
+
+        <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);"><b>OverTime&ge;2.5 wins even more decisively here (IG=0.420 vs 0.150)</b> &mdash; and the "No" child is already perfectly pure (H=0.000, all 45 stayed). That branch stops; only the "Yes" side (n=15) needs further splitting.</div>
+
+        <div class="card">
+          <h3>A doubt worth addressing directly: can the SAME feature come back at a later level?</h3>
+          <div class="callout purple"><b>Yes &mdash; absolutely, and it happens all the time.</b> A tree never "uses up" a feature after one split. At every node, ALL features (including ones already used higher up) are tried again, with a fresh search over thresholds. If a feature still separates that specific node's data well, it wins again &mdash; possibly with a completely different threshold.</div>
+          <p class="lead" style="margin-top:0;">Concretely: take the OverTime&ge;2.5 "Yes" branch above (n=15: 5 Stay, 10 Leave, H=0.918). <b>Age can legally be tried here again</b> &mdash; not with the old cutoff of 35, but searched fresh:</p>
+          <div class="step-card"><span class="step-tag">1</span> Try <b>Age &lt; 25</b> (a brand-new threshold, not 35): Left (n=8: 1 Stay, 7 Leave) H=<span class="mono num-hl">0.544</span>, Right (n=7: 4 Stay, 3 Leave) H=<span class="mono num-hl">0.985</span></div>
+          <div class="step-card"><span class="step-tag p">2</span> Weighted children = (8/15)&times;0.544 + (7/15)&times;0.985 = <span class="mono num-hl">0.750</span></div>
+          <div class="formula center">IG = 0.918 &minus; 0.750 = <span class="k">0.169</span> &nbsp;&nbsp; <span class="dim" style="font-size:11px;">(a genuinely positive, usable gain)</span></div>
+          <div class="callout info">Age shows up twice in this tree &mdash; once as <code>Age&lt;35</code> at the root, and again as <code>Age&lt;25</code> several levels deeper &mdash; each time chosen fresh because it happened to give the best Information Gain <i>at that specific node</i>, not because of any memory of its earlier use.</div>
+        </div>
+
+        <div class="callout purple">The whole algorithm in miniature: <b>at every single node, try every candidate feature (yes, even repeats), compute Information Gain for each, keep the best one, recurse.</b> A real tree just keeps doing this until nodes are pure or a stopping rule kicks in.</div>
+      </section>
+
+      <section class="block" id="ig-gini">
+        <h2>Same Thing, <span class="underline">Using Gini Instead</span></h2>
+        <div class="card screenshot">
+          <table class="data-table">
+            <tr><th>Split</th><th>Entropy-based IG</th><th>Gini-based IG</th><th>Winner (either metric)</th></tr>
+            <tr><td class="left">Level 1: Age&lt;35</td><td class="mono good">0.257</td><td class="mono good">0.163</td><td rowspan="2" class="good">Age&lt;35</td></tr>
+            <tr><td class="left">Level 1: Gender</td><td class="mono">0.091</td><td class="mono">0.061</td></tr>
+          </table>
+          <div class="callout info">Different absolute numbers (Gini's scale tops out lower than entropy's), but the SAME winner every time. This is the practical reason Gini is a safe default &mdash; you very rarely get a different tree structure, just a cheaper computation to get there.</div>
+        </div>
+      </section>
+
+      <section class="block" id="max-ig">
+        <h2>Maximum Information Gain <span class="underline">Is What We Want</span></h2>
+        <div class="card">
+          <div class="callout purple" style="font-size:14.5px;">At every node: compute Information Gain for every candidate feature (and every candidate threshold, for numerical features &mdash; next section). <b>Pick whichever gives the MAXIMUM Information Gain.</b> That single greedy rule, applied recursively, is the entire decision tree training algorithm.</div>
+        </div>
+      </section>
+
+      <section class="block" id="numerical">
+        <div class="section-eyebrow">Numerical features</div>
+        <h2>How Numerical Splits <span class="underline">Actually Work</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">A categorical feature splits cleanly (Male/Female). A numerical feature like Age could split anywhere. sklearn's approach:</p>
+          <div class="step-card"><span class="step-tag">1</span> Sort all n unique values of the feature.</div>
+          <div class="step-card"><span class="step-tag p">2</span> Take the midpoint between every pair of consecutive sorted values as a candidate threshold &mdash; that's n&minus;1 candidates.</div>
+          <div class="step-card"><span class="step-tag y">3</span> Compute Information Gain for EVERY candidate threshold.</div>
+          <div class="step-card"><span class="step-tag g">4</span> Keep whichever threshold gives the highest gain.</div>
+          <div class="callout info">Example: Age values [17,19,20,25,31,35] &rarr; candidate thresholds are the 5 midpoints: 18, 19.5, 22.5, 28, 33. Each one gets its own Information Gain computed, and the best one wins.</div>
+        </div>
+      </section>
+
+      <section class="block" id="numerical-cost">
+        <h2>Why This <span class="underline">Hurts at Scale</span></h2>
+        <div class="card screenshot">
+          <p class="lead" style="margin-top:0;">Recall the build-time formula: <b>O(n &middot; log(n) &middot; f)</b> &mdash; n=samples, f=features. That's because sorting n values costs O(n log n), and we repeat that sort for every one of the f features, at every node. Let's watch that formula predict real, measured time as BOTH n and f grow together.</p>
+          <table class="data-table">
+            <tr><th>Samples (n)</th><th>Features (f)</th><th>Formula: n&middot;log&#8322;(n)&middot;f</th><th>Actual measured fit time</th></tr>
+            <tr><td class="mono">1,000</td><td class="mono">5</td><td class="mono">49,829</td><td class="mono">2.23 ms</td></tr>
+            <tr><td class="mono">5,000</td><td class="mono">10</td><td class="mono">614,386</td><td class="mono">10.12 ms</td></tr>
+            <tr><td class="mono">20,000</td><td class="mono">25</td><td class="mono">7,143,856</td><td class="mono">88.58 ms</td></tr>
+            <tr><td class="mono">50,000</td><td class="mono">50</td><td class="mono">39,024,101</td><td class="mono">438.12 ms</td></tr>
+            <tr><td class="mono hl">100,000</td><td class="mono hl">100</td><td class="mono hl">166,096,405</td><td class="mono zero">1,777.30 ms</td></tr>
+          </table>
+          <div class="callout bad"><b>Read the last row plainly: 100,000 rows &times; 100 numerical features takes almost 1.8 SECONDS just to build one tree.</b> The formula column and the actual-time column grow together at nearly the same rate all the way down the table &mdash; that's the proof that O(n&middot;log(n)&middot;f) isn't just theoretical, it's exactly what you feel as a real wait time. Double the features, and you roughly double the wait. Double the samples, and the wait grows slightly faster than double (because of the log(n) term).</div>
+          <div class="callout purple"><b>Practical fixes:</b> bin numerical features into a handful of ranges first (fewer candidate thresholds to search per feature), cap <code>max_depth</code> (fewer nodes total need this search repeated), or use <code>max_features</code> so not every feature is evaluated at every single node.</div>
+        </div>
+      </section>
+
+      <section class="block" id="overfit">
+        <div class="section-eyebrow">Overfitting</div>
+        <h2>Depth=1 vs <span class="underline">Unlimited Depth</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">A deliberately harder dataset this time: two features X1, X2, where the TRUE rule is a checkerboard &mdash; Class 1 if (X1&lt;5 AND X2&lt;5) OR (X1&ge;5 AND X2&ge;5), Class 0 otherwise. <b>This genuinely needs at least 2 splits to separate at all</b> &mdash; a single cut can never do better than a coin flip here, on purpose, so underfitting shows up clearly.</p>
+          <div class="svg-card"><svg viewBox="0 0 340 240" width="100%" height="auto">
+      <line x1="40" y1="210" x2="310" y2="210" stroke="#999" stroke-width="1"/>
+      <line x1="40" y1="20" x2="40" y2="210" stroke="#999" stroke-width="1"/>
+      <line x1="175.0" y1="20" x2="175.0" y2="210" stroke="#888" stroke-width="1" stroke-dasharray="3,2"/>
+      <line x1="40" y1="115.0" x2="310" y2="115.0" stroke="#888" stroke-width="1" stroke-dasharray="3,2"/>
+      <text x="150" y="228" font-size="10" fill="#555" font-family="monospace">X1</text>
+      <text x="10" y="120" font-size="10" fill="#555" font-family="monospace" transform="rotate(-90 10 120)">X2</text>
+      <path d="M277.9,71.0 l10,10 M287.9,71.0 l-10,10" stroke="#C0392B" stroke-width="2.2"/><circle cx="88.7" cy="106.2" r="4.5" fill="#1F7A56"/><circle cx="116.0" cy="100.8" r="4.5" fill="#1F7A56"/><circle cx="202.1" cy="164.8" r="4.5" fill="#1F7A56"/><path d="M123.5,131.2 l10,10 M133.5,131.2 l-10,10" stroke="#C0392B" stroke-width="2.2"/><circle cx="84.5" cy="102.9" r="4.5" fill="#1F7A56"/><circle cx="275.6" cy="140.3" r="4.5" fill="#1F7A56"/><circle cx="84.7" cy="87.6" r="4.5" fill="#1F7A56"/><circle cx="288.1" cy="158.3" r="4.5" fill="#1F7A56"/><circle cx="117.6" cy="44.9" r="4.5" fill="#1F7A56"/><path d="M126.0,199.7 l10,10 M136.0,199.7 l-10,10" stroke="#C0392B" stroke-width="2.2"/><circle cx="124.8" cy="81.9" r="4.5" fill="#1F7A56"/><path d="M132.4,173.8 l10,10 M142.4,173.8 l-10,10" stroke="#C0392B" stroke-width="2.2"/><circle cx="125.6" cy="40.1" r="4.5" fill="#1F7A56"/><path d="M244.2,20.8 l10,10 M254.2,20.8 l-10,10" stroke="#C0392B" stroke-width="2.2"/><circle cx="52.1" cy="48.8" r="4.5" fill="#1F7A56"/><path d="M274.6,16.9 l10,10 M284.6,16.9 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M98.5,156.3 l10,10 M108.5,156.3 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M170.5,17.0 l10,10 M180.5,17.0 l-10,10" stroke="#C0392B" stroke-width="2.2"/><circle cx="258.1" cy="139.3" r="4.5" fill="#1F7A56"/><path d="M161.3,145.0 l10,10 M171.3,145.0 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M280.9,53.2 l10,10 M290.9,53.2 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M123.4,174.3 l10,10 M133.4,174.3 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M154.2,133.9 l10,10 M164.2,133.9 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M80.4,178.9 l10,10 M90.4,178.9 l-10,10" stroke="#C0392B" stroke-width="2.2"/><circle cx="301.5" cy="156.9" r="4.5" fill="#1F7A56"/><path d="M162.5,129.1 l10,10 M172.5,129.1 l-10,10" stroke="#C0392B" stroke-width="2.2"/><circle cx="117.8" cy="73.6" r="4.5" fill="#1F7A56"/><circle cx="221.5" cy="185.5" r="4.5" fill="#1F7A56"/><path d="M261.2,47.9 l10,10 M271.2,47.9 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M252.0,46.4 l10,10 M262.0,46.4 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M113.1,135.0 l10,10 M123.1,135.0 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M245.0,37.5 l10,10 M255.0,37.5 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M138.3,110.9 l10,10 M148.3,110.9 l-10,10" stroke="#C0392B" stroke-width="2.2"/><circle cx="188.4" cy="168.8" r="4.5" fill="#1F7A56"/><circle cx="247.5" cy="208.3" r="4.5" fill="#1F7A56"/><path d="M50.5,184.1 l10,10 M60.5,184.1 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M47.7,145.3 l10,10 M57.7,145.3 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M49.2,168.1 l10,10 M59.2,168.1 l-10,10" stroke="#C0392B" stroke-width="2.2"/><circle cx="140.0" cy="69.3" r="4.5" fill="#1F7A56"/><path d="M59.8,18.6 l10,10 M69.8,18.6 l-10,10" stroke="#C0392B" stroke-width="2.2"/><circle cx="259.5" cy="143.2" r="4.5" fill="#1F7A56"/><circle cx="177.3" cy="181.1" r="4.5" fill="#1F7A56"/><path d="M51.6,112.8 l10,10 M61.6,112.8 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M53.7,51.7 l10,10 M63.7,51.7 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M217.2,86.1 l10,10 M227.2,86.1 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M115.5,175.5 l10,10 M125.5,175.5 l-10,10" stroke="#C0392B" stroke-width="2.2"/><circle cx="95.7" cy="121.4" r="4.5" fill="#1F7A56"/><circle cx="304.1" cy="200.9" r="4.5" fill="#1F7A56"/><circle cx="250.1" cy="141.5" r="4.5" fill="#1F7A56"/><circle cx="267.2" cy="142.2" r="4.5" fill="#1F7A56"/><circle cx="190.5" cy="154.1" r="4.5" fill="#1F7A56"/><circle cx="112.5" cy="53.6" r="4.5" fill="#1F7A56"/><path d="M135.5,197.6 l10,10 M145.5,197.6 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M176.0,69.7 l10,10 M186.0,69.7 l-10,10" stroke="#C0392B" stroke-width="2.2"/><circle cx="137.6" cy="84.8" r="4.5" fill="#1F7A56"/><circle cx="240.1" cy="156.1" r="4.5" fill="#1F7A56"/><circle cx="154.0" cy="69.3" r="4.5" fill="#1F7A56"/><path d="M250.1,102.0 l10,10 M260.1,102.0 l-10,10" stroke="#C0392B" stroke-width="2.2"/><circle cx="139.8" cy="112.1" r="4.5" fill="#1F7A56"/><path d="M238.0,21.7 l10,10 M248.0,21.7 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M46.7,147.1 l10,10 M56.7,147.1 l-10,10" stroke="#C0392B" stroke-width="2.2"/><circle cx="136.7" cy="92.3" r="4.5" fill="#1F7A56"/><circle cx="181.7" cy="162.2" r="4.5" fill="#1F7A56"/><path d="M250.2,31.0 l10,10 M260.2,31.0 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M147.0,65.4 l10,10 M157.0,65.4 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M301.0,123.1 l10,10 M311.0,123.1 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M123.80000000000001,149.5 l10,10 M133.8,149.5 l-10,10" stroke="#C0392B" stroke-width="2.2"/><circle cx="100.5" cy="87.2" r="4.5" fill="#1F7A56"/><path d="M74.7,121.9 l10,10 M84.7,121.9 l-10,10" stroke="#C0392B" stroke-width="2.2"/>
+      <text x="245" y="30" font-size="9.5" font-family="monospace" fill="#C0392B" font-weight="bold">&times; = Class 1</text>
+      <text x="245" y="44" font-size="9.5" font-family="monospace" fill="#1F7A56" font-weight="bold">&#9679; = Class 0</text>
+    </svg></div>
+          <div class="svg-caption">Notice the checkerboard: Class 1 (&times;) occupies the top-right and bottom-left quadrants, Class 0 occupies the other two. No single straight cut separates this.</div>
+        </div>
+
+        <div class="card screenshot">
+          <h3>The full depth sweep, train vs test</h3>
+          <table class="data-table">
+            <tr><th>max_depth</th><th>Train Accuracy</th><th>Test Accuracy</th><th>Verdict</th></tr>
+            <tr><td class="mono">1</td><td class="mono zero">56.2%</td><td class="mono zero">45.6%</td><td class="zero">Badly underfit &mdash; barely better than a coin flip, on BOTH train and test</td></tr>
+            <tr><td class="mono">3</td><td class="mono">67.6%</td><td class="mono">66.7%</td><td>Still underfitting, but improving</td></tr>
+            <tr><td class="mono hl">5</td><td class="mono">96.2%</td><td class="mono good">88.9% (peak)</td><td class="good">Sweet spot</td></tr>
+            <tr><td class="mono">8</td><td class="mono good">100%</td><td class="mono">85.6%</td><td class="zero">Overfitting &mdash; test accuracy already dropped from the peak</td></tr>
+            <tr><td class="mono">None (unlimited)</td><td class="mono good">100%</td><td class="mono zero">85.6%</td><td class="zero">Overfitting, same as depth=8 &mdash; extra depth bought nothing</td></tr>
+          </table>
+          <div class="svg-card" style="margin-top:12px;"><svg viewBox="0 0 340 240" width="100%" height="auto">
+      <line x1="40" y1="210" x2="310" y2="210" stroke="#999" stroke-width="1"/>
+      <line x1="40" y1="20" x2="40" y2="210" stroke="#999" stroke-width="1"/>
+      <text x="150" y="228" font-size="10" fill="#555" font-family="monospace">max_depth</text>
+      <text x="10" y="120" font-size="10" fill="#555" font-family="monospace" transform="rotate(-90 10 120)">Accuracy</text>
+      <path d="M40.0,103.2 L59.3,103.2 L78.6,81.6 L97.9,54.4 L117.1,27.2 L136.4,23.6 L155.7,22.7 L175.0,20.0 L213.6,20.0 L310.0,20.0" fill="none" stroke="#1D5FD1" stroke-width="2.3"/>
+      <path d="M40.0,123.4 L59.3,106.6 L78.6,83.3 L97.9,43.2 L117.1,41.1 L136.4,41.1 L155.7,43.2 L175.0,47.4 L213.6,47.4 L310.0,47.4" fill="none" stroke="#C0392B" stroke-width="2.6"/>
+      <line x1="117.1" y1="20" x2="117.1" y2="210" stroke="#f4a300" stroke-width="1.3" stroke-dasharray="4,3"/>
+      <text x="121.1" y="30" font-size="9" fill="#f4a300" font-family="monospace">best depth~5</text>
+      <text x="230" y="45" font-size="9.5" font-family="monospace" fill="#1D5FD1">train accuracy</text>
+      <text x="230" y="190" font-size="9.5" font-family="monospace" fill="#C0392B">test accuracy</text>
+      <text x="45" y="200" font-size="8.5" font-family="monospace" fill="#888">underfit zone</text>
+      <text x="255" y="70" font-size="8.5" font-family="monospace" fill="#888">overfit zone</text>
+    </svg></div>
+          <div class="svg-caption">The classic U-shape: both lines rise together while underfitting, then test accuracy peaks and falls while train keeps climbing &mdash; that gap IS overfitting.</div>
+          <div class="callout bad"><b>Both failure modes are now unmistakable:</b> at depth=1, the tree is bad on data it HAS seen and data it HASN'T (56.2% / 45.6%) &mdash; it simply doesn't have enough splits to represent a checkerboard. At depth=8+, it's perfect on data it has seen (100%) but measurably worse on new data (85.6%) than the depth=5 tree was &mdash; it has started memorizing noise instead of the true pattern.</div>
+        </div>
+      </section>
+
+      <section class="block" id="hyperparams">
+        <h2>Other <span class="underline">Hyperparameters</span></h2>
+        <div class="card screenshot">
+          <table class="data-table">
+            <tr><th>Hyperparameter</th><th>What it controls</th><th>Higher value &rarr;</th><th>Lower value &rarr;</th></tr>
+            <tr><td><code>max_depth</code></td><td>Max levels the tree can grow</td><td class="zero">More overfitting risk</td><td class="zero">More underfitting risk</td></tr>
+            <tr><td><code>min_samples_split</code></td><td>Min points needed to split a node further</td><td class="good">Less overfitting</td><td class="zero">More overfitting</td></tr>
+            <tr><td><code>min_samples_leaf</code></td><td>Min points a leaf must contain</td><td class="good">Less overfitting</td><td class="zero">More overfitting</td></tr>
+            <tr><td><code>max_leaf_nodes</code></td><td>Total leaf count allowed</td><td class="zero">More overfitting risk</td><td class="good">Less overfitting risk</td></tr>
+            <tr><td><code>max_features</code></td><td>How many features considered per split</td><td class="zero">More overfitting risk</td><td class="good">Less overfitting risk, more randomness</td></tr>
+            <tr><td><code>criterion</code></td><td>gini (default) or entropy</td><td colspan="2" class="left">Not an overfitting knob &mdash; almost always agree on the best split</td></tr>
+          </table>
+          <div class="callout purple"><b>Pattern to remember:</b> <code>max_*</code> parameters are ceilings &mdash; raising them gives MORE room to overfit. <code>min_*</code> parameters are floors &mdash; raising them makes it HARDER to keep splitting, fighting overfitting. Easy to mix up which direction is "safe" across these two groups.</div>
+          <div class="callout info">Tune <code>max_depth</code> (or any of these) exactly like K in KNN: sweep several values, measure performance on a <b>validation</b> set at each, pick the value at the peak &mdash; never the training set, never a guess.</div>
+        </div>
+      </section>
+
+      <section class="block" id="regression">
+        <div class="section-eyebrow">Regression Trees</div>
+        <h2>MSE Instead of <span class="underline">Entropy / Gini</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Predicting continuous marks (not Pass/Fail) from StudyHours. Entropy/Gini need class PROBABILITIES &mdash; there are none for a continuous target. Swap in <b>Mean Squared Error</b>, and swap "majority vote" for "mean" as the prediction.</p>
+          <div class="formula center">MSE(node) = (1/n) &Sigma; (y<sub>i</sub> &minus; &#563;)&sup2; &nbsp;&nbsp; where &#563; = mean of the node's targets</div>
+        </div>
+        <div class="card screenshot">
+          <h3>8 students: StudyHours &rarr; Marks</h3>
+          <table class="data-table">
+            <tr><th>StudyHours</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th></tr>
+            <tr><td class="left">Marks</td><td class="mono">35</td><td class="mono">40</td><td class="mono">45</td><td class="mono">55</td><td class="mono">60</td><td class="mono">75</td><td class="mono">80</td><td class="mono">85</td></tr>
+          </table>
+          <div class="formula center">Parent MSE = 315.234 &nbsp;&nbsp; (parent mean = 59.375)</div>
+          <table class="data-table" style="margin-top:10px;">
+            <tr><th>Threshold</th><th>Left mean</th><th>Right mean</th><th>Weighted MSE</th><th>MSE Reduction</th></tr>
+            <tr><td class="mono">2.5</td><td class="mono">37.5</td><td class="mono">66.67</td><td class="mono">155.729</td><td class="mono">159.505</td></tr>
+            <tr><td class="mono">4.5</td><td class="mono">43.75</td><td class="mono">75.0</td><td class="mono">71.094</td><td class="mono">244.141</td></tr>
+            <tr><td class="mono num-hl">5.5</td><td class="mono">47.0</td><td class="mono">80.0</td><td class="mono good">60.000</td><td class="mono good">255.234 (best!)</td></tr>
+            <tr><td class="mono">6.5</td><td class="mono">51.67</td><td class="mono">82.5</td><td class="mono">136.979</td><td class="mono">178.255</td></tr>
+          </table>
+          <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);"><b>Threshold=5.5 wins</b>, cutting MSE from 315.2 down to 60.0. The tree splits: <code>StudyHours&lt;5.5 &rarr; predict 47.0</code>, <code>StudyHours&ge;5.5 &rarr; predict 80.0</code>. Exactly the same recipe as classification &mdash; sort, try every threshold, keep the best &mdash; just measuring "reduction in MSE" instead of "reduction in entropy."</div>
+          <h3 style="margin-top:16px;">Seeing the split as a prediction line</h3>
+          <div class="svg-card">
+            <svg viewBox="0 0 340 240" width="100%" height="auto">
+              <line x1="40" y1="210" x2="310" y2="210" stroke="#999" stroke-width="1"/>
+              <line x1="40" y1="20" x2="40" y2="210" stroke="#999" stroke-width="1"/>
+              <text x="150" y="228" font-size="10" fill="#555" font-family="monospace">StudyHours</text>
+              <text x="10" y="120" font-size="10" fill="#555" font-family="monospace" transform="rotate(-90 10 120)">Marks</text>
+              <line x1="117.0" y1="20" x2="117.0" y2="210" stroke="#888" stroke-width="1" stroke-dasharray="2,3"/>
+              <text x="5" y="121" font-size="8" fill="#888" font-family="monospace" transform="rotate(-90 5 121)">parent mean=59.4</text>
+              <line x1="205.0" y1="20" x2="205.0" y2="210" stroke="#f4a300" stroke-width="1.6" stroke-dasharray="5,3"/>
+              <text x="208" y="30" font-size="9" fill="#a97400" font-family="monospace">threshold=5.5</text>
+              <line x1="40" y1="156.2" x2="205.0" y2="156.2" stroke="#1D5FD1" stroke-width="2.6"/>
+              <text x="45" y="150" font-size="9" fill="#1D5FD1" font-family="monospace">left mean = 47.0</text>
+              <line x1="205.0" y1="51.7" x2="310" y2="51.7" stroke="#C0392B" stroke-width="2.6"/>
+              <text x="215" y="46" font-size="9" fill="#C0392B" font-family="monospace">right mean = 80.0</text>
+              <circle cx="70.0" cy="194.2" r="5" fill="#1F7A56"/>
+              <circle cx="100.0" cy="178.3" r="5" fill="#1F7A56"/>
+              <circle cx="130.0" cy="162.5" r="5" fill="#1F7A56"/>
+              <circle cx="160.0" cy="130.8" r="5" fill="#1F7A56"/>
+              <circle cx="190.0" cy="115.0" r="5" fill="#1F7A56"/>
+              <circle cx="220.0" cy="67.5" r="5" fill="#1F7A56"/>
+              <circle cx="250.0" cy="51.7" r="5" fill="#1F7A56"/>
+              <circle cx="280.0" cy="35.8" r="5" fill="#1F7A56"/>
+            </svg>
+          </div>
+          <div class="svg-caption">Green dots = the 8 real (StudyHours, Marks) points. The blue and red horizontal segments ARE the tree's predictions &mdash; a flat line at 47.0 for anyone below the threshold, jumping to a flat line at 80.0 above it. A regression tree's prediction is always a staircase like this, never a smooth slope.</div>
+        </div>
+      </section>
+
+      <section class="block" id="class-vs-reg">
+        <h2>Classification vs Regression, <span class="underline">Side by Side</span></h2>
+        <div class="card screenshot">
+          <table class="data-table">
+            <tr><th></th><th>Classification Tree</th><th>Regression Tree</th></tr>
+            <tr><td class="left">Impurity measure</td><td>Entropy or Gini</td><td>MSE (variance)</td></tr>
+            <tr><td class="left">"Improvement" metric</td><td>Information Gain (entropy/Gini reduction)</td><td>MSE reduction</td></tr>
+            <tr><td class="left">Leaf prediction</td><td>Majority class (vote)</td><td>Mean of target values</td></tr>
+            <tr><td class="left">Threshold search (numerical)</td><td>Same: sort, try every midpoint</td><td>Same: sort, try every midpoint</td></tr>
+            <tr><td class="left">Stopping / hyperparameters</td><td>max_depth, min_samples_leaf, etc.</td><td>Same parameters, same overfitting risk</td></tr>
+            <tr><td class="left">Overfitting signature</td><td>Train accuracy&uarr;, test accuracy&darr;</td><td>Train MSE&darr;, test MSE&uarr;</td></tr>
+          </table>
+          <div class="callout purple">Same tree-building algorithm end to end &mdash; only the "how do we measure improvement" and "what does a leaf output" steps change.</div>
+        </div>
+      </section>
+
+      <section class="block" id="nextclass">
+        <div class="section-eyebrow">Wrapping up</div>
+        <h2>Coming <span class="underline">Next Class</span></h2>
+        <div class="card">
+          <div class="pipeline">
+            <div class="pipe-step"><div class="n">01</div><div class="t">Feature Importance</div><div class="d">how do we find which features actually mattered?</div></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="block" id="summary">
+        <h2>Summary</h2>
+        <div class="card">
+          <table class="data-table">
+            <tr><th>Topic</th><th>One-line takeaway</th></tr>
+            <tr><td>Why Decision Trees</td><td>Logistic Regression can't handle non-linear regions; KNN can't predict fast at scale</td></tr>
+            <tr><td>Building a tree</td><td>Learn feature + condition to split, automatically, at every node</td></tr>
+            <tr><td>Entropy</td><td>0 when pure, max when 50/50; measures impurity, not which class wins</td></tr>
+            <tr><td>Gini</td><td>Same idea as entropy, no logarithms &mdash; sklearn's default</td></tr>
+            <tr><td>Information Gain</td><td>Parent impurity minus weighted child impurity &mdash; pick the feature/threshold that maximizes it</td></tr>
+            <tr><td>Numerical features</td><td>Sort, try every midpoint threshold &mdash; expensive with many features and many samples</td></tr>
+            <tr><td>Overfitting</td><td>Unlimited depth memorizes noise: train accuracy up, test accuracy down</td></tr>
+            <tr><td>Hyperparameters</td><td>max_* raises the overfitting ceiling; min_* raises the floor against it</td></tr>
+            <tr><td>Regression trees</td><td>MSE replaces entropy/Gini; leaf predicts the mean, not a majority vote</td></tr>
+          </table>
+        </div>
+      </section>
+
+      <div class="footnote-strip">
+        <span class="hand">&mdash; end of class &mdash;</span>
+        Decision Trees &middot; 03 August 2026
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+(function(){
+  const defaults = {
+    2: [6, 4],
+    3: [5, 3, 2],
+    4: [4, 3, 2, 1]
+  };
+  const classColors = ["#1D5FD1", "#C0392B", "#1F7A56", "#f4a300"];
+
+  function getCounts(){
+    const n = parseInt(document.getElementById('numClasses').value);
+    const counts = [];
+    for(let i=0;i<n;i++){
+      const el = document.getElementById('classCount'+i);
+      counts.push(el ? Math.max(0, parseInt(el.value)||0) : defaults[n][i]);
+    }
+    return counts;
+  }
+
+  function buildClassInputs(){
+    const n = parseInt(document.getElementById('numClasses').value);
+    const container = document.getElementById('classInputs');
+    container.innerHTML = '';
+    for(let i=0;i<n;i++){
+      const div = document.createElement('div');
+      const val = defaults[n][i];
+      div.innerHTML = `<label style="color:${classColors[i]}">Class ${i+1} count</label>
+        <input type="number" id="classCount${i}" min="0" max="50" value="${val}" oninput="window.updatePlayground()">`;
+      container.appendChild(div);
+    }
+  }
+
+  function entropyOf(props){
+    let h = 0;
+    for(const p of props){ if(p>0) h -= p*Math.log2(p); }
+    return h;
+  }
+  function giniOf(props){
+    let g = 1;
+    for(const p of props){ g -= p*p; }
+    return g;
+  }
+
+  window.updatePlayground = function(){
+    const counts = getCounts();
+    const total = counts.reduce((a,b)=>a+b, 0);
+    const metric = document.getElementById('metricSelect').value;
+    const props = counts.map(c => total>0 ? c/total : 0);
+
+    const value = metric === 'entropy' ? entropyOf(props) : giniOf(props);
+    const n = counts.length;
+    const maxPossible = metric === 'entropy' ? Math.log2(n) : (n-1)/n;
+
+    document.getElementById('statValue').textContent = value.toFixed(4);
+    document.getElementById('statTotal').textContent = total;
+    document.getElementById('statMax').textContent = maxPossible.toFixed(4);
+
+    // bar chart
+    const barW = 260, barH = 34;
+    let segX = 0;
+    let segs = '';
+    for(let i=0;i<n;i++){
+      const w = props[i]*barW;
+      segs += `<rect x="${segX.toFixed(1)}" y="0" width="${w.toFixed(1)}" height="${barH}" fill="${classColors[i]}"/>`;
+      if(w > 24){
+        segs += `<text x="${(segX+w/2).toFixed(1)}" y="22" font-size="11" font-family="monospace" text-anchor="middle" fill="white" font-weight="bold">${(props[i]*100).toFixed(1)}%</text>`;
+      }
+      segX += w;
+    }
+    document.getElementById('barChart').innerHTML = `
+      <svg viewBox="0 0 300 60" width="100%" height="auto">
+        <g transform="translate(20,10)">
+          <rect x="0" y="0" width="${barW}" height="${barH}" rx="6" fill="#eee"/>
+          <clipPath id="barClip"><rect x="0" y="0" width="${barW}" height="${barH}" rx="6"/></clipPath>
+          <g clip-path="url(#barClip)">${segs}</g>
+        </g>
+      </svg>`;
+
+    // formula substitution
+    let formulaHtml = '';
+    if(metric === 'entropy'){
+      const terms = counts.map((c,i) => {
+        const p = props[i];
+        return p>0 ? `${p.toFixed(3)}&middot;log<sub>2</sub>(${p.toFixed(3)})` : `0`;
+      }).join(' + ');
+      formulaHtml = `H = &minus;( ${terms} ) = <span class="k">${value.toFixed(4)}</span>`;
+    } else {
+      const terms = props.map(p => `${p.toFixed(3)}<sup>2</sup>`).join(' + ');
+      formulaHtml = `Gini = 1 &minus; ( ${terms} ) = <span class="k">${value.toFixed(4)}</span>`;
+    }
+    document.getElementById('formulaDisplay').innerHTML = formulaHtml;
+  };
+
+  document.getElementById('numClasses').addEventListener('change', function(){
+    buildClassInputs();
+    window.updatePlayground();
+  });
+  document.getElementById('metricSelect').addEventListener('change', window.updatePlayground);
+
+  buildClassInputs();
+  window.updatePlayground();
+})();
+</script>
+
+</body>
+</html>

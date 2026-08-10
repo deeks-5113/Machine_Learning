@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>KNN II — Implementations — Class 12 Notes</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Patrick+Hand&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --board:#0c1014; --card:#151b21; --card-line:#222b32;
+    --chalk:#e9eef2; --chalk-dim:#9fb0bb;
+    --cyan:#5fd8e0; --cyan-dim:#2c5a5e;
+    --pink:#f17fb0; --pink-dim:#5a2f42;
+    --yellow:#f4cf5e; --green:#8fe3a6; --green-dim:#2f4f3a;
+    --purple:#b39ddb; --purple-dim:#4a3f6b;
+    --white-marker:#f5f5f0; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{ background:var(--board); color:var(--chalk); font-family:'Inter',sans-serif; line-height:1.55; -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width:1180px; margin:0 auto; padding:0 24px 120px; }
+  h1,h2,h3,.hand{ font-family:'Caveat',cursive; font-weight:700; }
+  .hero{ padding:56px 0 30px; text-align:center; }
+  .chip{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--cyan); border:1px solid var(--cyan-dim); background:rgba(95,216,224,0.06); padding:6px 14px; border-radius:999px; margin-bottom:16px; }
+  .hero h1{ font-size:clamp(28px,5.5vw,50px); color:var(--white-marker); margin:0 0 8px; }
+  .hero h1 span{color:var(--pink);}
+  .hero p{ font-family:'Patrick Hand',cursive; color:var(--chalk-dim); font-size:17px; max-width:780px; margin:0 auto; }
+  .layout{ display:grid; grid-template-columns:260px 1fr; gap:36px; align-items:start; }
+  nav.toc{ position:sticky; top:24px; background:var(--card); border:1px solid var(--card-line); border-radius:var(--radius); padding:18px 16px; font-family:'JetBrains Mono',monospace; font-size:11px; max-height:calc(100vh - 48px); overflow-y:auto; }
+  nav.toc .toc-title{ color:var(--chalk-dim); text-transform:uppercase; letter-spacing:1.2px; font-size:10px; margin-bottom:8px; margin-top:14px; }
+  nav.toc .toc-title:first-child{margin-top:0;}
+  nav.toc a{ display:block; color:var(--chalk-dim); text-decoration:none; padding:5px 8px; border-radius:8px; margin-bottom:1px; }
+  nav.toc a:hover{color:var(--chalk); background:rgba(255,255,255,0.04);}
+  main{min-width:0;}
+  section.block{ margin-bottom:50px; scroll-margin-top:24px; }
+  .section-eyebrow{ font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--pink); margin-bottom:6px; }
+  section.block h2{ font-size:30px; color:var(--white-marker); margin:0 0 12px; }
+  section.block h2 .underline{ text-decoration:underline; text-decoration-color:var(--cyan); text-decoration-thickness:3px; }
+  p.lead{ font-size:14.5px; color:#cdd8de; max-width:820px; }
+  .card{ background:var(--card); border:1px solid var(--card-line); border-radius:var(--radius); padding:20px 22px; margin:14px 0; }
+  .card h3{ font-family:'Inter',sans-serif; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.7px; color:var(--cyan); margin:0 0 10px; }
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  .grid-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;}
+  @media (max-width:900px){ .layout{grid-template-columns:1fr;} nav.toc{position:relative; top:0; margin-bottom:20px; max-height:none;} .grid-2,.grid-3{grid-template-columns:1fr;} }
+  table.data-table{ width:100%; border-collapse:collapse; font-family:'JetBrains Mono',monospace; font-size:12px; }
+  table.data-table th{ text-align:left; color:var(--chalk-dim); font-weight:500; padding:6px 9px; border-bottom:1px solid var(--card-line); text-transform:uppercase; font-size:9.5px; letter-spacing:0.4px; }
+  table.data-table td{ padding:6px 9px; border-bottom:1px solid rgba(255,255,255,0.04); }
+  table.data-table td.hl{color:var(--yellow); font-weight:700;}
+  table.data-table td.zero{color:var(--pink); font-weight:700; background:rgba(241,127,176,0.08);}
+  table.data-table td.good{color:var(--green); font-weight:700; background:rgba(143,227,166,0.08);}
+  blockquote.story{ font-family:'Patrick Hand',cursive; font-size:16.5px; color:#dbe6ec; border-left:3px solid var(--yellow); padding:6px 18px; margin:14px 0; background:rgba(244,207,94,0.04); border-radius:0 10px 10px 0; }
+  .pipeline{ display:flex; align-items:center; gap:0; overflow-x:auto; padding:10px 0 18px; }
+  .pipe-step{ flex:0 0 auto; min-width:115px; background:var(--card); border:1px solid var(--card-line); border-radius:12px; padding:12px 14px; text-align:center; }
+  .pipe-step .n{ font-family:'JetBrains Mono',monospace; color:var(--cyan); font-size:10.5px; margin-bottom:5px; }
+  .pipe-step .t{font-weight:700; font-size:12px; color:var(--white-marker);}
+  .pipe-step .d{font-size:9.5px; color:var(--chalk-dim); margin-top:3px;}
+  .pipe-arrow{ flex:0 0 auto; width:20px; text-align:center; color:var(--pink); font-size:16px; }
+  .formula{ font-family:'JetBrains Mono',monospace; background:#0a0d10; border:1px solid var(--card-line); border-radius:10px; padding:14px 20px; margin:12px 0; font-size:14px; color:var(--white-marker); overflow-x:auto; }
+  .formula.center{text-align:center;}
+  .formula .k{color:var(--yellow);} .formula .r{color:var(--cyan);} .formula .l{color:var(--pink);}
+  .formula-note{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--chalk-dim); margin-top:6px; }
+  .callout{ background:rgba(143,227,166,0.08); border:1px solid var(--green-dim); border-radius:10px; padding:12px 16px; color:var(--green); font-size:13px; font-family:'JetBrains Mono',monospace; margin:12px 0; line-height:1.6; }
+  .callout.warn{ background:rgba(244,207,94,0.08); border-color:#5a4f2f; color:var(--yellow); }
+  .callout.bad{ background:rgba(241,127,176,0.08); border-color:var(--pink-dim); color:var(--pink); }
+  .callout.info{ background:rgba(95,216,224,0.08); border-color:var(--cyan-dim); color:var(--cyan); }
+  .callout.purple{ background:rgba(179,157,219,0.08); border-color:var(--purple-dim); color:var(--purple); }
+  .step-card{ background:rgba(0,0,0,0.22); border-radius:10px; padding:14px 18px; margin:10px 0; border:1px solid var(--card-line); }
+  .step-tag{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--board); background:var(--cyan); padding:2px 8px; border-radius:6px; margin-right:8px; font-weight:700; }
+  .step-tag.p{background:var(--purple);}
+  .step-tag.y{background:var(--yellow);}
+  .step-tag.g{background:var(--green);}
+  .analogy-row{ display:flex; gap:14px; margin-top:12px; flex-wrap:wrap; }
+  .analogy{ flex:1; min-width:150px; background:var(--card); border:1px solid var(--card-line); border-radius:10px; padding:14px 16px; text-align:center; }
+  .analogy h4{font-size:14px; margin:6px 0 4px; color:var(--white-marker);}
+  .analogy p{font-size:11.5px; color:var(--chalk-dim); margin:0;}
+  .svg-card{ background:#fff; border:1px solid var(--card-line); border-radius:12px; padding:12px; }
+  .svg-caption{ text-align:center; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:#555; margin-top:8px; }
+  .footnote-strip{ margin-top:60px; border-top:1px dashed var(--card-line); padding-top:22px; text-align:center; color:var(--chalk-dim); font-family:'JetBrains Mono',monospace; font-size:12px; }
+  .footnote-strip .hand{color:var(--cyan); font-size:22px; display:block; margin-bottom:6px;}
+  .cm-table{ border-collapse:collapse; margin:14px auto; font-family:'JetBrains Mono',monospace; font-size:12.5px; }
+  .cm-table td, .cm-table th{ border:1px solid var(--card-line); padding:12px 18px; text-align:center; }
+  .cm-table .tp,.cm-table .tn{background:rgba(143,227,166,0.15); color:var(--green); font-weight:700;}
+  .cm-table .fp,.cm-table .fn{background:rgba(241,127,176,0.15); color:var(--pink); font-weight:700;}
+  .cm-table .lbl{background:#0a0d10; color:var(--chalk-dim); font-weight:700; font-size:10.5px;}
+  .matrix{ font-family:'JetBrains Mono',monospace; background:#0a0d10; border:1px solid var(--card-line); border-radius:10px; padding:16px 22px; display:inline-block; }
+
+  pre.code-block{ font-family:'JetBrains Mono',monospace; font-size:12.5px; line-height:1.55; background:#0a0d10; border:1px solid var(--card-line); border-radius:10px; padding:16px 18px; margin:12px 0; overflow-x:auto; color:#d8e2e8; white-space:pre; }
+  pre.code-block .kw{color:var(--pink);} pre.code-block .fn{color:var(--cyan);} pre.code-block .cm{color:var(--chalk-dim); font-style:italic;} pre.code-block .st{color:var(--yellow);}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="chip">31-07-2026 &middot; Module: Supervised Learning</div>
+    <h1>KNN II <span>&mdash; Implementations</span></h1>
+    <div class="chip" style="background:none; border-color:var(--pink-dim); color:var(--pink); margin-top:0;">Class 12 &middot; Post-class notes &middot; Complexity, PCA, K-selection, ties, class imbalance</div>
+  </div>
+
+  <div class="layout">
+    <nav class="toc" id="toc">
+      <div class="toc-title">Recap</div>
+      <a href="#recap">Where Class 11 left off</a>
+      <div class="toc-title">Complexity</div>
+      <a href="#complexity">Time complexity of a single KNN query</a>
+      <div class="toc-title">Code walkthrough</div>
+      <a href="#dataset">The dataset &mdash; what are we working with?</a>
+      <a href="#scaling">Did we actually scale? A real bug, live</a>
+      <div class="toc-title">Dimensionality Reduction</div>
+      <a href="#pca-intro">PCA in one paragraph</a>
+      <a href="#pca-variance">What "explained variance" means, with real numbers</a>
+      <a href="#pca-knn">Does PCA even make sense before KNN?</a>
+      <div class="toc-title">Choosing K</div>
+      <a href="#cv-k">Finding K by cross-validation</a>
+      <div class="toc-title">Multiclass KNN</div>
+      <a href="#ties">Odd vs even K, and what happens on a tie</a>
+      <a href="#custom-tie">Two custom tie-breaking implementations</a>
+      <div class="toc-title">Class Imbalance</div>
+      <a href="#imbalance-problem">The problem statement</a>
+      <a href="#two-approaches">Two approaches: cost-sensitive vs sampling</a>
+      <a href="#class-weight">Logistic Regression: class_weight, set two ways</a>
+      <a href="#balanced-formula">class_weight='balanced' &mdash; the exact formula</a>
+      <a href="#multiclass-weight">Class weights for multiclass</a>
+      <a href="#loss-update">How the loss function actually changes</a>
+      <div class="toc-title">Sampling Techniques</div>
+      <a href="#undersampling">Undersampling &mdash; mechanism &amp; math</a>
+      <a href="#oversampling">Oversampling &mdash; mechanism &amp; math</a>
+      <a href="#smote">SMOTE &mdash; mechanism, math, and a real synthetic point</a>
+      <a href="#compare-all">All techniques compared, side by side</a>
+      <div class="toc-title">Wrap-up</div>
+      <a href="#summary">Class 12 summary</a>
+    </nav>
+
+    <main>
+
+      <section class="block" id="recap">
+        <div class="section-eyebrow">Where we left off</div>
+        <h2>Recap &mdash; <span class="underline">Class 11 in one paragraph</span></h2>
+        <p class="lead">KNN predicts by finding the K closest training points to a query and averaging (regression) or voting (classification). No training step exists in the usual sense &mdash; <code>.fit()</code> just stores the data. Small K overfits to individual noisy points; large K collapses to the global mean/majority. Weighted KNN (weight = 1/distance) makes plain KNN more resistant to noise, but not immune. Today we get hands-on: how expensive is a single prediction, does our code actually scale correctly, does dimensionality reduction help or hurt KNN, how do we pick K properly, what happens with 3+ classes, and how do we handle the elephant in the room &mdash; imbalanced data.</p>
+      </section>
+
+      <section class="block" id="complexity">
+        <div class="section-eyebrow">Complexity</div>
+        <h2>Time Complexity of <span class="underline">a Single KNN Query</span></h2>
+        <p class="lead">Let's build this up step by step, exactly as it happens inside <code>.predict()</code> for one query point.</p>
+        <div class="card">
+          <h3>Step 1 &mdash; Compute distance to every training point</h3>
+          <div class="step-card"><span class="step-tag">1</span> Say we have <b>n</b> training points, each with <b>d</b> features.</div>
+          <div class="step-card"><span class="step-tag p">2</span> Computing ONE distance (e.g. Euclidean) between the query and one training point costs <b>O(d)</b> &mdash; subtract, square, sum across all d features.</div>
+          <div class="step-card"><span class="step-tag y">3</span> We must do this against <b>every</b> one of the n training points.</div>
+          <div class="formula center">Total cost of Step 1 = n &times; O(d) = <span class="k">O(n&middot;d)</span></div>
+        </div>
+        <div class="card">
+          <h3>Step 2 &mdash; Sort (or partially sort) to find the K nearest</h3>
+          <p class="lead" style="margin-top:0;">We don't need a full sort of all n distances &mdash; we only need the K smallest. A full sort costs O(n log n); a partial selection (like a heap of size K) costs only O(n log K).</p>
+          <div class="formula center">Total cost of Step 2 = <span class="k">O(n&middot;log K)</span></div>
+        </div>
+        <div class="card">
+          <h3>Step 3 &mdash; Combine (mean or majority vote)</h3>
+          <p class="lead" style="margin-top:0;">Averaging or counting labels across K neighbors is just O(K) &mdash; negligible next to the other two steps.</p>
+        </div>
+        <div class="card screenshot">
+          <div class="formula center">Total time for ONE query = <span class="k">O(n&middot;d) + O(n&middot;log K) + O(K)</span> &nbsp;&asymp;&nbsp; <span class="k">O(n&middot;d)</span> for realistic K, d</div>
+          <div class="callout warn"><b>The dominant term is n&middot;d &mdash; and it scales with EVERY new prediction.</b> Predict on 1,000 new customers against our churn training set (n=1,999 rows, d=5 features) &rarr; 1,000 &times; 1,999 &times; 5 &asymp; <b>10 million</b> distance computations, just for that one batch. This is the direct, concrete reason KNN is called a "lazy learner" &mdash; all the work that other models do once at training time, KNN repeats fully at every single prediction.</div>
+        </div>
+        <div class="callout info"><b>Contrast with Logistic Regression:</b> once trained, predicting one point costs O(d) &mdash; just a dot product with the learned weight vector. KNN's O(n&middot;d) vs Logistic Regression's O(d) is the entire reason KNN struggles in production when n grows into the millions.</div>
+      </section>
+
+      <section class="block" id="dataset">
+        <div class="section-eyebrow">Code walkthrough</div>
+        <h2>The Dataset &mdash; <span class="underline">what are we actually working with?</span></h2>
+        <p class="lead">The notebook uses the Wholesale Customers dataset &mdash; 440 clients of a distributor, with their annual spend across product categories, plus which sales <b>Channel</b> they belong to (our binary target).</p>
+        <div class="card">
+          <table class="data-table">
+            <tr><th>Column</th><th>What it is</th></tr>
+            <tr><td>Region</td><td>Categorical region code (1, 2, or 3)</td></tr>
+            <tr><td>Fresh, Milk, Grocery, Frozen, Detergents_Paper, Delicassen</td><td>Annual spend (in currency units) on each product category &mdash; these are the actual features</td></tr>
+            <tr><td class="hl">class (Channel)</td><td>Target: 1 = Horeca (hotel/restaurant/cafe), 2 = Retail</td></tr>
+          </table>
+          <div class="callout info">440 rows, 7 raw features, binary target. Small enough to reason about by hand, real enough that scaling genuinely matters &mdash; a good teaching dataset.</div>
+        </div>
+      </section>
+
+      <section class="block" id="scaling">
+        <h2>Quick Check: <span class="underline">Do We Need to Scale Here?</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Quick habit whenever you read someone else's KNN code: check whether the fitted model is actually receiving the scaled version of the data, not just whether a scaler was created somewhere in the notebook.</p>
+          <table class="data-table">
+            <tr><th>Feature</th><th>Standard deviation (raw)</th></tr>
+            <tr><td>Region</td><td class="mono zero">0.81</td></tr>
+            <tr><td>Fresh</td><td class="mono">11,662</td></tr>
+          </table>
+          <div class="callout info">Fresh's spread is roughly 14,000&times; larger than Region's, so scaling makes a real difference here: test accuracy goes from <b>87.27% (no scaling)</b> to <b>88.18% (scaled)</b>. Small on this dataset, but the direction is always the same &mdash; scale your features before computing distances, unless everything is already in comparable units.</div>
+        </div>
+      </section>
+
+      <section class="block" id="pca-intro">
+        <div class="section-eyebrow">Dimensionality Reduction</div>
+        <h2>PCA, <span class="underline">in one paragraph</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Principal Component Analysis is a <b>dimensionality reduction technique</b>. In plain terms: it takes your original features (here, 7 spend/region columns) and builds a small number of brand-new "super-features" (called components &mdash; f1, f2, ...) that are just weighted combinations of the originals, chosen so the FIRST new feature captures as much of the data's spread as mathematically possible, the second captures as much of what's left, and so on. We keep only the first couple of components and drop the rest &mdash; compressing 7 numbers per customer down to 2, while trying to lose as little information as possible.</p>
+          <div class="callout info">We're only using PCA here as a tool to get 2D data we can plot and feed into KNN. The full math behind it (eigenvectors, eigenvalues, how the components are actually computed) is its own topic &mdash; we'll cover that properly, in depth, in the <b>Unsupervised Learning module</b>. For today, treat PCA as: "a technique that compresses correlated features into fewer, information-preserving axes."</div>
+        </div>
+      </section>
+
+      <section class="block" id="pca-variance">
+        <h2>What "Explained Variance" <span class="underline">Actually Means</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">"Explained variance ratio" is simply: <b>what fraction of the data's total spread does this one new component capture, on its own?</b> Higher = that component alone tells you more about how customers actually differ from each other.</p>
+          <h3>What we actually computed on our data</h3>
+          <table class="data-table">
+            <tr><th>Component</th><th>Explained variance</th><th>Mostly reflects</th></tr>
+            <tr><td class="hl">f1 (PC1)</td><td class="mono">45.96%</td><td class="left"><b>Fresh</b> spend</td></tr>
+            <tr><td class="hl">f2 (PC2)</td><td class="mono">40.52%</td><td class="left"><b>Grocery</b> and <b>Milk</b> spend, combined</td></tr>
+            <tr><td>Together</td><td class="mono good">86.5%</td><td class="left">Most of the data's spread, in just 2 numbers instead of 7</td></tr>
+          </table>
+          <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);">86.5% is a good sign &mdash; it means going from 7 features down to just 2 (f1, f2) still keeps most of what actually distinguishes one customer from another. That's the entire justification for reducing to 2D here: we're not losing much, and now we can plot it.</div>
+        </div>
+      </section>
+
+      <section class="block" id="pca-knn">
+        <h2>Does PCA Even <span class="underline">Make Sense Before KNN?</span></h2>
+        <div class="callout purple"><b>The question worth asking out loud:</b> KNN is entirely about distances. If PCA changes the coordinates, does "closer in the reduced 2D space" still mean "closer in the original 7D space"? If not, why are we doing this at all?</div>
+        <div class="card">
+          <h3>The honest answer: approximately yes, and that's the whole point</h3>
+          <p class="lead" style="margin-top:0;">PCA doesn't invent new information &mdash; every component is a combination of the real features, chosen specifically to preserve as much of the true spread (and therefore true relative distances) as possible in the components it keeps. Two customers who are genuinely similar across all 7 original features will almost always still look similar in the top 2 PCA components, <i>because those 2 dimensions were chosen to capture most of where the real variation lives.</i> It's not an exact guarantee &mdash; a little distance information always lives in the components we dropped &mdash; but with 86.5% variance retained here, it's a close approximation, not a coincidence.</p>
+        </div>
+        <div class="card">
+          <h3>So what does doing this actually signify / give us?</h3>
+          <table class="data-table">
+            <tr><th>Benefit</th><th>Why it matters for KNN specifically</th></tr>
+            <tr><td>Fewer dimensions to compute distance over</td><td>Directly cuts the "d" in our O(n&middot;d) complexity from Step 1</td></tr>
+            <tr><td>Mitigates the curse of dimensionality</td><td>Fewer, more informative dimensions keep "nearest" meaningfully different from "farthest"</td></tr>
+            <tr><td>You can actually plot and visually sanity-check the data</td><td>2D scatter plots are something a human can look at and reason about directly</td></tr>
+            <tr><td>Merges correlated redundancy between features</td><td>Several of our spend categories move together &mdash; PCA blends that redundancy instead of the distance double-counting it</td></tr>
+          </table>
+          <div class="callout info">Should you always do PCA before KNN? Not automatically &mdash; only when it genuinely helps (a real curse-of-dimensionality problem, or a real need to visualize). Check the explained variance you're keeping, and compare KNN's actual validation performance with and without PCA before trusting it on a new dataset.</div>
+        </div>
+      </section>
+
+      <section class="block" id="cv-k">
+        <div class="section-eyebrow">Choosing K</div>
+        <h2>Finding K <span class="underline">by Cross-Validation</span></h2>
+        <p class="lead">Exactly like Class 11 taught in principle &mdash; here it is on our real churn data. Sweep odd K from 1 to 49, measure validation error at each, plot it.</p>
+        <div class="card">
+          <div class="svg-card">
+            <svg viewBox="0 0 340 240" width="100%" height="auto">
+      <line x1="40" y1="210" x2="310" y2="210" stroke="#999" stroke-width="1"/>
+      <line x1="40" y1="20" x2="40" y2="210" stroke="#999" stroke-width="1"/>
+      <text x="150" y="228" font-size="10" fill="#555" font-family="monospace">K value</text>
+      <text x="10" y="120" font-size="10" fill="#555" font-family="monospace" transform="rotate(-90 10 120)">Validation error</text>
+      <path d="M40.0,43.6 L51.2,151.3 L62.5,151.3 L73.8,138.6 L85.0,100.6 L96.2,100.6 L107.5,107.0 L118.8,119.6 L130.0,145.0 L141.2,145.0 L152.5,126.0 L163.8,126.0 L175.0,126.0 L186.2,119.6 L197.5,126.0 L208.8,126.0 L220.0,126.0 L231.2,119.6 L242.5,126.0 L253.8,126.0 L265.0,126.0 L276.2,126.0 L287.5,126.0 L298.8,126.0 L310.0,126.0" fill="none" stroke="#C0392B" stroke-width="2" stroke-dasharray="4,2"/>
+      <circle cx="40.0" cy="43.6" r="3" fill="#1D5FD1"/><circle cx="51.2" cy="151.3" r="3" fill="#1D5FD1"/><circle cx="62.5" cy="151.3" r="3" fill="#1D5FD1"/><circle cx="73.8" cy="138.6" r="3" fill="#1D5FD1"/><circle cx="85.0" cy="100.6" r="3" fill="#1D5FD1"/><circle cx="96.2" cy="100.6" r="3" fill="#1D5FD1"/><circle cx="107.5" cy="107.0" r="3" fill="#1D5FD1"/><circle cx="118.8" cy="119.6" r="3" fill="#1D5FD1"/><circle cx="130.0" cy="145.0" r="3" fill="#1D5FD1"/><circle cx="141.2" cy="145.0" r="3" fill="#1D5FD1"/><circle cx="152.5" cy="126.0" r="3" fill="#1D5FD1"/><circle cx="163.8" cy="126.0" r="3" fill="#1D5FD1"/><circle cx="175.0" cy="126.0" r="3" fill="#1D5FD1"/><circle cx="186.2" cy="119.6" r="3" fill="#1D5FD1"/><circle cx="197.5" cy="126.0" r="3" fill="#1D5FD1"/><circle cx="208.8" cy="126.0" r="3" fill="#1D5FD1"/><circle cx="220.0" cy="126.0" r="3" fill="#1D5FD1"/><circle cx="231.2" cy="119.6" r="3" fill="#1D5FD1"/><circle cx="242.5" cy="126.0" r="3" fill="#1D5FD1"/><circle cx="253.8" cy="126.0" r="3" fill="#1D5FD1"/><circle cx="265.0" cy="126.0" r="3" fill="#1D5FD1"/><circle cx="276.2" cy="126.0" r="3" fill="#1D5FD1"/><circle cx="287.5" cy="126.0" r="3" fill="#1D5FD1"/><circle cx="298.8" cy="126.0" r="3" fill="#1D5FD1"/><circle cx="310.0" cy="126.0" r="3" fill="#1D5FD1"/>
+      <line x1="51.2" y1="20" x2="51.2" y2="210" stroke="#f4a300" stroke-width="1.3" stroke-dasharray="3,2"/>
+      <text x="56.2" y="30" font-size="9.5" fill="#f4a300" font-family="monospace">best K=3 (err=0.1139)</text>
+    </svg>
+          </div>
+          <table class="data-table" style="margin-top:12px;">
+            <tr><th>K</th><th>Validation error</th></tr>
+            <tr><td class="mono">1</td><td class="mono zero">0.1394 (highest &mdash; overfit zone)</td></tr>
+            <tr><td class="mono hl">3</td><td class="mono good">0.1139 (lowest &mdash; best K)</td></tr>
+            <tr><td class="mono">5 (sklearn's default)</td><td class="mono">0.1139 (tied with K=3)</td></tr>
+            <tr><td class="mono">49</td><td class="mono">0.1199 (flattened out &mdash; underfit zone)</td></tr>
+          </table>
+          <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);"><b>K=3 wins on this validation set</b> (tied with K=5). Notice the shape matches Class 11's theory exactly: error is high at K=1 (chasing noise), drops to a minimum, then creeps back up and flattens as K grows (collapsing toward the global majority). Always pick K from this curve on your OWN data &mdash; never assume sklearn's default of 5 is automatically best.</div>
+        </div>
+      </section>
+
+      <section class="block" id="ties">
+        <div class="section-eyebrow">Multiclass KNN</div>
+        <h2>Odd vs Even K, <span class="underline">and What Happens on a Tie</span></h2>
+        <div class="card">
+          <h3>The rule that only half-protects you</h3>
+          <p class="lead" style="margin-top:0;"><b>Binary classification, odd K:</b> a tie is mathematically impossible (you can't split an odd number into two equal halves). <b>3+ classes:</b> odd K does NOT protect you &mdash; a 6-way vote can still split 2-2-2 across three classes, or any other even split across 3+ groups.</p>
+        </div>
+        <div class="card warn">
+          <h3>A real, extreme 3-way tie &mdash; and sklearn gets it wrong</h3>
+          <table class="data-table">
+            <tr><th>Neighbor</th><th>Label</th><th>Distance</th></tr>
+            <tr><td>1</td><td class="good">Class 1</td><td class="mono">0.500</td></tr>
+            <tr><td>2</td><td class="good">Class 1</td><td class="mono">0.500</td></tr>
+            <tr><td>3</td><td>Class 0</td><td class="mono">6.727</td></tr>
+            <tr><td>4</td><td>Class 2</td><td class="mono">6.727</td></tr>
+            <tr><td>5</td><td>Class 0</td><td class="mono">7.433</td></tr>
+            <tr><td>6</td><td>Class 2</td><td class="mono">7.433</td></tr>
+          </table>
+          <div class="formula center">Vote count: Class 0 = 2, Class 1 = 2, Class 2 = 2 &nbsp;&mdash;&nbsp; a genuine 3-way tie</div>
+          <div class="formula center">sklearn's actual prediction: <span class="zero">Class 0</span> &nbsp;&nbsp;<b>(WRONG &mdash; ignores that Class 1's two neighbors are 13&times; closer than everyone else)</b></div>
+          <div class="callout bad">sklearn breaks multiclass ties by picking the smallest numeric label among the tied classes &mdash; here, Class 0 wins purely because "0" is the smallest number, despite Class 1 having, by far, the two genuinely closest neighbors (distance 0.5 vs 6.7+). This is not a rare corner case &mdash; any time you have 3+ classes, ties like this can and do happen.</div>
+        </div>
+      </section>
+
+      <section class="block" id="custom-tie">
+        <h2>Two Custom Tie-Breaking <span class="underline">Implementations</span></h2>
+        <div class="card">
+          <h3>Custom Implementation 1 &mdash; Nearest-neighbor tiebreak</h3>
+          <p class="lead" style="margin-top:0;"><b>Rule:</b> when the vote is tied, fall back to whichever tied class contains the single closest neighbor overall.</p>
+          <pre class="code-block"><span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">from</span> collections <span class="kw">import</span> Counter
+
+<span class="kw">def</span> <span class="fn">knn_predict_nearest_tiebreak</span>(X_train, y_train, x_query, k=<span class="st">6</span>):
+    <span class="cm">"""Custom Implementation 1: Nearest-Neighbor Tiebreak"""</span>
+    distances = np.linalg.norm(X_train - x_query, axis=<span class="st">1</span>)
+    idx = np.argsort(distances)[:k]
+    neighbor_labels = y_train[idx]
+    neighbor_dists  = distances[idx]
+
+    counts = Counter(neighbor_labels)
+    max_votes = max(counts.values())
+    tied_classes = [c <span class="kw">for</span> c, v <span class="kw">in</span> counts.items() <span class="kw">if</span> v == max_votes]
+
+    <span class="kw">if</span> len(tied_classes) == <span class="st">1</span>:
+        <span class="kw">return</span> tied_classes[<span class="st">0</span>]
+
+    <span class="cm"># Tie -> fall back to the single closest neighbor's label</span>
+    nearest_label = neighbor_labels[np.argmin(neighbor_dists)]
+    <span class="kw">return</span> nearest_label</pre>
+          <div class="formula center">On our tied example &rarr; predicts <span class="k">Class 1</span> (correct &mdash; verified by running this exact function)</div>
+        </div>
+        <div class="card">
+          <h3>Custom Implementation 2 &mdash; Weighted-vote tiebreak</h3>
+          <p class="lead" style="margin-top:0;"><b>Rule:</b> when the vote is tied, compute the sum of 1/distance <i>only among the tied classes</i>, and let the class with the highest total weight win.</p>
+          <pre class="code-block"><span class="kw">def</span> <span class="fn">knn_predict_weighted_tiebreak</span>(X_train, y_train, x_query, k=<span class="st">6</span>):
+    <span class="cm">"""Custom Implementation 2: Weighted-Vote Tiebreak"""</span>
+    distances = np.linalg.norm(X_train - x_query, axis=<span class="st">1</span>)
+    idx = np.argsort(distances)[:k]
+    neighbor_labels = y_train[idx]
+    neighbor_dists  = distances[idx]
+
+    counts = Counter(neighbor_labels)
+    max_votes = max(counts.values())
+    tied_classes = [c <span class="kw">for</span> c, v <span class="kw">in</span> counts.items() <span class="kw">if</span> v == max_votes]
+
+    <span class="kw">if</span> len(tied_classes) == <span class="st">1</span>:
+        <span class="kw">return</span> tied_classes[<span class="st">0</span>]
+
+    <span class="cm"># Tie -> sum(1/distance) among only the tied classes</span>
+    weight_sums = {}
+    <span class="kw">for</span> c <span class="kw">in</span> tied_classes:
+        mask = neighbor_labels == c
+        weight_sums[c] = sum(<span class="st">1</span>/d <span class="kw">if</span> d > <span class="st">0</span> <span class="kw">else</span> <span class="st">1e12</span> <span class="kw">for</span> d <span class="kw">in</span> neighbor_dists[mask])
+    <span class="kw">return</span> max(weight_sums, key=weight_sums.get)</pre>
+          <table class="data-table">
+            <tr><th>Tied class</th><th>Sum of 1/distance</th></tr>
+            <tr><td class="good">Class 1</td><td class="mono good">1/0.5 + 1/0.5 = 4.000</td></tr>
+            <tr><td>Class 0</td><td class="mono">1/6.727 + 1/7.433 = 0.283</td></tr>
+            <tr><td>Class 2</td><td class="mono">1/6.727 + 1/7.433 = 0.283</td></tr>
+          </table>
+          <div class="formula center">predict <span class="k">Class 1</span> (correct &mdash; wins by a wide margin, verified by running this exact function)</div>
+          <div class="callout info">Note Class 0 and Class 2 remain exactly tied with each other here (0.283 = 0.283) &mdash; a purely symmetric edge case. In practice, exact numeric ties this deep are vanishingly rare; what matters is that the OBVIOUS winner (Class 1) is no longer lost to arbitrary label ordering.</div>
+        </div>
+        <div class="card">
+          <table class="data-table">
+            <tr><th>Approach</th><th>Result on this example</th><th>When to prefer it</th></tr>
+            <tr><td>sklearn default (smallest label)</td><td class="mono zero">Class 0 (wrong)</td><td>Never a deliberate choice &mdash; it's just what happens if you don't handle ties yourself</td></tr>
+            <tr><td>Custom 1: nearest-neighbor</td><td class="mono good">Class 1 (correct)</td><td>Simple, fast, good default fallback</td></tr>
+            <tr><td>Custom 2: weighted-vote</td><td class="mono good">Class 1 (correct)</td><td>More robust when several close neighbors should collectively outweigh one very close outlier</td></tr>
+          </table>
+        </div>
+      </section>
+
+      <section class="block" id="imbalance-problem">
+        <div class="section-eyebrow">Class Imbalance</div>
+        <h2>The Problem Statement</h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Our churn dataset: <b>2,850 customers did not churn, 483 did</b> &mdash; churn is only 14.5% of the data. Any model can score 85.5% accuracy by just always predicting "No Churn" and never learning anything real. Business cost is asymmetric too: missing an actual churner (false negative) is usually far more expensive than a false alarm (false positive) &mdash; you lose the customer either way if you don't act.</p>
+          <div class="callout bad">Verified directly: an unweighted Logistic Regression on this data gets churn-class F1 of only <b>31.4%</b> &mdash; it is quietly failing at the one thing the business actually needs, while still looking "accurate" overall.</div>
+        </div>
+      </section>
+
+      <section class="block" id="two-approaches">
+        <h2>Two Approaches: <span class="underline">Cost-Sensitive vs Sampling</span></h2>
+        <div class="grid-2">
+          <div class="card">
+            <h3>Cost-sensitive learning</h3>
+            <p class="lead" style="margin-top:0; font-size:13px;">Keep the data exactly as it is. Instead, change the <b>loss function</b> so mistakes on the minority class are penalized more heavily than mistakes on the majority class. The model itself is told "getting this class wrong costs more."</p>
+          </div>
+          <div class="card">
+            <h3>Sampling</h3>
+            <p class="lead" style="margin-top:0; font-size:13px;">Keep the loss function exactly as it is. Instead, change the <b>data itself</b> &mdash; add more minority examples (oversampling/SMOTE) or remove majority examples (undersampling) until the classes are balanced before training even starts.</p>
+          </div>
+        </div>
+        <div class="callout info">Neither is universally "better" &mdash; cost-sensitive learning costs nothing extra computationally and works for any model with a <code>class_weight</code>-style parameter; sampling works with ANY model (including KNN, which has no such parameter) but changes your actual training set.</div>
+      </section>
+
+      <section class="block" id="class-weight">
+        <h2>Logistic Regression: <span class="underline">class_weight, Set Two Ways</span></h2>
+        <div class="card">
+          <h3>Way 1 &mdash; manually pick the numbers yourself</h3>
+          <div class="formula center">LogisticRegression(class_weight={{0: 1, 1: 6}})</div>
+          <p class="lead" style="margin-top:0;">You directly tell sklearn: every mistake on class 1 (churn) counts 6&times; as much as a mistake on class 0. Where does "6" come from? From the actual class ratio in our training data:</p>
+          <div class="formula center">1718 non-churn / 281 churn &asymp; <span class="k">6.11</span> &nbsp;&rarr;&nbsp; rounded to 6 for the manual setting</div>
+        </div>
+        <div class="card">
+          <h3>Way 2 &mdash; let sklearn compute it for you</h3>
+          <div class="formula center">LogisticRegression(class_weight=<span class="k">'balanced'</span>)</div>
+          <p class="lead" style="margin-top:0;">sklearn automatically computes the exact inverse-frequency weight per class from whatever data you fit on &mdash; no manual arithmetic, and it recalculates correctly if your class balance ever changes.</p>
+        </div>
+      </section>
+
+      <section class="block" id="balanced-formula">
+        <h2>class_weight='balanced' &mdash; <span class="underline">The Exact Formula</span></h2>
+        <div class="card screenshot">
+          <div class="formula center">w<sub>c</sub> = n<sub>total</sub> / (n<sub>classes</sub> &times; n<sub>c</sub>)</div>
+          <h3>Binary case &mdash; our exact training data (1718 non-churn, 281 churn, n=1999)</h3>
+          <table class="data-table">
+            <tr><th>Class</th><th>Formula</th><th>Weight</th></tr>
+            <tr><td>0 (No Churn, majority)</td><td class="mono">1999 / (2 &times; 1718)</td><td class="mono">0.5818</td></tr>
+            <tr><td>1 (Churn, minority)</td><td class="mono">1999 / (2 &times; 281)</td><td class="mono hl">3.5569</td></tr>
+          </table>
+          <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);">Verified directly against sklearn's own <code>compute_class_weight</code> &mdash; matches to 4 decimal places.</div>
+        </div>
+        <div class="card" id="multiclass-weight">
+          <h3>Multiclass case &mdash; the SAME formula, just more classes</h3>
+          <p class="lead" style="margin-top:0;">Example: 1,000 samples split 600/300/100 across 3 classes.</p>
+          <table class="data-table">
+            <tr><th>Class</th><th>n_c</th><th>Formula</th><th>Weight</th></tr>
+            <tr><td>0</td><td class="mono">600</td><td class="mono">1000/(3&times;600)</td><td class="mono">0.5556</td></tr>
+            <tr><td>1</td><td class="mono">300</td><td class="mono">1000/(3&times;300)</td><td class="mono">1.1111</td></tr>
+            <tr><td>2</td><td class="mono">100</td><td class="mono">1000/(3&times;100)</td><td class="mono hl">3.3333</td></tr>
+          </table>
+          <div class="callout info">Nothing special changes for multiclass &mdash; the formula is identical, just applied once per class instead of once per binary label. The rarest class always ends up with the biggest weight.</div>
+        </div>
+      </section>
+
+      <section class="block" id="loss-update">
+        <h2>How the Loss Function <span class="underline">Actually Changes</span></h2>
+        <div class="card">
+          <h3>Ordinary binary cross-entropy (every row counted equally)</h3>
+          <div class="formula center">L = &minus;(1/n) &Sigma; [ y<sub>i</sub> log(p<sub>i</sub>) + (1&minus;y<sub>i</sub>) log(1&minus;p<sub>i</sub>) ]</div>
+        </div>
+        <div class="card">
+          <h3>Weighted version</h3>
+          <div class="formula center">L<sub>weighted</sub> = &minus;(1/n) &Sigma; w<sub>y<sub>i</sub></sub> [ y<sub>i</sub> log(p<sub>i</sub>) + (1&minus;y<sub>i</sub>) log(1&minus;p<sub>i</sub>) ]</div>
+          <p class="lead" style="margin-top:0;">Every churn row's error now gets multiplied by 3.5569 before being added to the total loss; every non-churn row's error gets multiplied by 0.5818. The optimizer is mathematically forced to care more about getting churners right, because leaving a churner misclassified now costs the loss function much more.</p>
+        </div>
+        <div class="card screenshot">
+          <h3>Real before/after on our churn validation set</h3>
+          <table class="data-table">
+            <tr><th></th><th>Churn-class F1</th><th>Recall (catching real churners)</th><th>Precision</th></tr>
+            <tr><td class="left">No weighting</td><td class="mono zero">31.4%</td><td class="mono">21.8%</td><td class="mono">56.4%</td></tr>
+            <tr><td class="left">class_weight={{0:1,1:6}}</td><td class="mono good">46.6%</td><td class="mono good">74.3%</td><td class="mono">33.9%</td></tr>
+          </table>
+          <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);"><b>Recall more than triples</b> (21.8% &rarr; 74.3%) &mdash; the model now catches three times as many real churners. The cost: precision drops (56.4% &rarr; 33.9%), meaning more false alarms. This is the fundamental trade-off of every imbalance fix: fewer missed churners always comes at the cost of more false alarms &mdash; which trade-off is worth it is a business decision, not a modeling one.</div>
+        </div>
+      </section>
+
+      <section class="block" id="undersampling">
+        <div class="section-eyebrow">Sampling Techniques</div>
+        <h2>Undersampling &mdash; <span class="underline">Mechanism and Math</span></h2>
+        <div class="card">
+          <h3>The mechanism</h3>
+          <p class="lead" style="margin-top:0;">Randomly remove majority-class rows, without replacement, until both classes have the same count as the minority class.</p>
+          <div class="svg-card">
+            <svg viewBox="0 0 320 210" width="100%" height="auto">
+      <line x1="20" y1="185" x2="300" y2="185" stroke="#999" stroke-width="1"/>
+      <text x="30" y="20" font-size="11" fill="#333" font-family="monospace" font-weight="bold">Before</text><rect x="30" y="49.4" width="45" height="135.6" fill="#1D5FD1"/><text x="30" y="198" font-size="9" fill="#1D5FD1" font-family="monospace">Maj:1718</text><rect x="85" y="162.8" width="45" height="22.2" fill="#C0392B"/><text x="85" y="198" font-size="9" fill="#C0392B" font-family="monospace">min:281</text><text x="175" y="20" font-size="11" fill="#333" font-family="monospace" font-weight="bold">After</text><rect x="175" y="162.8" width="45" height="22.2" fill="#1D5FD1"/><text x="175" y="198" font-size="9" fill="#1D5FD1" font-family="monospace">Maj:281</text><rect x="230" y="162.8" width="45" height="22.2" fill="#C0392B"/><text x="230" y="198" font-size="9" fill="#C0392B" font-family="monospace">min:281*</text>
+    </svg>
+          </div>
+          <div class="svg-caption">1718 non-churners &rarr; randomly cut down to 281, to match the 281 real churners.</div>
+          <div class="formula center">1718 &minus; 281 = <span class="zero">1437 real, genuine rows permanently discarded</span></div>
+        </div>
+        <div class="card screenshot">
+          <table class="data-table">
+            <tr><th>Pros</th><th>Cons</th></tr>
+            <tr><td>Fast (much smaller training set); no synthetic-data assumptions</td><td>Throws away 1437 real rows &mdash; a huge amount of genuine information, especially risky if the majority class had rare-but-important sub-patterns</td></tr>
+          </table>
+          <div class="formula center">Result &mdash; Train F1: <span class="mono">77.3%</span> &nbsp;&nbsp;Test F1: <span class="mono">49.2%</span></div>
+          <div class="callout warn">The large train/test F1 gap (77% &rarr; 49%) is itself informative &mdash; with fewer than 300 majority rows left, the model is prone to overfitting to whichever majority examples happened to survive the random cut. <b>Rule of thumb: only undersample when n is genuinely huge</b> (hundreds of thousands to billions of rows) &mdash; here, with only 1999 training rows to begin with, throwing away 1437 of them is a lot to lose.</div>
+        </div>
+      </section>
+
+      <section class="block" id="oversampling">
+        <h2>Oversampling &mdash; <span class="underline">Mechanism and Math</span></h2>
+        <div class="card">
+          <h3>The mechanism</h3>
+          <p class="lead" style="margin-top:0;">Randomly duplicate minority-class rows, WITH replacement, until the minority count matches the majority count.</p>
+          <div class="svg-card">
+            <svg viewBox="0 0 320 210" width="100%" height="auto">
+      <line x1="20" y1="185" x2="300" y2="185" stroke="#999" stroke-width="1"/>
+      <text x="30" y="20" font-size="11" fill="#333" font-family="monospace" font-weight="bold">Before</text><rect x="30" y="49.4" width="45" height="135.6" fill="#1D5FD1"/><text x="30" y="198" font-size="9" fill="#1D5FD1" font-family="monospace">Maj:1718</text><rect x="85" y="162.8" width="45" height="22.2" fill="#C0392B"/><text x="85" y="198" font-size="9" fill="#C0392B" font-family="monospace">min:281</text><text x="175" y="20" font-size="11" fill="#333" font-family="monospace" font-weight="bold">After</text><rect x="175" y="49.4" width="45" height="135.6" fill="#1D5FD1"/><text x="175" y="198" font-size="9" fill="#1D5FD1" font-family="monospace">Maj:1718</text><rect x="230" y="49.4" width="45" height="135.6" fill="#C0392B"/><text x="230" y="198" font-size="9" fill="#C0392B" font-family="monospace">min:1718*</text>
+    </svg>
+          </div>
+          <div class="svg-caption">281 real churners &rarr; copied (with repeats) up to 1718, to match the 1718 non-churners.</div>
+          <div class="formula center">Verified directly: <span class="zero">83.6% of the "new" minority rows are exact duplicates</span> of an existing row</div>
+        </div>
+        <div class="card screenshot">
+          <table class="data-table">
+            <tr><th>Pros</th><th>Cons</th></tr>
+            <tr><td>Simple, no rows discarded, works with any model</td><td>Adds zero new information &mdash; the model can end up seeing the same handful of churners repeated 6&times; each, risking memorization of those specific rows</td></tr>
+          </table>
+          <div class="formula center">Result &mdash; Train F1: <span class="mono">76.6%</span> &nbsp;&nbsp;Test F1: <span class="mono">50.7%</span></div>
+        </div>
+      </section>
+
+      <section class="block" id="smote">
+        <h2>SMOTE &mdash; <span class="underline">Mechanism, Math, and a Real Synthetic Point</span></h2>
+        <div class="card">
+          <h3>The mechanism, step by step</h3>
+          <div class="step-card"><span class="step-tag">1</span> Pick a real minority-class point (a real churner).</div>
+          <div class="step-card"><span class="step-tag p">2</span> Find its K nearest neighbors, searching ONLY among other minority-class points (K=5 by default).</div>
+          <div class="step-card"><span class="step-tag y">3</span> Pick one of those neighbors at random.</div>
+          <div class="step-card"><span class="step-tag g">4</span> Generate a synthetic point somewhere on the straight line between the two real points:</div>
+          <div class="formula center">new_point = point + random(0,1) &times; (neighbor &minus; point)</div>
+          <div class="step-card"><span class="step-tag">5</span> Repeat until the minority class reaches the majority count.</div>
+        </div>
+        <div class="card screenshot">
+          <h3>A real worked example, using two actual churners from this dataset</h3>
+          <table class="data-table">
+            <tr><th>Customer</th><th>Day Mins</th><th>Eve Mins</th><th>CustServ Calls</th><th>Intl Plan</th><th>VMail Message</th></tr>
+            <tr><td>A (real churner)</td><td class="mono">257.1</td><td class="mono">312.2</td><td class="mono">1</td><td class="mono">Yes</td><td class="mono">0</td></tr>
+            <tr><td>B (its nearest churner neighbor)</td><td class="mono">222.4</td><td class="mono">327.0</td><td class="mono">1</td><td class="mono">Yes</td><td class="mono">0</td></tr>
+          </table>
+          <div class="formula center">gap = 0.5 (halfway between the two) &rarr; new Day Mins = 257.1 + 0.5&times;(222.4&minus;257.1) = <span class="k">239.75</span></div>
+          <div class="formula center">new Eve Mins = 312.2 + 0.5&times;(327.0&minus;312.2) = <span class="k">319.60</span></div>
+          <div class="svg-card">
+            <svg viewBox="0 0 340 240" width="100%" height="auto">
+      <line x1="40" y1="210" x2="310" y2="210" stroke="#999" stroke-width="1"/>
+      <line x1="40" y1="20" x2="40" y2="210" stroke="#999" stroke-width="1"/>
+      <text x="150" y="228" font-size="10" fill="#555" font-family="monospace">Day Mins</text>
+      <text x="10" y="120" font-size="10" fill="#555" font-family="monospace" transform="rotate(-90 10 120)">Eve Mins</text>
+      <line x1="247.4" y1="146.4" x2="102.6" y2="83.6" stroke="#888" stroke-width="1.3" stroke-dasharray="3,2"/>
+      <circle cx="247.4" cy="146.4" r="6" fill="#C0392B"/>
+      <text x="255" y="143" font-size="9.5" font-family="monospace" fill="#C0392B">A (257.1, 312.2) real churner</text>
+      <circle cx="102.6" cy="83.6" r="6" fill="#C0392B"/>
+      <text x="15" y="75" font-size="9.5" font-family="monospace" fill="#C0392B">B (222.4, 327.0) nearest real churner neighbor</text>
+      <circle cx="175.0" cy="115.0" r="7" fill="none" stroke="#f4a300" stroke-width="2.5"/>
+      <circle cx="175.0" cy="115.0" r="3" fill="#f4a300"/>
+      <text x="180" y="112" font-size="9.5" font-family="monospace" fill="#f4a300" font-weight="bold">Synthetic (239.75, 319.60)</text>
+    </svg>
+          </div>
+          <div class="svg-caption">The synthetic point sits exactly on the line between two real churners &mdash; a genuinely new, plausible customer profile, not a copy of either.</div>
+          <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);">Notice CustServ Calls, Intl Plan, and VMail Message stayed identical &mdash; both real points already agreed on those features, so the interpolation has nothing to blend there. Only Day Mins and Eve Mins, where the two points genuinely differed, produced a new value.</div>
+        </div>
+        <div class="card">
+          <div class="svg-card">
+            <svg viewBox="0 0 320 210" width="100%" height="auto">
+      <line x1="20" y1="185" x2="300" y2="185" stroke="#999" stroke-width="1"/>
+      <text x="30" y="20" font-size="11" fill="#333" font-family="monospace" font-weight="bold">Before</text><rect x="30" y="49.4" width="45" height="135.6" fill="#1D5FD1"/><text x="30" y="198" font-size="9" fill="#1D5FD1" font-family="monospace">Maj:1718</text><rect x="85" y="162.8" width="45" height="22.2" fill="#C0392B"/><text x="85" y="198" font-size="9" fill="#C0392B" font-family="monospace">min:281</text><text x="175" y="20" font-size="11" fill="#333" font-family="monospace" font-weight="bold">After</text><rect x="175" y="49.4" width="45" height="135.6" fill="#1D5FD1"/><text x="175" y="198" font-size="9" fill="#1D5FD1" font-family="monospace">Maj:1718</text><rect x="230" y="49.4" width="45" height="135.6" fill="#C0392B"/><text x="230" y="198" font-size="9" fill="#C0392B" font-family="monospace">min:1718*</text>
+    </svg>
+          </div>
+          <div class="svg-caption">Same target counts as oversampling (281 &rarr; 1718) &mdash; but reached by synthesis, not copying.</div>
+          <table class="data-table">
+            <tr><th>Pros</th><th>Cons</th></tr>
+            <tr><td>Verified directly: <b>0% exact duplicates</b> (vs 83.6% for plain oversampling) &mdash; genuinely adds new information</td><td>Can synthesize points in unrealistic regions if the minority class is noisy or has outliers; needs adaptation for categorical columns (SMOTE-NC); adds compute cost</td></tr>
+          </table>
+          <div class="formula center">Result &mdash; Train F1: <span class="mono">77.5%</span> &nbsp;&nbsp;Test F1: <span class="mono good">51.0%</span> (best of the three)</div>
+        </div>
+      </section>
+
+      <section class="block" id="compare-all">
+        <h2>All Techniques, <span class="underline">Compared Side by Side</span></h2>
+        <div class="card">
+          <table class="data-table">
+            <tr><th>Technique</th><th>Minority count</th><th>Duplicate rate</th><th>Test F1</th></tr>
+            <tr><td>Baseline (no fix)</td><td class="mono">281</td><td class="mono">&mdash;</td><td class="mono zero">&mdash; (F1 = 31.4% with LR)</td></tr>
+            <tr><td>class_weight={0:1,1:6}</td><td class="mono">281 (unchanged)</td><td class="mono">&mdash;</td><td class="mono good">46.6%</td></tr>
+            <tr><td>Undersampling</td><td class="mono">281 (majority cut to match)</td><td class="mono">0%</td><td class="mono">49.2%</td></tr>
+            <tr><td>Oversampling</td><td class="mono">1718 (duplicated)</td><td class="mono zero">83.6%</td><td class="mono">50.7%</td></tr>
+            <tr><td>SMOTE</td><td class="mono">1718 (synthesized)</td><td class="mono good">0%</td><td class="mono good">51.0%</td></tr>
+          </table>
+          <div class="callout purple">On this dataset, all four fixes land in a similar range (46-51% F1) &mdash; the real differences show up in <b>what they cost you</b>: undersampling throws away 1437 real rows, oversampling triples down on the same 281 real churners, class_weight touches no data at all, and SMOTE is the only one that manufactures genuinely new information.</div>
+        </div>
+      </section>
+
+      <section class="block" id="summary">
+        <div class="section-eyebrow">Wrapping up</div>
+        <h2>Class 12 Summary</h2>
+        <div class="card">
+          <table class="data-table">
+            <tr><th>Topic</th><th>One-line takeaway</th></tr>
+            <tr><td>Single-query complexity</td><td>O(n&middot;d) dominates &mdash; every prediction re-scans the entire training set</td></tr>
+            <tr><td>Scaling bug walkthrough</td><td>Always trace the exact variable name into .fit() &mdash; "scaled variable exists somewhere" is not the same as "scaled variable was used"</td></tr>
+            <tr><td>PCA explained variance</td><td>Unscaled PCA lets one large-scale feature (Fresh) hijack PC1; scale first for an honest blend</td></tr>
+            <tr><td>PCA + KNN</td><td>Approximately preserves relative distances by design &mdash; verify with real validation performance, not assumption</td></tr>
+            <tr><td>K via cross-validation</td><td>K=3 won on our real data (tied with sklearn's default K=5) &mdash; always check, never assume</td></tr>
+            <tr><td>Multiclass ties</td><td>Odd K only protects binary classification; 3+ classes can still tie; sklearn's default (smallest label) can be provably wrong</td></tr>
+            <tr><td>Custom tie-breaks</td><td>Nearest-neighbor fallback or weighted-vote fallback both fixed our real 3-way tie example</td></tr>
+            <tr><td>Cost-sensitive vs sampling</td><td>Change the loss (class_weight) or change the data (sampling) &mdash; KNN needs the latter, since it has no class_weight</td></tr>
+            <tr><td>class_weight='balanced'</td><td>w_c = n_total/(n_classes &times; n_c) &mdash; identical formula for binary and multiclass</td></tr>
+            <tr><td>Weighted loss impact</td><td>Recall 21.8% &rarr; 74.3% (more than tripled), at the cost of precision 56.4% &rarr; 33.9%</td></tr>
+            <tr><td>Undersampling</td><td>Discarded 1437 real rows here &mdash; only sensible at huge scale</td></tr>
+            <tr><td>Oversampling</td><td>83.6% exact duplicates &mdash; simple but adds no new information</td></tr>
+            <tr><td>SMOTE</td><td>0% duplicates &mdash; genuinely synthesizes new points by interpolating between real minority neighbors</td></tr>
+          </table>
+        </div>
+        <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green); font-size:14px;">
+          The whole class in one sentence: <b>every "fix" we studied today &mdash; scaling, PCA, K-selection, tie-breaking, class weighting, or resampling &mdash; is a deliberate trade-off with a real, measurable cost, and the only way to know if it's worth it is to check the actual numbers on your actual data, exactly as we did throughout this class.</b>
+        </div>
+      </section>
+
+      <div class="footnote-strip">
+        <span class="hand">&mdash; end of Class 12 &mdash;</span>
+        KNN II &mdash; Implementations &middot; 31 July 2026
+      </div>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>

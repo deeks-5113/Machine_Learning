@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Random Forest &amp; Pruning</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Patrick+Hand&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --board:#0c1014; --card:#151b21; --card-line:#222b32;
+    --chalk:#e9eef2; --chalk-dim:#9fb0bb;
+    --cyan:#5fd8e0; --cyan-dim:#2c5a5e;
+    --pink:#f17fb0; --pink-dim:#5a2f42;
+    --yellow:#f4cf5e; --green:#8fe3a6; --green-dim:#2f4f3a;
+    --purple:#b39ddb; --purple-dim:#4a3f6b;
+    --white-marker:#f5f5f0; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{ background:var(--board); color:var(--chalk); font-family:'Inter',sans-serif; line-height:1.55; -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width:1180px; margin:0 auto; padding:0 24px 120px; }
+  h1,h2,h3,.hand{ font-family:'Caveat',cursive; font-weight:700; }
+  .hero{ padding:56px 0 30px; text-align:center; }
+  .chip{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--cyan); border:1px solid var(--cyan-dim); background:rgba(95,216,224,0.06); padding:6px 14px; border-radius:999px; margin-bottom:16px; }
+  .hero h1{ font-size:clamp(28px,5.5vw,50px); color:var(--white-marker); margin:0 0 8px; }
+  .hero h1 span{color:var(--pink);}
+  .hero p{ font-family:'Patrick Hand',cursive; color:var(--chalk-dim); font-size:17px; max-width:780px; margin:0 auto; }
+  .layout{ display:grid; grid-template-columns:260px 1fr; gap:36px; align-items:start; }
+  nav.toc{ position:sticky; top:24px; background:var(--card); border:1px solid var(--card-line); border-radius:var(--radius); padding:18px 16px; font-family:'JetBrains Mono',monospace; font-size:11px; max-height:calc(100vh - 48px); overflow-y:auto; }
+  nav.toc .toc-title{ color:var(--chalk-dim); text-transform:uppercase; letter-spacing:1.2px; font-size:10px; margin-bottom:8px; margin-top:14px; }
+  nav.toc .toc-title:first-child{margin-top:0;}
+  nav.toc a{ display:block; color:var(--chalk-dim); text-decoration:none; padding:5px 8px; border-radius:8px; margin-bottom:1px; }
+  nav.toc a:hover{color:var(--chalk); background:rgba(255,255,255,0.04);}
+  main{min-width:0;}
+  section.block{ margin-bottom:50px; scroll-margin-top:24px; }
+  .section-eyebrow{ font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--pink); margin-bottom:6px; }
+  section.block h2{ font-size:30px; color:var(--white-marker); margin:0 0 12px; }
+  section.block h2 .underline{ text-decoration:underline; text-decoration-color:var(--cyan); text-decoration-thickness:3px; }
+  p.lead{ font-size:14.5px; color:#cdd8de; max-width:820px; }
+  .card{ background:var(--card); border:1px solid var(--card-line); border-radius:var(--radius); padding:20px 22px; margin:14px 0; }
+  .card h3{ font-family:'Inter',sans-serif; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.7px; color:var(--cyan); margin:0 0 10px; }
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  .grid-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;}
+  @media (max-width:900px){ .layout{grid-template-columns:1fr;} nav.toc{position:relative; top:0; margin-bottom:20px; max-height:none;} .grid-2,.grid-3{grid-template-columns:1fr;} }
+  table.data-table{ width:100%; border-collapse:collapse; font-family:'JetBrains Mono',monospace; font-size:12px; }
+  table.data-table th{ text-align:left; color:var(--chalk-dim); font-weight:500; padding:6px 9px; border-bottom:1px solid var(--card-line); text-transform:uppercase; font-size:9.5px; letter-spacing:0.4px; }
+  table.data-table td{ padding:6px 9px; border-bottom:1px solid rgba(255,255,255,0.04); }
+  table.data-table td.hl{color:var(--yellow); font-weight:700;}
+  table.data-table td.zero{color:var(--pink); font-weight:700; background:rgba(241,127,176,0.08);}
+  table.data-table td.good{color:var(--green); font-weight:700; background:rgba(143,227,166,0.08);}
+  table.data-table td.left{text-align:left;}
+  blockquote.story{ font-family:'Patrick Hand',cursive; font-size:16.5px; color:#dbe6ec; border-left:3px solid var(--yellow); padding:6px 18px; margin:14px 0; background:rgba(244,207,94,0.04); border-radius:0 10px 10px 0; }
+  .pipeline{ display:flex; align-items:center; gap:0; overflow-x:auto; padding:10px 0 18px; }
+  .pipe-step{ flex:0 0 auto; min-width:115px; background:var(--card); border:1px solid var(--card-line); border-radius:12px; padding:12px 14px; text-align:center; }
+  .pipe-step .n{ font-family:'JetBrains Mono',monospace; color:var(--cyan); font-size:10.5px; margin-bottom:5px; }
+  .pipe-step .t{font-weight:700; font-size:12px; color:var(--white-marker);}
+  .pipe-step .d{font-size:9.5px; color:var(--chalk-dim); margin-top:3px;}
+  .pipe-arrow{ flex:0 0 auto; width:20px; text-align:center; color:var(--pink); font-size:16px; }
+  .formula{ font-family:'JetBrains Mono',monospace; background:#0a0d10; border:1px solid var(--card-line); border-radius:10px; padding:14px 20px; margin:12px 0; font-size:14px; color:var(--white-marker); overflow-x:auto; }
+  .formula.center{text-align:center;}
+  .formula .k{color:var(--yellow);} .formula .r{color:var(--cyan);} .formula .l{color:var(--pink);}
+  .formula-note{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--chalk-dim); margin-top:6px; }
+  .callout{ background:rgba(143,227,166,0.08); border:1px solid var(--green-dim); border-radius:10px; padding:12px 16px; color:var(--green); font-size:13px; font-family:'JetBrains Mono',monospace; margin:12px 0; line-height:1.6; }
+  .callout.warn{ background:rgba(244,207,94,0.08); border-color:#5a4f2f; color:var(--yellow); }
+  .callout.bad{ background:rgba(241,127,176,0.08); border-color:var(--pink-dim); color:var(--pink); }
+  .callout.info{ background:rgba(95,216,224,0.08); border-color:var(--cyan-dim); color:var(--cyan); }
+  .callout.purple{ background:rgba(179,157,219,0.08); border-color:var(--purple-dim); color:var(--purple); }
+  .step-card{ background:rgba(0,0,0,0.22); border-radius:10px; padding:14px 18px; margin:10px 0; border:1px solid var(--card-line); }
+  .step-tag{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--board); background:var(--cyan); padding:2px 8px; border-radius:6px; margin-right:8px; font-weight:700; }
+  .step-tag.p{background:var(--purple);}
+  .step-tag.y{background:var(--yellow);}
+  .step-tag.g{background:var(--green);}
+  .analogy-row{ display:flex; gap:14px; margin-top:12px; flex-wrap:wrap; }
+  .analogy{ flex:1; min-width:150px; background:var(--card); border:1px solid var(--card-line); border-radius:10px; padding:14px 16px; text-align:center; }
+  .analogy h4{font-size:14px; margin:6px 0 4px; color:var(--white-marker);}
+  .analogy p{font-size:11.5px; color:var(--chalk-dim); margin:0;}
+  .svg-card{ background:#fff; border:1px solid var(--card-line); border-radius:12px; padding:12px; }
+  .svg-caption{ text-align:center; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:#555; margin-top:8px; }
+  .footnote-strip{ margin-top:60px; border-top:1px dashed var(--card-line); padding-top:22px; text-align:center; color:var(--chalk-dim); font-family:'JetBrains Mono',monospace; font-size:12px; }
+  .footnote-strip .hand{color:var(--cyan); font-size:22px; display:block; margin-bottom:6px;}
+  .cm-table{ border-collapse:collapse; margin:14px auto; font-family:'JetBrains Mono',monospace; font-size:12.5px; }
+  .cm-table td, .cm-table th{ border:1px solid var(--card-line); padding:12px 18px; text-align:center; }
+  .cm-table .tp,.cm-table .tn{background:rgba(143,227,166,0.15); color:var(--green); font-weight:700;}
+  .cm-table .fp,.cm-table .fn{background:rgba(241,127,176,0.15); color:var(--pink); font-weight:700;}
+  .cm-table .lbl{background:#0a0d10; color:var(--chalk-dim); font-weight:700; font-size:10.5px;}
+  .num-hl{ color:var(--yellow); font-weight:700; }
+  .num-cool{ color:var(--cyan); font-weight:700; }
+  pre.code-block{ font-family:'JetBrains Mono',monospace; font-size:12.5px; line-height:1.55; background:#0a0d10; border:1px solid var(--card-line); border-radius:10px; padding:16px 18px; margin:12px 0; overflow-x:auto; color:#d8e2e8; white-space:pre; }
+  pre.code-block .kw{color:var(--pink);} pre.code-block .fn{color:var(--cyan);} pre.code-block .cm{color:var(--chalk-dim); font-style:italic;} pre.code-block .st{color:var(--yellow);}
+  details.opt{ background:rgba(179,157,219,0.05); border:1px solid var(--purple-dim); border-radius:12px; margin:16px 0; padding:4px 18px; }
+  details.opt summary{ cursor:pointer; padding:12px 0; font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:0.5px; color:var(--purple); font-weight:700; text-transform:uppercase; }
+  details.opt[open] summary{color:var(--yellow);}
+  details.opt .inner{padding:2px 0 16px;}
+  .badge-impl{display:inline-block; background:rgba(244,207,94,0.1); border:1px solid #5a4f2f; color:var(--yellow); font-family:'JetBrains Mono',monospace; font-size:10px; padding:2px 9px; border-radius:6px; margin-left:6px;}
+  .svg-card svg text{font-family:monospace;}
+  .sum-wrap{ display:inline-block; position:relative; padding:10px 28px 20px 18px; vertical-align:middle; }
+  .sum-wrap .sigma{ font-size:26px; line-height:1; vertical-align:middle; }
+  .sum-wrap .sup{ position:absolute; top:2px; left:26px; font-size:11px; color:var(--cyan); }
+  .sum-wrap .sub{ position:absolute; bottom:0px; left:14px; font-size:11px; color:var(--cyan); white-space:nowrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="chip">07-08-2026 &middot; Module: Supervised Learning &middot; Class 15</div>
+    <h1>Random Forest <span>&amp; Pruning</span></h1>
+    <div class="chip" style="background:none; border-color:var(--pink-dim); color:var(--pink); margin-top:0;">Continuing directly from Class 14: Decision Tree II &amp; Intro to Random Forest</div>
+  </div>
+
+  <div class="layout">
+    <nav class="toc" id="toc">
+      <div class="toc-title">Bridge</div>
+      <a href="#recap">Quick recap of Class 14</a>
+      <div class="toc-title">Bagging → Random Forest</div>
+      <a href="#bagging">What is Bagging?</a>
+      <a href="#bagging-example">Bagging with real data points D</a>
+      <a href="#rf-vs-bagging">Random Forest = Bagging + Column Subsampling</a>
+      <div class="toc-title">Out-of-Bag</div>
+      <a href="#oob-points">What is an OOB point?</a>
+      <a href="#oob-score">Computing the OOB score</a>
+      <div class="toc-title">Feature (Column) Subsampling</div>
+      <a href="#col-subsample">Subsampling per NODE, not per tree</a>
+      <div class="toc-title">Why Random Forest?</div>
+      <a href="#why-variance">The instability of a single Decision Tree</a>
+      <a href="#low-bias-high-var">Why each tree should be low bias, high variance</a>
+      <a href="#correlation">Why trees must NOT be correlated</a>
+      <a href="#variance-formula">The variance formula (derivation optional, in companion PDF)</a>
+      <div class="toc-title">Pruning</div>
+      <a href="#pruning-def">What is pruning, and why</a>
+      <a href="#pre-pruning">Pre-pruning</a>
+      <a href="#post-pruning">Post-pruning &amp; alpha</a>
+      <div class="toc-title">Prediction</div>
+      <a href="#predict-dt">predict() for a single Decision Tree</a>
+      <a href="#predict-rf">predict() &amp; predict_proba() for Random Forest</a>
+      <div class="toc-title">Feature Importance</div>
+      <a href="#fi-recap">Recap: importance for one tree</a>
+      <a href="#fi-rf">Extending to the whole forest</a>
+      <a href="#fi-missing">When a feature is missing from a subtree</a>
+      <div class="toc-title">Wrap-up</div>
+      <a href="#summary">Summary &amp; cheat sheet</a>
+    </nav>
+
+    <main>
+      <section class="block" id="recap">
+        <div class="section-eyebrow">Bridge</div>
+        <h2>Quick Recap of <span class="underline">Class 14</span></h2>
+        <div class="card">
+          <div class="pipeline">
+            <div class="pipe-step"><div class="n">01</div><div class="t">Entropy max &ne; 1</div><div class="d">only when k=2 classes</div></div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-step"><div class="n">02</div><div class="t">Encodings</div><div class="d">one-hot, label, target</div></div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-step"><div class="n">03</div><div class="t">Feature importance</div><div class="d">weighted impurity drop, not usage count</div></div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-step"><div class="n">04</div><div class="t">Missing values</div><div class="d">learned routing direction</div></div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-step"><div class="n">05</div><div class="t">class_weight</div><div class="d">weighted Gini flips predictions</div></div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-step"><div class="n">06</div><div class="t">High variance</div><div class="d">small data change → different tree</div></div>
+          </div>
+          <p class="lead" style="margin-top:0;">We ended Class 14 exactly here: a single Decision Tree is unstable, and that instability is precisely what ensembles are built to fix. Today we build that fix properly — Random Forest, end to end — and then circle back to control a single tree's complexity via pruning.</p>
+        </div>
+      </section>
+
+      <section class="block" id="bagging">
+        <div class="section-eyebrow">Bagging → Random Forest</div>
+        <h2>What Is <span class="underline">Bagging?</span></h2>
+        <div class="card">
+          <div class="formula center">Bagging = <span class="k">B</span>ootstrap <span class="r">Agg</span>regat<span class="k">ing</span></div>
+          <p class="lead" style="margin-top:0;">Two ideas glued together:</p>
+          <div class="grid-2">
+            <div class="card"><h3>Bootstrap</h3><p style="font-size:13px; color:var(--chalk-dim);">From your original dataset D, create MANY new datasets by resampling — drawing rows WITH replacement, same size as D each time. Each resample is slightly different: some rows appear twice, some don't appear at all.</p></div>
+            <div class="card"><h3>Aggregating</h3><p style="font-size:13px; color:var(--chalk-dim);">Train one model on each resampled dataset, then COMBINE their predictions — vote for classification, average for regression.</p></div>
+          </div>
+          <div class="callout info">Bagging is a general recipe — it works with ANY base algorithm (Decision Trees, Logistic Regression, KNN...). Today we bag Decision Trees specifically, which is the first ingredient of Random Forest.</div>
+        </div>
+      </section>
+
+      <section class="block" id="bagging-example">
+        <h2>Bagging With <span class="underline">Real Data Points D</span></h2>
+        <div class="card screenshot">
+          <p class="lead" style="margin-top:0;">Original dataset D — 8 customers, predicting loan Default:</p>
+          <table class="data-table">
+            <tr><th>Row ID</th><th>Age</th><th>Income</th><th>Default</th></tr>
+            <tr><td class="mono">1</td><td class="mono">22</td><td class="mono">30K</td><td class="mono">N</td></tr>
+            <tr><td class="mono">2</td><td class="mono">25</td><td class="mono">35K</td><td class="mono">N</td></tr>
+            <tr><td class="mono">3</td><td class="mono">29</td><td class="mono">42K</td><td class="mono">N</td></tr>
+            <tr><td class="mono">4</td><td class="mono">31</td><td class="mono">50K</td><td class="mono">Y</td></tr>
+            <tr><td class="mono">5</td><td class="mono">35</td><td class="mono">60K</td><td class="mono">Y</td></tr>
+            <tr><td class="mono">6</td><td class="mono">40</td><td class="mono">70K</td><td class="mono">Y</td></tr>
+            <tr><td class="mono">7</td><td class="mono">45</td><td class="mono">80K</td><td class="mono">Y</td></tr>
+            <tr><td class="mono">8</td><td class="mono">50</td><td class="mono">90K</td><td class="mono">N</td></tr>
+          </table>
+        </div>
+        <div class="card screenshot">
+          <h3>Draw 3 bootstrap samples — same size (8), WITH replacement</h3>
+          <div class="formula center">D<sub>1</sub> = { 1, 2, 2, 4, 5, 5, 7, 8 } &nbsp;&rarr;&nbsp; <b>Tree 1</b></div>
+          <div class="formula center">D<sub>2</sub> = { 1, 3, 3, 4, 4, 6, 7, 8 } &nbsp;&rarr;&nbsp; <b>Tree 2</b></div>
+          <div class="formula center">D<sub>3</sub> = { 2, 2, 3, 5, 6, 6, 7, 7 } &nbsp;&rarr;&nbsp; <b>Tree 3</b></div>
+          <table class="data-table">
+            <tr><th>Sample</th><th>Rows duplicated</th><th>Rows missing entirely (OOB for this tree)</th></tr>
+            <tr><td class="mono">D<sub>1</sub></td><td class="mono">2, 5</td><td class="mono zero">3, 6</td></tr>
+            <tr><td class="mono">D<sub>2</sub></td><td class="mono">3, 4</td><td class="mono zero">2, 5</td></tr>
+            <tr><td class="mono">D<sub>3</sub></td><td class="mono">2, 6, 7</td><td class="mono zero">1, 4, 8</td></tr>
+          </table>
+          <div class="callout warn">Each D<sub>b</sub> is a genuinely DIFFERENT training set — different rows, different duplicates, different missing rows. Fitting a Decision Tree on each one, independently, produces THREE structurally different trees, even though they all came from the same original D. This is bagging's entire mechanism: manufacture controlled diversity, then combine.</div>
+          <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);">The rows that never got drawn for a given tree (3,6 for Tree 1; 2,5 for Tree 2; 1,4,8 for Tree 3) are that tree's <b>Out-of-Bag (OOB)</b> rows — we come back to this in a few minutes, because it gives us a free validation signal.</div>
+        </div>
+      </section>
+      <section class="block" id="rf-vs-bagging">
+        <h2>Random Forest = <span class="underline">Bagging + Column Subsampling</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Bagging alone (Decision Trees as the base learner) already gives you three different trees, as we just saw. Random Forest adds exactly ONE more ingredient on top:</p>
+          <div class="formula center">Random Forest = Bagging (bootstrap rows) &nbsp;+&nbsp; Random Feature Subsampling (at every split)</div>
+          <table class="data-table">
+            <tr><th></th><th>Bagging (of trees)</th><th>Random Forest</th></tr>
+            <tr><td class="left mono">Row sampling</td><td class="left mono good">Bootstrap (with replacement)</td><td class="left mono good">Bootstrap (with replacement) — SAME as bagging</td></tr>
+            <tr><td class="left mono">Feature availability per split</td><td class="left mono zero">ALL features always available</td><td class="left mono good">Only a RANDOM SUBSET available, refreshed every split</td></tr>
+            <tr><td class="left mono">How different are the trees?</td><td class="left mono">Different, but tend to agree at the root (strongest feature usually wins everywhere)</td><td class="left mono good">MORE different — strongest feature is sometimes unavailable, forcing genuine diversity</td></tr>
+          </table>
+          <div class="callout purple">Both bootstrap rows AND randomly restrict features. This second ingredient is what today's "column subsampling" section is about — and it's the detail most people get wrong, so we'll be very precise about it below.</div>
+        </div>
+      </section>
+
+      <section class="block" id="oob-points">
+        <div class="section-eyebrow">Out-of-Bag</div>
+        <h2>What Is an <span class="underline">OOB Point?</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Look back at D<sub>1</sub> = {1,2,2,4,5,5,7,8}. Rows 3 and 6 were never drawn — Tree 1 never trained on them. That's the entire definition:</p>
+          <div class="callout info"><b>An OOB (Out-of-Bag) point, for a specific tree, is any row that tree never saw during training</b> — because bootstrap sampling with replacement happened to skip it. It's "out of the bag" of rows that went into building that tree.</div>
+        </div>
+        <div class="card screenshot">
+          <h3>Simple visualization — 8 rows &times; 3 trees</h3>
+          <table class="data-table">
+            <tr><th>Row</th><th>True Default</th><th>Tree 1 (D<sub>1</sub>)</th><th>Tree 2 (D<sub>2</sub>)</th><th>Tree 3 (D<sub>3</sub>)</th></tr>
+            <tr><td class="mono">1</td><td class="mono">N</td><td class="mono good">in-bag</td><td class="mono good">in-bag</td><td class="mono zero">OOB</td></tr>
+            <tr><td class="mono">2</td><td class="mono">N</td><td class="mono good">in-bag</td><td class="mono zero">OOB</td><td class="mono good">in-bag</td></tr>
+            <tr><td class="mono">3</td><td class="mono">N</td><td class="mono zero">OOB</td><td class="mono good">in-bag</td><td class="mono good">in-bag</td></tr>
+            <tr><td class="mono">4</td><td class="mono">Y</td><td class="mono good">in-bag</td><td class="mono good">in-bag</td><td class="mono zero">OOB</td></tr>
+            <tr><td class="mono">5</td><td class="mono">Y</td><td class="mono good">in-bag</td><td class="mono zero">OOB</td><td class="mono good">in-bag</td></tr>
+            <tr><td class="mono">6</td><td class="mono">Y</td><td class="mono zero">OOB</td><td class="mono good">in-bag</td><td class="mono good">in-bag</td></tr>
+            <tr><td class="mono">7</td><td class="mono">Y</td><td class="mono good">in-bag</td><td class="mono good">in-bag</td><td class="mono good">in-bag</td></tr>
+            <tr><td class="mono">8</td><td class="mono">N</td><td class="mono good">in-bag</td><td class="mono good">in-bag</td><td class="mono zero">OOB</td></tr>
+          </table>
+          <div class="callout warn">Row 7 was in-bag for ALL three trees — it never got a chance to be "OOB" here (pure chance, common with few trees). Every other row is OOB for at least one tree — that tree can honestly evaluate its prediction on that row, since it never trained on it.</div>
+        </div>
+      </section>
+
+      <section class="block" id="oob-score">
+        <h2>Computing the <span class="underline">OOB Score</span></h2>
+        <div class="card screenshot">
+          <h3>Step 1 — for each row, ask ONLY the trees where it was OOB</h3>
+          <table class="data-table">
+            <tr><th>Row</th><th>True</th><th>OOB in which tree(s)?</th><th>Their prediction(s)</th><th>OOB vote</th><th>Correct?</th></tr>
+            <tr><td class="mono">1</td><td class="mono">N</td><td class="mono">Tree 3</td><td class="mono">N</td><td class="mono good">N</td><td class="good">✓</td></tr>
+            <tr><td class="mono">2</td><td class="mono">N</td><td class="mono">Tree 2</td><td class="mono">N</td><td class="mono good">N</td><td class="good">✓</td></tr>
+            <tr><td class="mono">3</td><td class="mono">N</td><td class="mono">Tree 1</td><td class="mono">Y</td><td class="mono zero">Y</td><td class="zero">✗</td></tr>
+            <tr><td class="mono">4</td><td class="mono">Y</td><td class="mono">Tree 3</td><td class="mono">Y</td><td class="mono good">Y</td><td class="good">✓</td></tr>
+            <tr><td class="mono">5</td><td class="mono">Y</td><td class="mono">Tree 2</td><td class="mono">Y</td><td class="mono good">Y</td><td class="good">✓</td></tr>
+            <tr><td class="mono">6</td><td class="mono">Y</td><td class="mono">Tree 1</td><td class="mono">Y</td><td class="mono good">Y</td><td class="good">✓</td></tr>
+            <tr><td class="mono">7</td><td class="mono">Y</td><td class="mono">— none —</td><td class="mono">—</td><td class="mono">excluded</td><td>—</td></tr>
+            <tr><td class="mono">8</td><td class="mono">N</td><td class="mono">Tree 3</td><td class="mono">N</td><td class="mono good">N</td><td class="good">✓</td></tr>
+          </table>
+        </div>
+        <div class="card screenshot">
+          <h3>Step 2 — aggregate to the OOB score</h3>
+          <div class="formula center">Evaluable rows = 7 (row 7 excluded, no OOB tree) &nbsp;&nbsp;&nbsp; Correct = 6 &nbsp;&nbsp;&nbsp; Incorrect = 1</div>
+          <div class="formula center" style="font-size:16px;">OOB score = 6 / 7 = <span class="k">0.857</span></div>
+          <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);">This number was computed WITHOUT holding out a single dedicated validation row. Every one of the 8 rows contributed to training the forest (via whichever trees included it); it was simply never scored by a tree that had already memorized it. That's the entire trick — and it's essentially free.</div>
+        </div>
+      </section>
+      <section class="block" id="col-subsample">
+        <div class="section-eyebrow">Feature (Column) Subsampling</div>
+        <h2>Subsampled <span class="underline">Per NODE, Not Per Tree</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">This is the single most misunderstood detail in Random Forest. The wrong mental model: <i>"each tree randomly picks a fixed set of features and uses only those for its whole life."</i> That is NOT what happens.</p>
+          <div class="callout bad"><b>The correct model:</b> at EVERY single split (every node, in every tree), a FRESH random subset of features is drawn. The same tree can have Age available at the root but NOT available two nodes later — and Age might come back again at a deeper node. Nothing is fixed for "the whole tree."</div>
+        </div>
+        <div class="card screenshot">
+          <h3>Concrete setup</h3>
+          <div class="formula center">p = 6 features: Age, Income, Balance, Tenure, Transactions, CreditScore &nbsp;&nbsp;&nbsp; m<sub>try</sub> = 2</div>
+          <p class="lead">At every node, only 2 of the 6 features are randomly drawn as candidates. Watch how this plays out inside ONE tree:</p>
+        </div>
+        <div class="svg-card">
+          <svg viewBox="0 0 700 340" width="100%" height="auto">
+            <rect x="270" y="10" width="160" height="46" rx="8" fill="#fff8e0" stroke="#C99A00" stroke-width="1.5"/>
+            <text x="350" y="28" text-anchor="middle" font-size="10" font-family="monospace" fill="#a97400" font-weight="bold">Candidates: Age, Balance</text>
+            <text x="350" y="44" text-anchor="middle" font-size="11" font-family="monospace" fill="#1D5FD1" font-weight="bold">Root: Age &lt; 35</text>
+
+            <line x1="310" y1="56" x2="160" y2="95" stroke="#888" stroke-width="1.3"/>
+            <line x1="390" y1="56" x2="540" y2="95" stroke="#888" stroke-width="1.3"/>
+
+            <rect x="80" y="95" width="170" height="46" rx="8" fill="#fff8e0" stroke="#C99A00" stroke-width="1.5"/>
+            <text x="165" y="113" text-anchor="middle" font-size="10" font-family="monospace" fill="#a97400" font-weight="bold">Candidates: Income, CreditScore</text>
+            <text x="165" y="129" text-anchor="middle" font-size="11" font-family="monospace" fill="#1D5FD1" font-weight="bold">CreditScore &lt; 650</text>
+
+            <rect x="460" y="95" width="170" height="46" rx="8" fill="#fff8e0" stroke="#C99A00" stroke-width="1.5"/>
+            <text x="545" y="113" text-anchor="middle" font-size="10" font-family="monospace" fill="#a97400" font-weight="bold">Candidates: Tenure, Balance</text>
+            <text x="545" y="129" text-anchor="middle" font-size="11" font-family="monospace" fill="#1D5FD1" font-weight="bold">Tenure &lt; 2yrs</text>
+
+            <line x1="130" y1="141" x2="80" y2="180" stroke="#888" stroke-width="1.3"/>
+            <line x1="200" y1="141" x2="250" y2="180" stroke="#888" stroke-width="1.3"/>
+            <line x1="510" y1="141" x2="460" y2="180" stroke="#888" stroke-width="1.3"/>
+            <line x1="580" y1="141" x2="630" y2="180" stroke="#888" stroke-width="1.3"/>
+
+            <rect x="20" y="180" width="120" height="30" rx="6" fill="#e8fff0" stroke="#1F7A56"/>
+            <text x="80" y="199" text-anchor="middle" font-size="10" font-family="monospace" fill="#1F7A56">Leaf</text>
+
+            <rect x="190" y="180" width="170" height="46" rx="8" fill="#fff8e0" stroke="#C99A00" stroke-width="1.5"/>
+            <text x="275" y="198" text-anchor="middle" font-size="10" font-family="monospace" fill="#a97400" font-weight="bold">Candidates: Age, Transactions</text>
+            <text x="275" y="214" text-anchor="middle" font-size="11" font-family="monospace" fill="#1D5FD1" font-weight="bold">Transactions &lt; 12</text>
+
+            <rect x="400" y="180" width="120" height="30" rx="6" fill="#e8fff0" stroke="#1F7A56"/>
+            <text x="460" y="199" text-anchor="middle" font-size="10" font-family="monospace" fill="#1F7A56">Leaf</text>
+
+            <rect x="570" y="180" width="120" height="30" rx="6" fill="#e8fff0" stroke="#1F7A56"/>
+            <text x="630" y="199" text-anchor="middle" font-size="10" font-family="monospace" fill="#1F7A56">Leaf</text>
+
+            <line x1="235" y1="226" x2="200" y2="260" stroke="#888" stroke-width="1.3"/>
+            <line x1="315" y1="226" x2="350" y2="260" stroke="#888" stroke-width="1.3"/>
+
+            <rect x="140" y="260" width="120" height="30" rx="6" fill="#e8fff0" stroke="#1F7A56"/>
+            <text x="200" y="279" text-anchor="middle" font-size="10" font-family="monospace" fill="#1F7A56">Leaf</text>
+
+            <rect x="290" y="260" width="130" height="30" rx="6" fill="#e8fff0" stroke="#1F7A56"/>
+            <text x="355" y="279" text-anchor="middle" font-size="10" font-family="monospace" fill="#1F7A56">Leaf (Age again!)</text>
+
+            <text x="350" y="320" text-anchor="middle" font-size="11" font-family="monospace" fill="#888">Age was a candidate at the root AND at a depth-3 node — but NOT at the two nodes in between</text>
+          </svg>
+        </div>
+        <div class="card">
+          <table class="data-table">
+            <tr><th>Node in this ONE tree</th><th>Randomly drawn candidates (fresh draw!)</th><th>Winner</th></tr>
+            <tr><td class="left mono">Root</td><td class="left mono num-hl">Age, Balance</td><td class="left mono">Age &lt; 35</td></tr>
+            <tr><td class="left mono">Left child of root</td><td class="left mono num-hl">Income, CreditScore</td><td class="left mono">CreditScore &lt; 650</td></tr>
+            <tr><td class="left mono">Right child of root</td><td class="left mono num-hl">Tenure, Balance</td><td class="left mono">Tenure &lt; 2yrs</td></tr>
+            <tr><td class="left mono">A node deeper still</td><td class="left mono num-hl">Age, Transactions</td><td class="left mono">Transactions &lt; 12</td></tr>
+          </table>
+          <div class="callout purple">Income never won a single split in this whole tree, despite being a candidate once — but it might dominate a DIFFERENT tree entirely, where the random draw happened to favor it more. Averaged across hundreds of trees, every feature gets a fair, repeated chance to prove itself, at many different nodes, under many different candidate combinations.</div>
+        </div>
+        <div class="card">
+          <table class="data-table">
+            <tr><th>Randomness source</th><th>How often does it refresh?</th></tr>
+            <tr><td class="left mono">Bootstrap rows (D<sub>b</sub>)</td><td class="left mono">Once per tree — decided before that tree starts growing</td></tr>
+            <tr><td class="left mono">Random feature subset (m<sub>try</sub>)</td><td class="left mono good">Again and again — a FRESH draw at every single split, in every tree</td></tr>
+          </table>
+        </div>
+      </section>
+      <section class="block" id="why-variance">
+        <div class="section-eyebrow">Why Random Forest?</div>
+        <h2>The Instability of a <span class="underline">Single Decision Tree</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Two training sets differing by exactly ONE row. Dataset A has (Age=31, Income=50K, Default=N). Dataset B has that same row changed to Default=Y.</p>
+          <div class="formula center">Tree fit on A: root split <b>Age &lt; 30</b> &nbsp;&nbsp;&nbsp;&nbsp; Tree fit on B: root split <b>Age &lt; 33</b></div>
+          <p class="lead">Evaluate both trees at a NEW test point, Age=31:</p>
+          <div class="formula center">Tree A: 31 &ge; 30 &rArr; right &rArr; predicts <b>N</b> &nbsp;&nbsp;&nbsp;&nbsp; Tree B: 31 &lt; 33 &rArr; left &rArr; predicts <b>Y</b></div>
+          <div class="callout bad">One row out of eight flipped the prediction entirely. Not a fluke — it's structural: the root split is chosen by comparing thresholds on whatever rows happen to be in the training set, and once the root changes, every node beneath it inherits a DIFFERENT subset of rows, so every split below can change too. This is exactly what "high variance" means: <b>Var<sub>D</sub>[&fnof;&#770;<sub>D</sub>(x)]</b> is large — the tree's prediction at a fixed point x swings a lot depending on which dataset D trained it.</div>
+        </div>
+      </section>
+
+      <section class="block" id="low-bias-high-var">
+        <h2>Why Each Tree SHOULD Be <span class="underline">Low Bias, High Variance</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">The natural instinct: "if instability is the problem, make every tree simple and stable — shallow, restricted, low variance." <b>This is the wrong fix.</b> Here's why.</p>
+          <blockquote class="story">Imagine 100 students given a genuinely hard problem. Force every student to use the same simplified, "safe" reasoning, and they ALL make the SAME mistake. Instead, let each student explore deeply and form their own detailed interpretation. Some will make mistakes — but if their mistakes are DIFFERENT from each other, the group's consensus becomes far more reliable than any "safe but shallow" approach ever could be.</blockquote>
+          <table class="data-table">
+            <tr><th>Design choice</th><th>Bias</th><th>Variance (single tree)</th><th>Forest result after averaging</th></tr>
+            <tr><td class="left mono">Deep, unrestricted trees</td><td class="mono good">Low</td><td class="mono zero">High</td><td class="mono good">Falls sharply, IF trees are diverse</td></tr>
+            <tr><td class="left mono">Shallow, restricted trees</td><td class="mono zero">High</td><td class="mono good">Lower</td><td class="mono zero">Still high bias — averaging can't fix systematic mistakes</td></tr>
+          </table>
+          <div class="callout warn"><b>Random Forest is excellent at reducing variance. It does not fix bias.</b> If every tree is wrong in the same systematic way, averaging just gives you the same wrong answer with more confidence. Deep trees start with the easy problem (variance, fixable by averaging) instead of the hard one (bias, not fixable by averaging) — that's the whole justification for deliberately keeping individual trees expressive.</div>
+        </div>
+      </section>
+
+      <section class="block" id="correlation">
+        <h2>Why Trees Must <span class="underline">NOT Be Correlated</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Suppose every tree in the forest IS deep and expressive (low bias) — is that alone enough? Only if they're also sufficiently DIFFERENT from each other.</p>
+          <div class="formula center">If T<sub>1</sub>(x) = T<sub>2</sub>(x) = ... = T<sub>B</sub>(x) (identical trees), then averaging gives back the SAME T(x)</div>
+          <div class="callout bad"><b>100 identical trees = effectively ONE tree.</b> If all trees make correlated errors — say they all overpredict together whenever a certain pattern appears — averaging them does NOT cancel that shared error out. The forest inherits the correlated mistake at full strength.</div>
+        </div>
+      </section>
+
+      <section class="block" id="variance-formula">
+        <h2>The Variance Formula, <span class="underline">With Correlation</span></h2>
+        <div class="card">
+          <div class="callout info"><span class="badge-impl">End-to-end derivation optional</span> — the full step-by-step algebraic derivation (starting from Var(a+b), building up to B trees, proving every assumption) is in the companion PDF on the drive: <i>"Why Random Forest Reduces Variance."</i> Here we go straight to the result and build intuition with numbers.</div>
+          <div class="formula center" style="font-size:16px;">Var(Random Forest) = &rho;&sigma;&sup2; + (1&minus;&rho;)&sigma;&sup2;/B</div>
+          <table class="data-table">
+            <tr><th>Symbol</th><th>Meaning</th></tr>
+            <tr><td class="mono">&sigma;&sup2;</td><td class="left">Variance of ONE single tree's prediction, on its own</td></tr>
+            <tr><td class="mono">&rho;</td><td class="left">Average correlation between any two trees' predictions</td></tr>
+            <tr><td class="mono">B</td><td class="left">Number of trees in the forest</td></tr>
+          </table>
+        </div>
+        <div class="card screenshot">
+          <h3>Three scenarios, B=100 trees, <span style="text-transform:none;">&sigma;&sup2;=1</span></h3>
+          <div class="grid-3">
+            <div class="card"><h3 style="color:var(--green);">&rho;=0 (independent)</h3>
+              <div class="formula center">Var(RF) = 0 + 1&times;1/100 = <span class="k">0.01</span></div>
+              <p style="font-size:11.5px; color:var(--chalk-dim);">99% variance reduction — the ideal case.</p>
+            </div>
+            <div class="card"><h3 style="color:var(--yellow);">&rho;=0.9 (highly correlated)</h3>
+              <div class="formula center">Var(RF) = 0.9 + 0.1/100 = <span class="k">0.901</span></div>
+              <p style="font-size:11.5px; color:var(--chalk-dim);">Barely better than ONE tree — 100 trees wasted.</p>
+            </div>
+            <div class="card"><h3 style="color:var(--pink);">&rho;=1 (identical)</h3>
+              <div class="formula center">Var(RF) = 1 + 0 = <span class="k">1.000</span></div>
+              <p style="font-size:11.5px; color:var(--chalk-dim);">Exactly a single tree's variance. Zero benefit.</p>
+            </div>
+          </div>
+        </div>
+        <div class="svg-card">
+          <svg viewBox="0 0 620 260" width="100%" height="auto">
+            <line x1="60" y1="220" x2="580" y2="220" stroke="#333" stroke-width="1.3"/>
+            <line x1="60" y1="220" x2="60" y2="20" stroke="#333" stroke-width="1.3"/>
+            <text x="320" y="245" text-anchor="middle" font-size="12" font-family="monospace" fill="#333">correlation &rho; (0 &rarr; 1)</text>
+            <text x="25" y="120" text-anchor="middle" font-size="12" font-family="monospace" fill="#333" transform="rotate(-90 25 120)">Var(RF), B=100</text>
+
+            <path d="M 60 213 C 200 200, 350 120, 580 24" fill="none" stroke="#1D5FD1" stroke-width="2.5"/>
+
+            <line x1="60" y1="24" x2="580" y2="24" stroke="#ccc" stroke-dasharray="4 3"/>
+            <text x="585" y="28" font-size="10" font-family="monospace" fill="#888">rho=1 ceiling</text>
+
+            <circle cx="60" cy="213" r="4" fill="#1F7A56"/><text x="70" y="205" font-size="10" font-family="monospace" fill="#1F7A56">&rho;=0: 0.01</text>
+            <circle cx="580" cy="24" r="4" fill="#C0392B"/><text x="460" y="45" font-size="10" font-family="monospace" fill="#C0392B">&rho;=0.9: 0.901</text>
+            <circle cx="527" cy="35" r="4" fill="#a97400"/>
+
+            <text x="320" y="20" text-anchor="middle" font-size="11" font-family="monospace" fill="#555">Var(RF) rises steeply as trees stop being independent</text>
+          </svg>
+          <div class="svg-caption">Correlation dominates. More trees (bigger B) barely helps once &rho; is high — the curve is almost flat near &rho;=1 regardless of B.</div>
+        </div>
+        <div class="callout purple" style="font-size:14.5px;"><b>This is exactly why Random Forest bothers with column subsampling at all.</b> Bootstrap rows alone lowers &rho; only a little — if one feature is by far the strongest predictor, nearly every bootstrapped tree will still find it and put it at the root, keeping trees correlated. Randomly hiding features at each split forces genuinely different trees to emerge, pushing &rho; down — which the graph above shows is the single biggest lever on the whole formula.</div>
+      </section>
+      <section class="block" id="pruning-def">
+        <div class="section-eyebrow">Pruning</div>
+        <h2>What Is Pruning, <span class="underline">and Why?</span></h2>
+        <div class="card">
+          <div class="formula center">Pruning = deliberately REMOVING parts of a tree to control its complexity</div>
+          <p class="lead" style="margin-top:0;">A fully-grown Decision Tree keeps splitting until it nearly memorizes the training data — training error approaches 0, but test error starts rising past a certain depth (classic overfitting, from Class 13). Pruning is the tool that fixes this for a SINGLE tree.</p>
+          <div class="callout info">Note the contrast with today's earlier sections: inside a Random Forest we deliberately let trees stay deep and unpruned (ensemble averaging handles their variance). Pruning matters most when you have <b>one single tree</b> and no ensemble to average its instability away.</div>
+        </div>
+      </section>
+
+      <section class="block" id="pre-pruning">
+        <h2>Pre-Pruning</h2>
+        <div class="card">
+          <div class="formula center">Pre-pruning = stop the tree from growing too much, WHILE it's being built</div>
+          <p class="lead" style="margin-top:0;">Already familiar from Class 13/14 — a handful of intuitive stopping rules, checked at every node BEFORE deciding whether to split further:</p>
+          <table class="data-table">
+            <tr><th>Parameter</th><th>What it controls</th></tr>
+            <tr><td class="left mono">max_depth</td><td class="left">Maximum levels the tree may reach</td></tr>
+            <tr><td class="left mono">min_samples_split</td><td class="left">Minimum rows required to even attempt a split</td></tr>
+            <tr><td class="left mono">min_samples_leaf</td><td class="left">Minimum rows required in each resulting leaf</td></tr>
+            <tr><td class="left mono">max_leaf_nodes</td><td class="left">Total leaf budget for the whole tree</td></tr>
+          </table>
+          <div class="callout warn">Cheap, easy to tune — but GREEDY. A split that looks weak right now might have led to a genuinely useful split one level deeper; pre-pruning never lets the tree grow far enough to find out.</div>
+        </div>
+      </section>
+
+      <section class="block" id="post-pruning">
+        <h2>Post-Pruning <span class="underline">&amp; Alpha</span></h2>
+        <div class="card">
+          <div class="formula center">Post-pruning = grow the FULL tree first, then decide which branches are worth keeping</div>
+          <div class="pipeline">
+            <div class="pipe-step"><div class="n">01</div><div class="t">Grow full tree</div><div class="d">no early stopping</div></div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-step"><div class="n">02</div><div class="t">Evaluate every subtree</div><div class="d">is it worth its leaves?</div></div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-step"><div class="n">03</div><div class="t">Collapse weak ones</div><div class="d">into single leaves</div></div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-step"><div class="n">✓</div><div class="t">Simpler, final tree</div></div>
+          </div>
+        </div>
+        <div class="card screenshot">
+          <h3>Alpha — the hyperparameter that controls how much gets pruned</h3>
+          <div class="formula center">R<sub>&alpha;</sub>(T) = R(T) + &alpha;&middot;|T|</div>
+          <p class="lead" style="margin-top:0;">R(T) = the tree's error. |T| = number of leaves. &alpha; = price charged PER leaf. This single number is the dial that decides how aggressively to prune:</p>
+          <table class="data-table">
+            <tr><th>&alpha; value</th><th>What happens</th><th>Result</th></tr>
+            <tr><td class="mono zero">&alpha; = 0</td><td class="left mono">No penalty for extra leaves at all</td><td class="left mono zero">Full, unpruned tree survives → <b>OVERFITTING</b></td></tr>
+            <tr><td class="mono">&alpha; small</td><td class="left mono">Weak penalty</td><td class="left mono">Only clearly-useless leaves get removed</td></tr>
+            <tr><td class="mono hl">&alpha; "just right"</td><td class="left mono">Balances error vs complexity</td><td class="left mono hl">Best validation performance — the goal</td></tr>
+            <tr><td class="mono zero">&alpha; very large</td><td class="left mono">Every leaf is extremely expensive</td><td class="left mono zero">Tree collapses toward 1 leaf → <b>UNDERFITTING</b></td></tr>
+          </table>
+        </div>
+        <div class="card screenshot">
+          <h3>Small worked example</h3>
+          <p class="lead" style="margin-top:0;">A 3-leaf subtree: R(T)=0.1667 (training error). Compare 3 candidate &alpha; values:</p>
+          <div class="formula center">
+            &alpha;=0: R<sub>&alpha;</sub> = 0.1667 + 0&times;3 = <span class="k">0.1667</span> &nbsp;(full tree wins — nothing to lose by keeping every leaf)<br>
+            &alpha;=0.1: R<sub>&alpha;</sub> = 0.1667 + 0.1&times;3 = <span class="k">0.4667</span> &nbsp;(now compare against a smaller, 2-leaf alternative...)<br>
+            &alpha;=0.5: R<sub>&alpha;</sub> = 0.1667 + 0.5&times;3 = <span class="k">1.6667</span> &nbsp;(leaves are now VERY expensive — smaller trees start winning easily)
+          </div>
+          <div class="callout purple">This is exactly the sweet-spot search: pick a handful of candidate &alpha; values, compute R<sub>&alpha;</sub> for each resulting tree, and let VALIDATION data (not training error) tell you which one actually generalizes best.</div>
+        </div>
+        <div class="card">
+          <div class="callout info"><span class="badge-impl">Full step-by-step, round-by-round detail in a separate document</span> — the exact weakest-link algorithm (which subtree gets collapsed first, how &alpha;<sub>t</sub> is derived per node, verified against sklearn's <code>cost_complexity_pruning_path()</code>, for both classification AND regression) is worked through completely in the companion notes on the drive: <i>"Post-Pruning, In Full."</i> Go through that for the full round-by-round computation — today's notes give you the concept and the hyperparameter intuition.</div>
+        </div>
+      </section>
+      <section class="block" id="predict-dt">
+        <div class="section-eyebrow">Prediction</div>
+        <h2>predict() For a <span class="underline">Single Decision Tree</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">A test point walks root &rarr; leaf, following the already-fixed split conditions. Whatever the leaf's majority class is, that's the prediction — one tree, one deterministic path, one answer.</p>
+          <div class="pipeline">
+            <div class="pipe-step"><div class="n">01</div><div class="t">Test point x</div></div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-step"><div class="n">02</div><div class="t">Root condition</div><div class="d">Age &lt; 35?</div></div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-step"><div class="n">03</div><div class="t">Follow branch</div></div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-step"><div class="n">✓</div><div class="t">Leaf reached</div><div class="d">predict majority class</div></div>
+          </div>
+          <div class="callout info">For probabilities, <code>predict_proba()</code> on a single tree just reads off the leaf's own class proportions — e.g. a leaf with 8 Yes / 2 No gives P(Yes)=0.8, P(No)=0.2. Still just ONE leaf's opinion, nothing aggregated.</div>
+        </div>
+      </section>
+
+      <section class="block" id="predict-rf">
+        <h2>predict() &amp; predict_proba() <span class="underline">For Random Forest</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">The SAME test point now walks through EVERY tree independently — B separate root-to-leaf journeys, B separate opinions, then combined.</p>
+          <div class="formula center">P&#770;(Y=k | x) = (1/B) <span class="sum-wrap"><span class="sup">B</span><span class="sigma">&sum;</span><span class="sub">b=1</span></span> I(&ycirc;<sub>b</sub> = k)</div>
+          <div class="formula-note">I(&middot;) = 1 if tree b predicted class k, else 0. Averaging these 0/1 votes across all B trees IS the estimated probability for class k.</div>
+        </div>
+        <div class="card screenshot">
+          <h3>Worked example — 5 trees, one test point</h3>
+          <table class="data-table">
+            <tr><th>Tree</th><th>Leaf reached</th><th>Leaf's own prediction</th></tr>
+            <tr><td class="mono">Tree 1</td><td class="mono">n=12, 9 Yes/3 No</td><td class="mono good">Yes</td></tr>
+            <tr><td class="mono">Tree 2</td><td class="mono">n=8, 2 Yes/6 No</td><td class="mono zero">No</td></tr>
+            <tr><td class="mono">Tree 3</td><td class="mono">n=15, 11 Yes/4 No</td><td class="mono good">Yes</td></tr>
+            <tr><td class="mono">Tree 4</td><td class="mono">n=10, 7 Yes/3 No</td><td class="mono good">Yes</td></tr>
+            <tr><td class="mono">Tree 5</td><td class="mono">n=9, 3 Yes/6 No</td><td class="mono zero">No</td></tr>
+          </table>
+          <div class="formula center">P&#770;(Yes) = 3/5 = <span class="k">0.60</span> &nbsp;&nbsp;&nbsp; P&#770;(No) = 2/5 = <span class="k">0.40</span></div>
+          <div class="formula center" style="border-color:var(--cyan);">predict() &rArr; <b>Yes</b> (majority) &nbsp;&nbsp;&nbsp; predict_proba() &rArr; <b>[0.40, 0.60]</b></div>
+          <div class="callout warn"><span class="badge-impl">Version-specific detail</span> — some RF implementations use a hard 0/1 vote per tree (as shown above); scikit-learn's <code>RandomForestClassifier</code> specifically averages each tree's own <code>predict_proba</code> (its leaf's class proportions) rather than a hard vote by default. Both converge to a similar idea, but the exact numbers can differ slightly — always check your library's docs.</div>
+        </div>
+        <div class="card">
+          <h3>Decision Tree vs Random Forest — prediction, side by side</h3>
+          <table class="data-table">
+            <tr><th>Aspect</th><th>Single Decision Tree</th><th>Random Forest</th></tr>
+            <tr><td class="left mono">Journeys taken per test point</td><td class="left mono">1 (one root-to-leaf path)</td><td class="left mono good">B (one per tree, independent)</td></tr>
+            <tr><td class="left mono">predict() logic</td><td class="left mono">Leaf's own majority class</td><td class="left mono good">Majority vote / averaged probability across B trees</td></tr>
+            <tr><td class="left mono">predict_proba() logic</td><td class="left mono">One leaf's class proportions</td><td class="left mono good">Averaged proportions across B leaves (one per tree)</td></tr>
+            <tr><td class="left mono">Stability of the prediction</td><td class="left mono zero">Can flip with tiny data changes (high variance)</td><td class="left mono good">Stable — B independent opinions rarely flip together</td></tr>
+          </table>
+        </div>
+        <div class="card screenshot">
+          <h3>Regression works the same way — plain averaging, no vote needed</h3>
+          <div class="formula center">&ycirc; = (1/B) <span class="sum-wrap"><span class="sup">B</span><span class="sigma">&sum;</span><span class="sub">b=1</span></span> &ycirc;<sub>b</sub></div>
+          <div class="formula center">Tree predictions: 68, 72, 65, 70, 74 &nbsp;&rArr;&nbsp; &ycirc; = (68+72+65+70+74)/5 = <span class="k">69.8</span></div>
+        </div>
+      </section>
+      <section class="block" id="fi-recap">
+        <div class="section-eyebrow">Feature Importance</div>
+        <h2>Recap: <span class="underline">Importance For One Tree</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Already covered in Class 14 — quick recap of the formula before extending it.</p>
+          <div class="formula center">&Delta;I = I(parent) &minus; [ (n<sub>L</sub>/n)&middot;I(left) + (n<sub>R</sub>/n)&middot;I(right) ]</div>
+          <div class="formula center">FI<sub>j</sub><sup>(tree)</sup> = &sum;<sub>nodes splitting on feature j</sub> (n<sub>node</sub>/n<sub>total</sub>) &middot; &Delta;I<sub>node</sub></div>
+          <div class="callout warn">Not a usage count. A feature used ONCE at the root (affects 100% of data, big impurity drop) can easily outrank a feature used FIVE times deep in the tree (each time affecting a tiny, already-pure subset).</div>
+        </div>
+      </section>
+
+      <section class="block" id="fi-rf">
+        <h2>Extending to the <span class="underline">Whole Forest</span></h2>
+        <div class="card">
+          <div class="formula center">FI<sub>j</sub><sup>RF</sup> = (1/B) <span class="sum-wrap"><span class="sup">B</span><span class="sigma">&sum;</span><span class="sub">b=1</span></span> FI<sub>j</sub><sup>(b)</sup></div>
+          <div class="formula-note">Simple average of each tree's own (already normalized to 1) importance vector, across all B trees.</div>
+        </div>
+      </section>
+
+      <section class="block" id="fi-missing">
+        <h2>When a Feature Is <span class="underline">Missing From a Subtree</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Direct consequence of column subsampling: a feature can be COMPLETELY UNAVAILABLE at every node of a given tree, purely by the luck of the random draw — not because it's weak.</p>
+          <div class="callout info">If Feature A never gets randomly offered as a candidate anywhere in Tree 3 — or gets offered but never wins — its contribution for Tree 3 is exactly <b>FI<sub>A</sub><sup>(3)</sup> = 0</b>. No hidden default, no imputed value. It just averages in as a zero for that one tree.</div>
+        </div>
+        <div class="card screenshot">
+          <h3>Full numerical example — 4 trees, 4 features</h3>
+          <table class="data-table">
+            <tr><th>Feature</th><th>Tree 1</th><th>Tree 2</th><th>Tree 3</th><th>Tree 4</th><th>Forest Average</th></tr>
+            <tr><td class="left mono">Age</td><td class="mono">0.40</td><td class="mono">0.10</td><td class="mono zero">0 (never used)</td><td class="mono">0.20</td><td class="mono hl">0.175</td></tr>
+            <tr><td class="left mono">Income</td><td class="mono">0.40</td><td class="mono">0.35</td><td class="mono">0.55</td><td class="mono zero">0 (never used)</td><td class="mono hl">0.325</td></tr>
+            <tr><td class="left mono">Balance</td><td class="mono">0.20</td><td class="mono">0.30</td><td class="mono">0.25</td><td class="mono">0.35</td><td class="mono hl">0.275</td></tr>
+            <tr><td class="left mono">Tenure</td><td class="mono zero">0 (never used)</td><td class="mono">0.25</td><td class="mono">0.20</td><td class="mono">0.45</td><td class="mono hl">0.225</td></tr>
+          </table>
+          <div class="callout info">Check every column sums to 1.0 first — that's how you know each tree's own importance vector was properly normalized BEFORE averaging: Tree 1 = 0.40+0.40+0.20+0 = 1.00 ✓ &nbsp; Tree 2 = 0.10+0.35+0.30+0.25 = 1.00 ✓ &nbsp; Tree 3 = 0+0.55+0.25+0.20 = 1.00 ✓ &nbsp; Tree 4 = 0.20+0+0.35+0.45 = 1.00 ✓</div>
+          <div class="step-card"><span class="step-tag">Age</span> (0.40+0.10+0+0.20)/4 = 0.70/4 = <span class="mono num-hl">0.175</span></div>
+          <div class="step-card"><span class="step-tag p">Income</span> (0.40+0.35+0.55+0)/4 = 1.30/4 = <span class="mono num-hl">0.325</span></div>
+          <div class="step-card"><span class="step-tag y">Balance</span> (0.20+0.30+0.25+0.35)/4 = 1.10/4 = <span class="mono num-hl">0.275</span></div>
+          <div class="step-card"><span class="step-tag g">Tenure</span> (0+0.25+0.20+0.45)/4 = 0.90/4 = <span class="mono num-hl">0.225</span></div>
+          <div class="formula center">Sum check: 0.175+0.325+0.275+0.225 = <span class="k">1.000</span> ✓</div>
+        </div>
+        <div class="card">
+          <div class="callout purple"><b>Income was completely absent from Tree 4</b> (contributed exactly 0 there) yet still finished with the HIGHEST forest importance (0.325) — because in the three trees where it WAS available, it was extremely useful (0.40, 0.35, 0.55). Being unavailable in one tree — an artifact of random feature subsampling, not a judgment about usefulness — doesn't drag down a feature's overall standing if it earns high importance whenever it IS given the chance.</div>
+          <div class="callout bad">Never confuse USAGE FREQUENCY ("how often was this feature even offered/selected?") with IMPORTANCE ("how much impurity reduction did it contribute when it won?"). A feature can be rare and powerful, or common and weak — the forest average captures the second thing, not the first.</div>
+        </div>
+      </section>
+
+      <section class="block" id="summary">
+        <div class="section-eyebrow">Wrap-up</div>
+        <h2>Summary <span class="underline">&amp; Cheat Sheet</span></h2>
+        <div class="card">
+          <table class="data-table">
+            <tr><th>Topic</th><th>One-line takeaway</th></tr>
+            <tr><td class="left">Bagging</td><td class="left">Bootstrap rows (with replacement) + aggregate; works with any base learner</td></tr>
+            <tr><td class="left">Random Forest</td><td class="left">Bagging of trees + random feature subsampling AT EVERY SPLIT</td></tr>
+            <tr><td class="left">OOB</td><td class="left">Each row scored only by the trees that never trained on it — free validation signal</td></tr>
+            <tr><td class="left">Column subsampling</td><td class="left">Fresh random feature subset every node, not once per tree — this is what decorrelates trees</td></tr>
+            <tr><td class="left">High variance of a single tree</td><td class="left">Small data change → different root split → cascading structural change</td></tr>
+            <tr><td class="left">Each tree: low bias, high variance</td><td class="left">Averaging fixes variance but not bias — so start with the fixable problem</td></tr>
+            <tr><td class="left">Var(RF) = &rho;&sigma;&sup2;+(1&minus;&rho;)&sigma;&sup2;/B</td><td class="left">&rho; is a floor that more trees (B) alone can't remove — decorrelation is the real lever</td></tr>
+            <tr><td class="left">Pre-pruning</td><td class="left">Stop growth early — cheap, greedy, can miss deeper useful splits</td></tr>
+            <tr><td class="left">Post-pruning + &alpha;</td><td class="left">Grow fully, then prune; &alpha;=0 overfits, &alpha; too large underfits, validate to find the middle</td></tr>
+            <tr><td class="left">RF predict_proba</td><td class="left">Average of each tree's own leaf probabilities (or hard-vote fraction), not one leaf's opinion</td></tr>
+            <tr><td class="left">RF feature importance</td><td class="left">Average of each tree's normalized importance; missing-from-a-tree contributes exactly 0, never a hidden default</td></tr>
+          </table>
+        </div>
+
+        <div class="card screenshot">
+          <h3>Coming next</h3>
+          <div class="pipeline">
+            <div class="pipe-step"><div class="n">01</div><div class="t">RF hyperparameters</div><div class="d">n_estimators, max_features, max_samples, bootstrap</div></div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-step"><div class="n">02</div><div class="t">Full code walkthrough</div><div class="d">DT and RF, sklearn, end to end</div></div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-step"><div class="n">03</div><div class="t">Boosting</div><div class="d">a fundamentally different ensemble idea</div></div>
+          </div>
+        </div>
+      </section>
+
+      <div class="footnote-strip">
+        <span class="hand">&mdash; end of class &mdash;</span>
+        Random Forest &amp; Pruning &middot; 07 August 2026
+      </div>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>

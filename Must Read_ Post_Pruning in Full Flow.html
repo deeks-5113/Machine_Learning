@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Post-Pruning, In Full — Classification, Regression, and Validation</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Patrick+Hand&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --board:#0c1014; --card:#151b21; --card-line:#222b32;
+    --chalk:#e9eef2; --chalk-dim:#9fb0bb;
+    --cyan:#5fd8e0; --cyan-dim:#2c5a5e;
+    --pink:#f17fb0; --pink-dim:#5a2f42;
+    --yellow:#f4cf5e; --green:#8fe3a6; --green-dim:#2f4f3a;
+    --purple:#b39ddb; --purple-dim:#4a3f6b;
+    --white-marker:#f5f5f0; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{ background:var(--board); color:var(--chalk); font-family:'Inter',sans-serif; line-height:1.6; -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width:960px; margin:0 auto; padding:0 24px 120px; }
+  h1,h2,h3,.hand{ font-family:'Caveat',cursive; font-weight:700; }
+  .hero{ padding:50px 0 26px; text-align:center; }
+  .chip{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--cyan); border:1px solid var(--cyan-dim); background:rgba(95,216,224,0.06); padding:6px 14px; border-radius:999px; margin-bottom:16px; }
+  .hero h1{ font-size:clamp(24px,5vw,36px); color:var(--white-marker); margin:0 0 8px; }
+  .hero h1 span{color:var(--pink);}
+  .hero p{ font-family:'Patrick Hand',cursive; color:var(--chalk-dim); font-size:16.5px; max-width:720px; margin:0 auto; }
+  nav.toc{ background:var(--card); border:1px solid var(--card-line); border-radius:var(--radius); padding:18px 22px; font-family:'JetBrains Mono',monospace; font-size:12px; margin:24px 0 10px; }
+  nav.toc .toc-title{ color:var(--chalk-dim); text-transform:uppercase; letter-spacing:1.2px; font-size:10px; margin-bottom:8px; margin-top:14px; }
+  nav.toc .toc-title:first-child{margin-top:0;}
+  nav.toc a{ display:block; color:var(--chalk-dim); text-decoration:none; padding:4px 0; }
+  nav.toc a:hover{color:var(--cyan);}
+  section.block{ margin-top:48px; scroll-margin-top:24px; }
+  .section-eyebrow{ font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--pink); margin-bottom:6px; }
+  section.block h2{ font-size:26px; color:var(--white-marker); margin:0 0 12px; }
+  section.block h2 .underline{ text-decoration:underline; text-decoration-color:var(--cyan); text-decoration-thickness:3px; }
+  p.lead{ font-size:15px; color:#cdd8de; }
+  .card{ background:var(--card); border:1px solid var(--card-line); border-radius:var(--radius); padding:20px 24px; margin:16px 0; }
+  .card h3{ font-family:'Inter',sans-serif; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.7px; color:var(--cyan); margin:0 0 10px; }
+  table.data-table{ width:100%; border-collapse:collapse; font-family:'JetBrains Mono',monospace; font-size:11.5px; }
+  table.data-table th{ text-align:left; color:var(--chalk-dim); font-weight:500; padding:6px 8px; border-bottom:1px solid var(--card-line); text-transform:uppercase; font-size:9.5px; letter-spacing:0.4px; }
+  table.data-table td{ padding:6px 8px; border-bottom:1px solid rgba(255,255,255,0.04); }
+  table.data-table td.hl{color:var(--yellow); font-weight:700;}
+  table.data-table td.zero{color:var(--pink); font-weight:700;}
+  table.data-table td.good{color:var(--green); font-weight:700;}
+  table.data-table td.left{text-align:left;}
+  .formula{ font-family:'JetBrains Mono',monospace; background:#0a0d10; border:1px solid var(--card-line); border-radius:10px; padding:16px 22px; margin:14px 0; font-size:14px; color:var(--white-marker); overflow-x:auto; text-align:center; }
+  .formula .k{color:var(--yellow);} .formula .r{color:var(--cyan);} .formula .l{color:var(--pink);}
+  .callout{ background:rgba(143,227,166,0.08); border:1px solid var(--green-dim); border-radius:10px; padding:14px 18px; color:var(--green); font-size:13.5px; font-family:'JetBrains Mono',monospace; margin:14px 0; line-height:1.65; }
+  .callout.warn{ background:rgba(244,207,94,0.08); border-color:#5a4f2f; color:var(--yellow); }
+  .callout.bad{ background:rgba(241,127,176,0.08); border-color:var(--pink-dim); color:var(--pink); }
+  .callout.info{ background:rgba(95,216,224,0.08); border-color:var(--cyan-dim); color:var(--cyan); }
+  .callout.purple{ background:rgba(179,157,219,0.08); border-color:var(--purple-dim); color:var(--purple); }
+  .num-hl{ color:var(--yellow); font-weight:700; }
+  .svg-card{ background:#fff; border:1px solid var(--card-line); border-radius:12px; padding:16px; }
+  .svg-caption{ text-align:center; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:#555; margin-top:8px; }
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start;}
+  @media (max-width:760px){.grid-2{grid-template-columns:1fr;}}
+  .footnote-strip{ margin-top:60px; border-top:1px dashed var(--card-line); padding-top:22px; text-align:center; color:var(--chalk-dim); font-family:'JetBrains Mono',monospace; font-size:12px; }
+  .footnote-strip .hand{color:var(--cyan); font-size:22px; display:block; margin-bottom:6px;}
+
+  @media print{
+    body{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    nav.toc{ display:none; }
+    .card, table.data-table, pre.code-block, pre.output-block, .callout, .formula, .svg-card{ break-inside:avoid; page-break-inside:avoid; }
+    .hero{ padding-top:10px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="chip">Companion Derivation &middot; Post-Pruning, End to End</div>
+    <h1>Post-Pruning, <span>In Full — Classification, Regression &amp; Validation</span></h1>
+    <p>Not a formula to memorize — a counting exercise. Collapse a subtree, count leaves before, count leaves after, subtract. Then the full round-by-round algorithm, drawn out, on real trees, with every "wrong if collapsed" number shown from raw counts — and finally, how to properly validate which pruned tree to actually deploy.</p>
+  </div>
+
+  <nav class="toc" id="toc">
+    <div class="toc-title">The Core Confusion</div>
+    <a href="#subtree-not-leaf">One subtree at a time, not one leaf</a>
+    <a href="#counting">Where "&minus;1" literally comes from</a>
+    <a href="#bigger-example">Same counting, a bigger subtree</a>
+    <div class="toc-title">The Full Algorithm, Drawn</div>
+    <a href="#round1">Classification Round 1 — three candidates, one winner</a>
+    <a href="#round2">Classification Round 2 — recompute</a>
+    <a href="#round3">Classification Round 3 — down to the root</a>
+    <div class="toc-title">Now For Regression</div>
+    <a href="#reg-subtree">Same subtree collapse, mean/SSE version</a>
+    <a href="#reg-round1">Regression Round 1</a>
+    <a href="#reg-round2">Regression Round 2</a>
+    <a href="#reg-round3">Regression Round 3</a>
+    <div class="toc-title">How This Becomes Code</div>
+    <a href="#code-mechanism">Multiple alphas computed, one stored per round</a>
+    <div class="toc-title">After The Sequence</div>
+    <a href="#validate">How do you validate and pick the best alpha?</a>
+    <div class="toc-title">Wrap-up</div>
+    <a href="#sequence">Both sequences, compared</a>
+  </nav>
+  <section class="block" id="subtree-not-leaf">
+    <div class="section-eyebrow">The Core Confusion</div>
+    <h2>One Subtree At a Time, <span class="underline">Not One Leaf</span></h2>
+    <div class="card">
+      <p class="lead" style="margin-top:0;">You never remove leaves individually. The operation is always: pick ONE internal node, and turn its ENTIRE subtree — however many leaves it has — into a single leaf, all at once, in one move.</p>
+    </div>
+    <div class="grid-2">
+      <div class="svg-card">
+        <svg viewBox="0 0 260 180" width="100%" height="auto">
+          <text x="130" y="20" text-anchor="middle" font-size="12" font-family="monospace" fill="#333" font-weight="bold">BEFORE</text>
+          <rect x="90" y="34" width="80" height="34" rx="7" fill="#e8f0ff" stroke="#1D5FD1" stroke-width="1.5"/>
+          <text x="130" y="55" text-anchor="middle" font-size="11" font-family="monospace" fill="#1D5FD1" font-weight="bold">node 4 (n=131)</text>
+          <line x1="115" y1="68" x2="60" y2="105" stroke="#888" stroke-width="1.3"/>
+          <line x1="145" y1="68" x2="200" y2="105" stroke="#888" stroke-width="1.3"/>
+          <rect x="15" y="105" width="90" height="40" rx="7" fill="#e8fff0" stroke="#1F7A56" stroke-width="1.5"/>
+          <text x="60" y="123" text-anchor="middle" font-size="10.5" font-family="monospace" fill="#1F7A56" font-weight="bold">LEAF 5</text>
+          <text x="60" y="137" text-anchor="middle" font-size="9" font-family="monospace" fill="#555">n=3</text>
+          <rect x="155" y="105" width="90" height="40" rx="7" fill="#e8fff0" stroke="#1F7A56" stroke-width="1.5"/>
+          <text x="200" y="123" text-anchor="middle" font-size="10.5" font-family="monospace" fill="#1F7A56" font-weight="bold">LEAF 6</text>
+          <text x="200" y="137" text-anchor="middle" font-size="9" font-family="monospace" fill="#555">n=128</text>
+          <text x="130" y="170" text-anchor="middle" font-size="11" font-family="monospace" fill="#a97400" font-weight="bold">2 leaves exist</text>
+        </svg>
+        <div class="svg-caption">Two separate leaves: leaf 5 and leaf 6</div>
+      </div>
+      <div class="svg-card">
+        <svg viewBox="0 0 260 180" width="100%" height="auto">
+          <text x="130" y="20" text-anchor="middle" font-size="12" font-family="monospace" fill="#333" font-weight="bold">AFTER collapsing node 4</text>
+          <rect x="90" y="80" width="80" height="40" rx="7" fill="#fff0e8" stroke="#C0392B" stroke-width="1.5"/>
+          <text x="130" y="99" text-anchor="middle" font-size="10.5" font-family="monospace" fill="#C0392B" font-weight="bold">LEAF 4</text>
+          <text x="130" y="113" text-anchor="middle" font-size="9" font-family="monospace" fill="#555">n=131</text>
+          <text x="60" y="130" text-anchor="middle" font-size="18" font-family="monospace" fill="#ccc">✕</text>
+          <text x="200" y="130" text-anchor="middle" font-size="18" font-family="monospace" fill="#ccc">✕</text>
+          <text x="60" y="150" text-anchor="middle" font-size="9" font-family="monospace" fill="#999">leaf 5 gone</text>
+          <text x="200" y="150" text-anchor="middle" font-size="9" font-family="monospace" fill="#999">leaf 6 gone</text>
+          <text x="130" y="170" text-anchor="middle" font-size="11" font-family="monospace" fill="#a97400" font-weight="bold">1 leaf exists</text>
+        </svg>
+        <div class="svg-caption">Node 4 itself IS the leaf now — predicts one class for all 131 samples</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="callout warn">Nothing was removed "one leaf at a time." You didn't first delete leaf 5, then separately decide about leaf 6. The WHOLE subtree below node 4 — both leaves, in one move — got replaced by exactly one leaf.</div>
+    </div>
+  </section>
+
+  <section class="block" id="counting">
+    <h2>Where "&minus;1" <span class="underline">Literally Comes From</span></h2>
+    <div class="card">
+      <p class="lead" style="margin-top:0;">Not a clever formula choice — just counting, before and after, from the exact picture above:</p>
+      <div class="formula">Before collapsing: &nbsp; <span class="k">2</span> leaves existed (leaf 5, leaf 6)<br>After collapsing: &nbsp; <span class="l">1</span> leaf exists (node 4 itself, now a leaf)<br><br>Leaves eliminated &nbsp;=&nbsp; <span class="k">2</span> &minus; <span class="l">1</span> &nbsp;=&nbsp; 1</div>
+      <div class="callout info"><b>|T<sub>t</sub>| is "how many leaves the subtree had BEFORE."</b> The result of collapsing ANYTHING is always EXACTLY 1 leaf, no matter how many leaves you started with. So "leaves eliminated" is always (leaves before) minus 1 — not because 1 is special, but because collapsing always lands you at exactly one leaf, regardless of the starting count.</div>
+    </div>
+  </section>
+
+  <section class="block" id="bigger-example">
+    <h2>Same Counting, <span class="underline">A Bigger Subtree</span></h2>
+    <div class="card">
+      <p class="lead" style="margin-top:0;">Watch the exact same logic hold for a much bigger subtree — node 0, the ENTIRE tree (4 leaves: 2, 3, 5, 6):</p>
+    </div>
+    <div class="grid-2">
+      <div class="svg-card">
+        <svg viewBox="0 0 300 220" width="100%" height="auto">
+          <text x="150" y="18" text-anchor="middle" font-size="12" font-family="monospace" fill="#333" font-weight="bold">BEFORE</text>
+          <rect x="115" y="28" width="70" height="30" rx="6" fill="#e8f0ff" stroke="#1D5FD1"/>
+          <text x="150" y="48" text-anchor="middle" font-size="10" font-family="monospace" fill="#1D5FD1" font-weight="bold">node 0</text>
+          <line x1="130" y1="58" x2="70" y2="85" stroke="#888"/><line x1="170" y1="58" x2="230" y2="85" stroke="#888"/>
+          <rect x="35" y="85" width="70" height="28" rx="6" fill="#e8f0ff" stroke="#1D5FD1"/>
+          <text x="70" y="103" text-anchor="middle" font-size="9.5" font-family="monospace" fill="#1D5FD1" font-weight="bold">node 1</text>
+          <rect x="195" y="85" width="70" height="28" rx="6" fill="#e8f0ff" stroke="#1D5FD1"/>
+          <text x="230" y="103" text-anchor="middle" font-size="9.5" font-family="monospace" fill="#1D5FD1" font-weight="bold">node 4</text>
+          <line x1="55" y1="113" x2="30" y2="145" stroke="#888"/><line x1="85" y1="113" x2="110" y2="145" stroke="#888"/>
+          <line x1="215" y1="113" x2="190" y2="145" stroke="#888"/><line x1="245" y1="113" x2="270" y2="145" stroke="#888"/>
+          <rect x="5" y="145" width="55" height="34" rx="6" fill="#e8fff0" stroke="#1F7A56"/><text x="32" y="166" text-anchor="middle" font-size="9" font-family="monospace" fill="#1F7A56" font-weight="bold">LEAF 2</text>
+          <rect x="80" y="145" width="55" height="34" rx="6" fill="#e8fff0" stroke="#1F7A56"/><text x="107" y="166" text-anchor="middle" font-size="9" font-family="monospace" fill="#1F7A56" font-weight="bold">LEAF 3</text>
+          <rect x="165" y="145" width="55" height="34" rx="6" fill="#e8fff0" stroke="#1F7A56"/><text x="192" y="166" text-anchor="middle" font-size="9" font-family="monospace" fill="#1F7A56" font-weight="bold">LEAF 5</text>
+          <rect x="240" y="145" width="55" height="34" rx="6" fill="#e8fff0" stroke="#1F7A56"/><text x="267" y="166" text-anchor="middle" font-size="9" font-family="monospace" fill="#1F7A56" font-weight="bold">LEAF 6</text>
+          <text x="150" y="205" text-anchor="middle" font-size="11" font-family="monospace" fill="#a97400" font-weight="bold">4 leaves exist</text>
+        </svg>
+        <div class="svg-caption">Leaves 2, 3, 5, 6 — all four, currently separate</div>
+      </div>
+      <div class="svg-card">
+        <svg viewBox="0 0 300 220" width="100%" height="auto">
+          <text x="150" y="18" text-anchor="middle" font-size="12" font-family="monospace" fill="#333" font-weight="bold">AFTER collapsing node 0</text>
+          <rect x="110" y="90" width="80" height="40" rx="7" fill="#fff0e8" stroke="#C0392B" stroke-width="1.5"/>
+          <text x="150" y="110" text-anchor="middle" font-size="10.5" font-family="monospace" fill="#C0392B" font-weight="bold">LEAF 0</text>
+          <text x="150" y="124" text-anchor="middle" font-size="9" font-family="monospace" fill="#555">n=398</text>
+          <text x="32" y="160" text-anchor="middle" font-size="16" font-family="monospace" fill="#ccc">✕</text>
+          <text x="107" y="160" text-anchor="middle" font-size="16" font-family="monospace" fill="#ccc">✕</text>
+          <text x="192" y="160" text-anchor="middle" font-size="16" font-family="monospace" fill="#ccc">✕</text>
+          <text x="267" y="160" text-anchor="middle" font-size="16" font-family="monospace" fill="#ccc">✕</text>
+          <text x="150" y="205" text-anchor="middle" font-size="11" font-family="monospace" fill="#a97400" font-weight="bold">1 leaf exists</text>
+        </svg>
+        <div class="svg-caption">All 4 gone — node 0 itself is now the only leaf</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="formula">Leaves eliminated &nbsp;=&nbsp; <span class="k">4</span> &minus; <span class="l">1</span> &nbsp;=&nbsp; 3</div>
+      <div class="callout purple">If a subtree had 10 leaves, collapsing it would eliminate 9. <b>The "&minus;1" is not "remove one leaf" — it's "however many leaves you had, minus the one leaf you always end up with."</b> Same rule, node 4 (2&rarr;1, eliminates 1) or node 0 (4&rarr;1, eliminates 3) — just plain subtraction, applied to whatever the actual leaf count happens to be.</div>
+    </div>
+  </section>
+  <section class="block" id="round1">
+    <div class="section-eyebrow">The Full Algorithm, Drawn</div>
+    <h2>Round 1 — <span class="underline">Three Candidates, One Winner</span></h2>
+    <div class="card">
+      <p class="lead" style="margin-top:0;">Real tree, real class counts (breast cancer dataset). Every internal node is evaluated as a CANDIDATE — "what would alpha<sub>t</sub> be if I collapsed THIS one?" — but nothing is collapsed yet. All three numbers get computed first.</p>
+    </div>
+    <div class="svg-card">
+      <svg viewBox="0 0 620 320" width="100%" height="auto">
+        <rect x="260" y="14" width="100" height="34" rx="7" fill="#e8f0ff" stroke="#1D5FD1" stroke-width="1.5"/>
+        <text x="310" y="34" text-anchor="middle" font-size="11" font-family="monospace" fill="#1D5FD1" font-weight="bold">node 0</text>
+        <rect x="365" y="10" width="150" height="40" rx="8" fill="#fff8e0" stroke="#C99A00" stroke-width="1.5"/>
+        <text x="440" y="26" text-anchor="middle" font-size="10" font-family="monospace" fill="#a97400" font-weight="bold">candidate alpha_t</text>
+        <text x="440" y="42" text-anchor="middle" font-size="12" font-family="monospace" fill="#a97400" font-weight="bold">= 44.67</text>
+
+        <line x1="285" y1="48" x2="150" y2="85" stroke="#888" stroke-width="1.3"/>
+        <line x1="335" y1="48" x2="470" y2="85" stroke="#888" stroke-width="1.3"/>
+
+        <rect x="100" y="85" width="100" height="34" rx="7" fill="#e8f0ff" stroke="#1D5FD1" stroke-width="1.5"/>
+        <text x="150" y="105" text-anchor="middle" font-size="11" font-family="monospace" fill="#1D5FD1" font-weight="bold">node 1</text>
+        <rect x="5" y="122" width="140" height="34" rx="8" fill="#fff8e0" stroke="#C99A00" stroke-width="1.5"/>
+        <text x="75" y="135" text-anchor="middle" font-size="9.5" font-family="monospace" fill="#a97400" font-weight="bold">candidate alpha_t</text>
+        <text x="75" y="149" text-anchor="middle" font-size="12" font-family="monospace" fill="#a97400" font-weight="bold">= 12.0</text>
+
+        <rect x="420" y="85" width="100" height="34" rx="7" fill="#ffe8e8" stroke="#f4b400" stroke-width="3">
+          <animate attributeName="stroke-opacity" values="1;0.4;1" dur="1.6s" repeatCount="indefinite"/>
+        </rect>
+        <text x="470" y="105" text-anchor="middle" font-size="11" font-family="monospace" fill="#a97400" font-weight="bold">node 4 ★</text>
+        <rect x="475" y="122" width="140" height="34" rx="8" fill="#fff0c0" stroke="#f4b400" stroke-width="2"/>
+        <text x="545" y="135" text-anchor="middle" font-size="9.5" font-family="monospace" fill="#a97400" font-weight="bold">candidate alpha_t</text>
+        <text x="545" y="149" text-anchor="middle" font-size="13" font-family="monospace" fill="#a97400" font-weight="bold">= 3.0  ← smallest!</text>
+
+        <line x1="130" y1="119" x2="70" y2="165" stroke="#888" stroke-width="1.3"/>
+        <line x1="170" y1="119" x2="230" y2="165" stroke="#888" stroke-width="1.3"/>
+        <line x1="450" y1="119" x2="410" y2="165" stroke="#888" stroke-width="1.3"/>
+        <line x1="490" y1="119" x2="530" y2="165" stroke="#888" stroke-width="1.3"/>
+
+        <rect x="15" y="165" width="110" height="52" rx="7" fill="#e8fff0" stroke="#1F7A56" stroke-width="1.5"/>
+        <text x="70" y="182" text-anchor="middle" font-size="10" font-family="monospace" fill="#1F7A56" font-weight="bold">LEAF 2</text>
+        <text x="70" y="195" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">4 class0, 237 class1</text>
+        <text x="70" y="207" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">wrong=4</text>
+
+        <rect x="175" y="165" width="110" height="52" rx="7" fill="#e8fff0" stroke="#1F7A56" stroke-width="1.5"/>
+        <text x="230" y="182" text-anchor="middle" font-size="10" font-family="monospace" fill="#1F7A56" font-weight="bold">LEAF 3</text>
+        <text x="230" y="195" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">19 class0, 7 class1</text>
+        <text x="230" y="207" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">wrong=7</text>
+
+        <rect x="355" y="165" width="110" height="52" rx="7" fill="#e8fff0" stroke="#1F7A56" stroke-width="1.5"/>
+        <text x="410" y="182" text-anchor="middle" font-size="10" font-family="monospace" fill="#1F7A56" font-weight="bold">LEAF 5</text>
+        <text x="410" y="195" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">0 class0, 3 class1</text>
+        <text x="410" y="207" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">wrong=0</text>
+
+        <rect x="475" y="165" width="110" height="52" rx="7" fill="#e8fff0" stroke="#1F7A56" stroke-width="1.5"/>
+        <text x="530" y="182" text-anchor="middle" font-size="10" font-family="monospace" fill="#1F7A56" font-weight="bold">LEAF 6</text>
+        <text x="530" y="195" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">125 class0, 3 class1</text>
+        <text x="530" y="207" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">wrong=3</text>
+
+        <text x="310" y="255" text-anchor="middle" font-size="13" font-family="monospace" fill="#a97400" font-weight="bold">Smallest alpha_t = node 4 (3.0)  →  COLLAPSE IT</text>
+        <text x="310" y="275" text-anchor="middle" font-size="10" font-family="monospace" fill="#888">nodes 1 and 0 are left completely untouched this round</text>
+      </svg>
+      <div class="svg-caption">Every leaf now shows its FULL class breakdown — this is what gets added together below, not just the "wrong" count in isolation.</div>
+    </div>
+
+    <div class="card screenshot">
+      <h3>Exactly how "wrong if collapsed" is calculated — for every candidate</h3>
+      <p class="lead" style="margin-top:0;">"Collapsing" a node means: combine (add up) the class counts of every leaf underneath it, then check which class wins the combined majority. Whichever count is now the MINORITY becomes the new "wrong" count — those are the samples that would get misclassified if this node stopped splitting and just predicted one class for everyone.</p>
+
+      <div class="formula">
+        <b>node 4</b> collapses leaves 5 + 6 together:<br>
+        class0: 0 (leaf 5) + 125 (leaf 6) = <span class="k">125</span><br>
+        class1: 3 (leaf 5) + 3 (leaf 6) = <span class="k">6</span><br>
+        Combined: 125 class0 vs 6 class1 &rarr; majority = class0 (125 &gt; 6)<br>
+        The MINORITY count becomes "wrong" &rarr; wrong-if-collapsed = <span class="l">6</span>
+      </div>
+
+      <div class="formula">
+        <b>node 1</b> collapses leaves 2 + 3 together:<br>
+        class0: 4 (leaf 2) + 19 (leaf 3) = <span class="k">23</span><br>
+        class1: 237 (leaf 2) + 7 (leaf 3) = <span class="k">244</span><br>
+        Combined: 23 class0 vs 244 class1 &rarr; majority = class1 (244 &gt; 23)<br>
+        The MINORITY count becomes "wrong" &rarr; wrong-if-collapsed = <span class="l">23</span>
+      </div>
+
+      <div class="formula">
+        <b>node 0</b> collapses ALL FOUR leaves (2, 3, 5, 6) together:<br>
+        class0: 4 + 19 + 0 + 125 = <span class="k">148</span><br>
+        class1: 237 + 7 + 3 + 3 = <span class="k">250</span><br>
+        Combined: 148 class0 vs 250 class1 &rarr; majority = class1 (250 &gt; 148)<br>
+        The MINORITY count becomes "wrong" &rarr; wrong-if-collapsed = <span class="l">148</span>
+      </div>
+      <div class="callout info">This is the SAME logic every single time: add up the raw class counts from every leaf under that node, find the new majority, and whatever's left over (the minority) is how many samples would be misclassified. No shortcuts, no separate formula — just addition, then one comparison.</div>
+    </div>
+
+    <div class="card">
+      <table class="data-table">
+        <tr><th>Candidate</th><th>Wrong if collapsed</th><th>Wrong as subtree</th><th>Leaves before &rarr; after</th><th>alpha_t</th></tr>
+        <tr><td class="left mono">node 0 (whole tree)</td><td class="mono">148</td><td class="mono">4+7+0+3=14</td><td class="mono">4 &rarr; 1</td><td class="mono">(148&minus;14)/(4&minus;1) = 44.67</td></tr>
+        <tr><td class="left mono">node 1</td><td class="mono">23</td><td class="mono">4+7=11</td><td class="mono">2 &rarr; 1</td><td class="mono">(23&minus;11)/(2&minus;1) = 12.0</td></tr>
+        <tr><td class="left mono good">node 4 ★ winner</td><td class="mono good">6</td><td class="mono good">0+3=3</td><td class="mono good">2 &rarr; 1</td><td class="mono good">(6&minus;3)/(2&minus;1) = 3.0</td></tr>
+      </table>
+      <div class="callout warn">"Wrong as subtree" is a different, simpler addition — just add each leaf's OWN wrong count directly (no majority/minority check needed, since each leaf already made its own separate prediction). "Wrong if collapsed" is the one that needs the combine-then-find-new-majority step shown above, because collapsing forces ALL those samples to share one single new prediction.</div>
+    </div>
+  </section>
+  <section class="block" id="round2">
+    <h2>Round 2 — <span class="underline">Recompute On the Smaller Tree</span></h2>
+    <div class="card">
+      <p class="lead" style="margin-top:0;">Node 4 is now a leaf — it carries forward the combined class counts we just computed: 125 class0, 6 class1. Only node 0 and node 1 remain as candidates.</p>
+    </div>
+    <div class="svg-card">
+      <svg viewBox="0 0 620 300" width="100%" height="auto">
+        <rect x="260" y="14" width="100" height="34" rx="7" fill="#e8f0ff" stroke="#1D5FD1" stroke-width="1.5"/>
+        <text x="310" y="34" text-anchor="middle" font-size="11" font-family="monospace" fill="#1D5FD1" font-weight="bold">node 0</text>
+        <rect x="365" y="8" width="220" height="42" rx="8" fill="#fff8e0" stroke="#C99A00" stroke-width="1.5"/>
+        <text x="475" y="24" text-anchor="middle" font-size="10" font-family="monospace" fill="#a97400" font-weight="bold">RECOMPUTED alpha_t</text>
+        <text x="475" y="42" text-anchor="middle" font-size="11.5" font-family="monospace" fill="#a97400" font-weight="bold">= 65.5 (was 44.67)</text>
+
+        <line x1="285" y1="48" x2="150" y2="85" stroke="#888" stroke-width="1.3"/>
+        <line x1="335" y1="48" x2="470" y2="85" stroke="#888" stroke-width="1.3"/>
+
+        <rect x="100" y="85" width="100" height="34" rx="7" fill="#ffe8e8" stroke="#f4b400" stroke-width="3">
+          <animate attributeName="stroke-opacity" values="1;0.4;1" dur="1.6s" repeatCount="indefinite"/>
+        </rect>
+        <text x="150" y="105" text-anchor="middle" font-size="11" font-family="monospace" fill="#a97400" font-weight="bold">node 1 ★</text>
+        <rect x="15" y="122" width="170" height="34" rx="8" fill="#fff0c0" stroke="#f4b400" stroke-width="2"/>
+        <text x="100" y="135" text-anchor="middle" font-size="9.5" font-family="monospace" fill="#a97400" font-weight="bold">candidate alpha_t</text>
+        <text x="100" y="149" text-anchor="middle" font-size="11.5" font-family="monospace" fill="#a97400" font-weight="bold">= 12.0 ← smallest!</text>
+
+        <rect x="420" y="85" width="120" height="46" rx="7" fill="#fff0e8" stroke="#C0392B" stroke-width="1.5"/>
+        <text x="480" y="102" text-anchor="middle" font-size="10.5" font-family="monospace" fill="#C0392B" font-weight="bold">LEAF 4</text>
+        <text x="480" y="115" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">125 class0, 6 class1</text>
+        <text x="480" y="126" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">wrong=6</text>
+
+        <line x1="130" y1="119" x2="70" y2="180" stroke="#888" stroke-width="1.3"/>
+        <line x1="170" y1="119" x2="230" y2="180" stroke="#888" stroke-width="1.3"/>
+
+        <rect x="15" y="180" width="110" height="50" rx="7" fill="#e8fff0" stroke="#1F7A56" stroke-width="1.5"/>
+        <text x="70" y="197" text-anchor="middle" font-size="10" font-family="monospace" fill="#1F7A56" font-weight="bold">LEAF 2</text>
+        <text x="70" y="210" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">4 class0, 237 class1</text>
+        <text x="70" y="221" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">wrong=4</text>
+
+        <rect x="175" y="180" width="110" height="50" rx="7" fill="#e8fff0" stroke="#1F7A56" stroke-width="1.5"/>
+        <text x="230" y="197" text-anchor="middle" font-size="10" font-family="monospace" fill="#1F7A56" font-weight="bold">LEAF 3</text>
+        <text x="230" y="210" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">19 class0, 7 class1</text>
+        <text x="230" y="221" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">wrong=7</text>
+
+        <text x="310" y="260" text-anchor="middle" font-size="13" font-family="monospace" fill="#a97400" font-weight="bold">Smallest alpha_t = node 1 (12.0)  →  COLLAPSE IT</text>
+      </svg>
+      <div class="svg-caption">Node 0's alpha_t CHANGED (44.67 → 65.5) because its combined count is now different — recomputed below.</div>
+    </div>
+
+    <div class="card screenshot">
+      <h3>Recomputing "wrong if collapsed" for node 0, now that node 4 is already a leaf</h3>
+      <div class="formula">
+        <b>node 0</b> now collapses leaf 2 + leaf 3 + LEAF 4 (the already-collapsed one) together:<br>
+        class0: 4 (leaf 2) + 19 (leaf 3) + 125 (leaf 4) = <span class="k">148</span><br>
+        class1: 237 (leaf 2) + 7 (leaf 3) + 6 (leaf 4) = <span class="k">250</span><br>
+        Combined: 148 class0 vs 250 class1 &rarr; majority = class1 (250 &gt; 148)<br>
+        wrong-if-collapsed = <span class="l">148</span> &nbsp;<span style="color:var(--chalk-dim); font-size:11px;">(same 398 total samples as round 1 — collapsing node 4 doesn't change WHO's in the tree, only how they're grouped)</span>
+      </div>
+      <div class="callout info">node 1's own numbers (23 vs 244, wrong=23) are UNCHANGED from round 1 — its two leaves were never touched, so there's nothing new to recompute for it.</div>
+    </div>
+
+    <div class="card">
+      <table class="data-table">
+        <tr><th>Candidate</th><th>Wrong if collapsed</th><th>Wrong as subtree</th><th>Leaves before &rarr; after</th><th>alpha_t</th></tr>
+        <tr><td class="left mono">node 0 (whole CURRENT tree)</td><td class="mono">148</td><td class="mono">4+7+6=17</td><td class="mono">3 &rarr; 1</td><td class="mono">(148&minus;17)/(3&minus;1) = 65.5</td></tr>
+        <tr><td class="left mono good">node 1 ★ winner</td><td class="mono good">23</td><td class="mono good">4+7=11</td><td class="mono good">2 &rarr; 1</td><td class="mono good">(23&minus;11)/(2&minus;1) = 12.0</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="block" id="round3">
+    <h2>Round 3 — <span class="underline">Down To the Root</span></h2>
+    <div class="card">
+      <p class="lead" style="margin-top:0;">Only node 0 is left as an internal node. There's nothing to compare anymore — whatever alpha_t it has, it's automatically the "smallest" by default (the only candidate).</p>
+    </div>
+    <div class="svg-card">
+      <svg viewBox="0 0 500 220" width="100%" height="auto">
+        <rect x="200" y="14" width="100" height="34" rx="7" fill="#ffe8e8" stroke="#f4b400" stroke-width="3">
+          <animate attributeName="stroke-opacity" values="1;0.4;1" dur="1.6s" repeatCount="indefinite"/>
+        </rect>
+        <text x="250" y="34" text-anchor="middle" font-size="11" font-family="monospace" fill="#a97400" font-weight="bold">node 0 ★</text>
+        <rect x="305" y="10" width="180" height="40" rx="8" fill="#fff0c0" stroke="#f4b400" stroke-width="2"/>
+        <text x="395" y="26" text-anchor="middle" font-size="10" font-family="monospace" fill="#a97400" font-weight="bold">RECOMPUTED alpha_t</text>
+        <text x="395" y="42" text-anchor="middle" font-size="12" font-family="monospace" fill="#a97400" font-weight="bold">= 119.0</text>
+
+        <line x1="225" y1="48" x2="150" y2="85" stroke="#888" stroke-width="1.3"/>
+        <line x1="275" y1="48" x2="350" y2="85" stroke="#888" stroke-width="1.3"/>
+
+        <rect x="90" y="85" width="120" height="50" rx="7" fill="#fff0e8" stroke="#C0392B" stroke-width="1.5"/>
+        <text x="150" y="102" text-anchor="middle" font-size="10.5" font-family="monospace" fill="#C0392B" font-weight="bold">LEAF 1</text>
+        <text x="150" y="115" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">23 class0, 244 class1</text>
+        <text x="150" y="126" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">wrong=23</text>
+
+        <rect x="290" y="85" width="120" height="50" rx="7" fill="#fff0e8" stroke="#C0392B" stroke-width="1.5"/>
+        <text x="350" y="102" text-anchor="middle" font-size="10.5" font-family="monospace" fill="#C0392B" font-weight="bold">LEAF 4</text>
+        <text x="350" y="115" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">125 class0, 6 class1</text>
+        <text x="350" y="126" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">wrong=6</text>
+
+        <text x="250" y="165" text-anchor="middle" font-size="13" font-family="monospace" fill="#a97400" font-weight="bold">Only candidate = node 0  →  COLLAPSE IT</text>
+        <text x="250" y="185" text-anchor="middle" font-size="10" font-family="monospace" fill="#888">alpha_t = (148 − 29) / (2 − 1) = 119.0</text>
+      </svg>
+      <div class="svg-caption">Both remaining leaves are themselves already-collapsed subtrees — their history doesn't matter, they're just leaves now.</div>
+    </div>
+
+    <div class="card screenshot">
+      <h3>Recomputing "wrong if collapsed" one final time</h3>
+      <div class="formula">
+        <b>node 0</b> collapses LEAF 1 + LEAF 4 together (both already-collapsed leaves):<br>
+        class0: 23 (leaf 1) + 125 (leaf 4) = <span class="k">148</span><br>
+        class1: 244 (leaf 1) + 6 (leaf 4) = <span class="k">250</span><br>
+        Combined: 148 class0 vs 250 class1 &rarr; majority = class1 (250 &gt; 148)<br>
+        wrong-if-collapsed = <span class="l">148</span> &nbsp;<span style="color:var(--chalk-dim); font-size:11px;">(still the same 398 total samples, same answer as every round — only the grouping changed, never the underlying data)</span>
+      </div>
+      <div class="formula">wrong-as-subtree = wrong(leaf 1) + wrong(leaf 4) = 23 + 6 = <span class="k">29</span><br><br>alpha_t = (148 &minus; 29) / (2 &minus; 1) = <span class="l">119.0</span></div>
+      <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);">Collapsing node 0 produces the trivial single-leaf tree — the root, predicting class1 for every one of the 398 training samples (since class1=250 is always the majority, no matter how the tree is grouped). No internal nodes remain. The algorithm stops here.</div>
+    </div>
+  </section>
+  <section class="block" id="reg-subtree">
+    <div class="section-eyebrow">Same Idea, Regression</div>
+    <h2>Now the Same Picture, <span class="underline">for Regression</span></h2>
+    <div class="card">
+      <p class="lead" style="margin-top:0;">Identical mechanics — only "wrong count" becomes "SSE" (sum of squared errors from the mean). Real tree, real target values (diabetes dataset — predicting disease progression), node 4's subtree collapsing exactly like before.</p>
+    </div>
+    <div class="grid-2">
+      <div class="svg-card">
+        <svg viewBox="0 0 260 190" width="100%" height="auto">
+          <text x="130" y="20" text-anchor="middle" font-size="12" font-family="monospace" fill="#333" font-weight="bold">BEFORE</text>
+          <rect x="90" y="34" width="80" height="34" rx="7" fill="#e8f0ff" stroke="#1D5FD1" stroke-width="1.5"/>
+          <text x="130" y="55" text-anchor="middle" font-size="11" font-family="monospace" fill="#1D5FD1" font-weight="bold">node 4 (n=126)</text>
+          <line x1="115" y1="68" x2="60" y2="105" stroke="#888" stroke-width="1.3"/>
+          <line x1="145" y1="68" x2="200" y2="105" stroke="#888" stroke-width="1.3"/>
+          <rect x="10" y="105" width="100" height="52" rx="7" fill="#e8fff0" stroke="#1F7A56" stroke-width="1.5"/>
+          <text x="60" y="122" text-anchor="middle" font-size="10.5" font-family="monospace" fill="#1F7A56" font-weight="bold">LEAF 5</text>
+          <text x="60" y="135" text-anchor="middle" font-size="8.5" font-family="monospace" fill="#555">n=101, mean=189.30</text>
+          <text x="60" y="148" text-anchor="middle" font-size="8.5" font-family="monospace" fill="#555">SSE=469,969.09</text>
+          <rect x="150" y="105" width="100" height="52" rx="7" fill="#e8fff0" stroke="#1F7A56" stroke-width="1.5"/>
+          <text x="200" y="122" text-anchor="middle" font-size="10.5" font-family="monospace" fill="#1F7A56" font-weight="bold">LEAF 6</text>
+          <text x="200" y="135" text-anchor="middle" font-size="8.5" font-family="monospace" fill="#555">n=25, mean=271.12</text>
+          <text x="200" y="148" text-anchor="middle" font-size="8.5" font-family="monospace" fill="#555">SSE=63,134.64</text>
+          <text x="130" y="180" text-anchor="middle" font-size="11" font-family="monospace" fill="#a97400" font-weight="bold">2 leaves, 2 separate means</text>
+        </svg>
+        <div class="svg-caption">Two leaves, each with its OWN tailored mean prediction</div>
+      </div>
+      <div class="svg-card">
+        <svg viewBox="0 0 260 190" width="100%" height="auto">
+          <text x="130" y="20" text-anchor="middle" font-size="12" font-family="monospace" fill="#333" font-weight="bold">AFTER collapsing node 4</text>
+          <rect x="80" y="80" width="100" height="52" rx="7" fill="#fff0e8" stroke="#C0392B" stroke-width="1.5"/>
+          <text x="130" y="100" text-anchor="middle" font-size="10.5" font-family="monospace" fill="#C0392B" font-weight="bold">LEAF 4</text>
+          <text x="130" y="114" text-anchor="middle" font-size="8.5" font-family="monospace" fill="#555">n=126, mean=205.53</text>
+          <text x="130" y="127" text-anchor="middle" font-size="8.5" font-family="monospace" fill="#555">SSE=667,269.37</text>
+          <text x="60" y="150" text-anchor="middle" font-size="16" font-family="monospace" fill="#ccc">✕</text>
+          <text x="200" y="150" text-anchor="middle" font-size="16" font-family="monospace" fill="#ccc">✕</text>
+          <text x="130" y="180" text-anchor="middle" font-size="11" font-family="monospace" fill="#a97400" font-weight="bold">1 leaf, ONE shared mean</text>
+        </svg>
+        <div class="svg-caption">One mean (205.53) forced onto BOTH groups — fits neither well</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="formula">SSE eliminated by keeping the split = 667,269.37 &minus; (469,969.09 + 63,134.64) = 667,269.37 &minus; 533,103.73 = <span class="k">134,165.64 extra SSE if collapsed</span><br><br>Leaves eliminated = 2 &minus; 1 = <span class="l">1</span><br><br>alpha_t = 134,165.64 / 1 = <span class="k">134,165.64</span></div>
+      <div class="callout warn">Same "&minus;1" logic, same reason: 2 leaves existed, collapsing always produces exactly 1, so exactly 1 leaf gets eliminated here too. Only the numerator changed shape — extra SSE instead of extra wrong-predictions — because "error" now means something different.</div>
+    </div>
+  </section>
+  <section class="block" id="reg-round1">
+    <h2>Regression Round 1 — <span class="underline">Three Candidates, One Winner</span></h2>
+    <div class="card">
+      <p class="lead" style="margin-top:0;">Same tree shape as the classification example (3 internal nodes: 0, 1, 4), same procedure — compute ALL candidates first, collapse only the smallest.</p>
+    </div>
+    <div class="svg-card">
+      <svg viewBox="0 0 640 320" width="100%" height="auto">
+        <rect x="270" y="14" width="100" height="34" rx="7" fill="#e8f0ff" stroke="#1D5FD1" stroke-width="1.5"/>
+        <text x="320" y="34" text-anchor="middle" font-size="11" font-family="monospace" fill="#1D5FD1" font-weight="bold">node 0</text>
+        <rect x="375" y="8" width="230" height="42" rx="8" fill="#fff8e0" stroke="#C99A00" stroke-width="1.5"/>
+        <text x="490" y="24" text-anchor="middle" font-size="10" font-family="monospace" fill="#a97400" font-weight="bold">candidate alpha_t</text>
+        <text x="490" y="42" text-anchor="middle" font-size="12" font-family="monospace" fill="#a97400" font-weight="bold">= 278,699.94</text>
+
+        <line x1="295" y1="48" x2="150" y2="85" stroke="#888" stroke-width="1.3"/>
+        <line x1="345" y1="48" x2="480" y2="85" stroke="#888" stroke-width="1.3"/>
+
+        <rect x="100" y="85" width="100" height="34" rx="7" fill="#e8f0ff" stroke="#1D5FD1" stroke-width="1.5"/>
+        <text x="150" y="105" text-anchor="middle" font-size="11" font-family="monospace" fill="#1D5FD1" font-weight="bold">node 1</text>
+        <rect x="10" y="122" width="180" height="34" rx="8" fill="#fff8e0" stroke="#C99A00" stroke-width="1.5"/>
+        <text x="100" y="135" text-anchor="middle" font-size="9.5" font-family="monospace" fill="#a97400" font-weight="bold">candidate alpha_t</text>
+        <text x="100" y="149" text-anchor="middle" font-size="11.5" font-family="monospace" fill="#a97400" font-weight="bold">= 134,830.37</text>
+
+        <rect x="430" y="85" width="100" height="34" rx="7" fill="#ffe8e8" stroke="#f4b400" stroke-width="3">
+          <animate attributeName="stroke-opacity" values="1;0.4;1" dur="1.6s" repeatCount="indefinite"/>
+        </rect>
+        <text x="480" y="105" text-anchor="middle" font-size="11" font-family="monospace" fill="#a97400" font-weight="bold">node 4 ★</text>
+        <rect x="450" y="122" width="185" height="34" rx="8" fill="#fff0c0" stroke="#f4b400" stroke-width="2"/>
+        <text x="542" y="135" text-anchor="middle" font-size="9.5" font-family="monospace" fill="#a97400" font-weight="bold">candidate alpha_t</text>
+        <text x="542" y="149" text-anchor="middle" font-size="11.5" font-family="monospace" fill="#a97400" font-weight="bold">= 134,165.64 ← smallest!</text>
+
+        <line x1="130" y1="119" x2="70" y2="165" stroke="#888" stroke-width="1.3"/>
+        <line x1="170" y1="119" x2="230" y2="165" stroke="#888" stroke-width="1.3"/>
+        <line x1="460" y1="119" x2="420" y2="165" stroke="#888" stroke-width="1.3"/>
+        <line x1="500" y1="119" x2="540" y2="165" stroke="#888" stroke-width="1.3"/>
+
+        <rect x="20" y="165" width="100" height="46" rx="7" fill="#e8fff0" stroke="#1F7A56" stroke-width="1.5"/>
+        <text x="70" y="182" text-anchor="middle" font-size="10" font-family="monospace" fill="#1F7A56" font-weight="bold">LEAF 2</text>
+        <text x="70" y="194" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">n=138, mean=102.86</text>
+        <text x="70" y="205" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">SSE=364,595.10</text>
+
+        <rect x="180" y="165" width="100" height="46" rx="7" fill="#e8fff0" stroke="#1F7A56" stroke-width="1.5"/>
+        <text x="230" y="182" text-anchor="middle" font-size="10" font-family="monospace" fill="#1F7A56" font-weight="bold">LEAF 3</text>
+        <text x="230" y="194" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">n=45, mean=165.89</text>
+        <text x="230" y="205" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">SSE=166,020.44</text>
+
+        <rect x="370" y="165" width="100" height="46" rx="7" fill="#e8fff0" stroke="#1F7A56" stroke-width="1.5"/>
+        <text x="420" y="182" text-anchor="middle" font-size="10" font-family="monospace" fill="#1F7A56" font-weight="bold">LEAF 5</text>
+        <text x="420" y="194" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">n=101, mean=189.30</text>
+        <text x="420" y="205" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">SSE=469,969.09</text>
+
+        <rect x="490" y="165" width="100" height="46" rx="7" fill="#e8fff0" stroke="#1F7A56" stroke-width="1.5"/>
+        <text x="540" y="182" text-anchor="middle" font-size="10" font-family="monospace" fill="#1F7A56" font-weight="bold">LEAF 6</text>
+        <text x="540" y="194" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">n=25, mean=271.12</text>
+        <text x="540" y="205" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">SSE=63,134.64</text>
+
+        <text x="320" y="255" text-anchor="middle" font-size="13" font-family="monospace" fill="#a97400" font-weight="bold">Smallest alpha_t = node 4 (134,165.64)  →  COLLAPSE IT</text>
+        <text x="320" y="275" text-anchor="middle" font-size="10" font-family="monospace" fill="#888">nodes 1 and 0 are left completely untouched this round</text>
+      </svg>
+      <div class="svg-caption">Same procedure as classification — all 3 candidates computed, only the smallest actually collapsed.</div>
+    </div>
+
+    <div class="card screenshot">
+      <h3>Exactly how "SSE if collapsed" is calculated — for every candidate</h3>
+      <p class="lead" style="margin-top:0;">"Collapsing" a node means: pool ALL the raw target values from every leaf underneath it into one group, compute ONE new shared mean for that pooled group, then re-measure the squared error of every one of those pooled values against that single new mean. This is a completely fresh SSE calculation, not a sum of the old leaf SSEs.</p>
+      <div class="formula">
+        <b>node 4</b> pools leaf 5 (101 values) + leaf 6 (25 values) = 126 raw values together:<br>
+        new shared mean = sum of all 126 values &divide; 126 = <span class="k">205.53</span><br>
+        SSE-if-collapsed = &sum; (each of the 126 values &minus; 205.53)&sup2; = <span class="l">667,269.37</span>
+      </div>
+      <div class="formula">
+        <b>node 1</b> pools leaf 2 (138 values) + leaf 3 (45 values) = 183 raw values together:<br>
+        new shared mean = sum of all 183 values &divide; 183 = <span class="k">118.36</span><br>
+        SSE-if-collapsed = &sum; (each of the 183 values &minus; 118.36)&sup2; = <span class="l">665,445.91</span>
+      </div>
+      <div class="callout info">This new mean is NEVER just the average of the two old leaf means (e.g. NOT (189.30+271.12)/2) — it's the mean of the raw, pooled, individual values, which correctly weights by how many samples came from each leaf. That's why it must be recomputed from scratch rather than combined arithmetically from the two existing leaf means.</div>
+    </div>
+
+    <div class="card">
+      <table class="data-table">
+        <tr><th>Candidate</th><th>SSE if collapsed</th><th>SSE as subtree</th><th>Leaves before &rarr; after</th><th>alpha_t</th></tr>
+        <tr><td class="left mono">node 0 (whole tree)</td><td class="mono">1,899,819.09</td><td class="mono">1,063,719.28</td><td class="mono">4 &rarr; 1</td><td class="mono">278,699.94</td></tr>
+        <tr><td class="left mono">node 1</td><td class="mono">665,445.91</td><td class="mono">530,615.55</td><td class="mono">2 &rarr; 1</td><td class="mono">134,830.37</td></tr>
+        <tr><td class="left mono good">node 4 ★ winner</td><td class="mono good">667,269.37</td><td class="mono good">533,103.73</td><td class="mono good">2 &rarr; 1</td><td class="mono good">134,165.64</td></tr>
+      </table>
+      <div class="callout warn">Node 4 wins by a narrow margin over node 1 (134,165.64 vs 134,830.37) — its subtree was the least "worth" the leaf it costs, of the three candidates, so it's collapsed first.</div>
+    </div>
+  </section>
+  <section class="block" id="reg-round2">
+    <h2>Regression Round 2 — <span class="underline">Recompute On the Smaller Tree</span></h2>
+    <div class="card">
+      <p class="lead" style="margin-top:0;">Node 4 is now a leaf (mean 205.53, SSE 667,269.37). Only node 0 and node 1 remain as candidates.</p>
+    </div>
+    <div class="svg-card">
+      <svg viewBox="0 0 620 300" width="100%" height="auto">
+        <rect x="260" y="14" width="100" height="34" rx="7" fill="#e8f0ff" stroke="#1D5FD1" stroke-width="1.5"/>
+        <text x="310" y="34" text-anchor="middle" font-size="11" font-family="monospace" fill="#1D5FD1" font-weight="bold">node 0</text>
+        <rect x="365" y="8" width="220" height="42" rx="8" fill="#fff8e0" stroke="#C99A00" stroke-width="1.5"/>
+        <text x="475" y="24" text-anchor="middle" font-size="10" font-family="monospace" fill="#a97400" font-weight="bold">RECOMPUTED alpha_t</text>
+        <text x="475" y="42" text-anchor="middle" font-size="11.5" font-family="monospace" fill="#a97400" font-weight="bold">= 350,967.08 (was 278,699.94)</text>
+
+        <line x1="285" y1="48" x2="150" y2="85" stroke="#888" stroke-width="1.3"/>
+        <line x1="335" y1="48" x2="470" y2="85" stroke="#888" stroke-width="1.3"/>
+
+        <rect x="100" y="85" width="100" height="34" rx="7" fill="#ffe8e8" stroke="#f4b400" stroke-width="3">
+          <animate attributeName="stroke-opacity" values="1;0.4;1" dur="1.6s" repeatCount="indefinite"/>
+        </rect>
+        <text x="150" y="105" text-anchor="middle" font-size="11" font-family="monospace" fill="#a97400" font-weight="bold">node 1 ★</text>
+        <rect x="20" y="122" width="160" height="34" rx="8" fill="#fff0c0" stroke="#f4b400" stroke-width="2"/>
+        <text x="100" y="135" text-anchor="middle" font-size="9.5" font-family="monospace" fill="#a97400" font-weight="bold">candidate alpha_t</text>
+        <text x="100" y="149" text-anchor="middle" font-size="11.5" font-family="monospace" fill="#a97400" font-weight="bold">= 134,830.37 ← smallest!</text>
+
+        <rect x="420" y="85" width="100" height="44" rx="7" fill="#fff0e8" stroke="#C0392B" stroke-width="1.5"/>
+        <text x="470" y="103" text-anchor="middle" font-size="10.5" font-family="monospace" fill="#C0392B" font-weight="bold">LEAF 4</text>
+        <text x="470" y="116" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">n=126, mean=205.53</text>
+        <text x="470" y="127" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">SSE=667,269.37</text>
+
+        <line x1="130" y1="119" x2="70" y2="180" stroke="#888" stroke-width="1.3"/>
+        <line x1="170" y1="119" x2="230" y2="180" stroke="#888" stroke-width="1.3"/>
+
+        <rect x="20" y="180" width="100" height="46" rx="7" fill="#e8fff0" stroke="#1F7A56" stroke-width="1.5"/>
+        <text x="70" y="197" text-anchor="middle" font-size="10" font-family="monospace" fill="#1F7A56" font-weight="bold">LEAF 2</text>
+        <text x="70" y="209" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">n=138, mean=102.86</text>
+        <text x="70" y="220" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">SSE=364,595.10</text>
+
+        <rect x="180" y="180" width="100" height="46" rx="7" fill="#e8fff0" stroke="#1F7A56" stroke-width="1.5"/>
+        <text x="230" y="197" text-anchor="middle" font-size="10" font-family="monospace" fill="#1F7A56" font-weight="bold">LEAF 3</text>
+        <text x="230" y="209" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">n=45, mean=165.89</text>
+        <text x="230" y="220" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">SSE=166,020.44</text>
+
+        <text x="310" y="260" text-anchor="middle" font-size="13" font-family="monospace" fill="#a97400" font-weight="bold">Smallest alpha_t = node 1 (134,830.37)  →  COLLAPSE IT</text>
+      </svg>
+      <div class="svg-caption">Node 0's alpha_t changed (278,699.94 → 350,967.08) — its subtree now includes the already-collapsed node 4.</div>
+    </div>
+    <div class="card">
+      <table class="data-table">
+        <tr><th>Candidate</th><th>SSE if collapsed</th><th>SSE as subtree</th><th>Leaves before &rarr; after</th><th>alpha_t</th></tr>
+        <tr><td class="left mono">node 0 (whole CURRENT tree)</td><td class="mono">1,899,819.09</td><td class="mono">1,197,884.92</td><td class="mono">3 &rarr; 1</td><td class="mono">350,967.08</td></tr>
+        <tr><td class="left mono good">node 1 ★ winner</td><td class="mono good">665,445.91</td><td class="mono good">530,615.55</td><td class="mono good">2 &rarr; 1</td><td class="mono good">134,830.37</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="block" id="reg-round3">
+    <h2>Regression Round 3 — <span class="underline">Down To the Root</span></h2>
+    <div class="svg-card">
+      <svg viewBox="0 0 500 220" width="100%" height="auto">
+        <rect x="200" y="14" width="100" height="34" rx="7" fill="#ffe8e8" stroke="#f4b400" stroke-width="3">
+          <animate attributeName="stroke-opacity" values="1;0.4;1" dur="1.6s" repeatCount="indefinite"/>
+        </rect>
+        <text x="250" y="34" text-anchor="middle" font-size="11" font-family="monospace" fill="#a97400" font-weight="bold">node 0 ★</text>
+        <rect x="305" y="8" width="190" height="42" rx="8" fill="#fff0c0" stroke="#f4b400" stroke-width="2"/>
+        <text x="400" y="24" text-anchor="middle" font-size="10" font-family="monospace" fill="#a97400" font-weight="bold">RECOMPUTED alpha_t</text>
+        <text x="400" y="42" text-anchor="middle" font-size="11" font-family="monospace" fill="#a97400" font-weight="bold">= 567,103.80</text>
+
+        <line x1="225" y1="48" x2="150" y2="85" stroke="#888" stroke-width="1.3"/>
+        <line x1="275" y1="48" x2="350" y2="85" stroke="#888" stroke-width="1.3"/>
+
+        <rect x="90" y="85" width="120" height="46" rx="7" fill="#fff0e8" stroke="#C0392B" stroke-width="1.5"/>
+        <text x="150" y="103" text-anchor="middle" font-size="10.5" font-family="monospace" fill="#C0392B" font-weight="bold">LEAF 1</text>
+        <text x="150" y="116" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">n=183, mean=118.36</text>
+        <text x="150" y="127" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">SSE=665,445.91</text>
+
+        <rect x="290" y="85" width="120" height="46" rx="7" fill="#fff0e8" stroke="#C0392B" stroke-width="1.5"/>
+        <text x="350" y="103" text-anchor="middle" font-size="10.5" font-family="monospace" fill="#C0392B" font-weight="bold">LEAF 4</text>
+        <text x="350" y="116" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">n=126, mean=205.53</text>
+        <text x="350" y="127" text-anchor="middle" font-size="8" font-family="monospace" fill="#555">SSE=667,269.37</text>
+
+        <text x="250" y="165" text-anchor="middle" font-size="13" font-family="monospace" fill="#a97400" font-weight="bold">Only candidate = node 0  →  COLLAPSE IT</text>
+        <text x="250" y="185" text-anchor="middle" font-size="10" font-family="monospace" fill="#888">alpha_t = (1,899,819.09 − 1,332,715.29) / (2−1) = 567,103.80</text>
+      </svg>
+      <div class="svg-caption">All 309 samples now share ONE mean (153.90) — the trivial tree.</div>
+    </div>
+    <div class="card">
+      <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);">Node 0 collapses to the single-leaf tree, predicting the overall mean (153.90) for every one of the 309 training samples. No internal nodes remain.</div>
+    </div>
+  </section>
+  <section class="block" id="code-mechanism">
+    <div class="section-eyebrow">How This Becomes Code</div>
+    <h2>Multiple Alphas Per Round — <span class="underline">Which One Gets Stored?</span></h2>
+    <div class="card">
+      <p class="lead" style="margin-top:0;">Look back at Round 1 of either tree above: THREE candidate alphas were computed (one per internal node), but only ONE number — the smallest — actually changed anything or got recorded as a "breakpoint." This is exactly what <code>cost_complexity_pruning_path()</code> does internally, and it's worth being explicit about the computed-vs-stored distinction.</p>
+      <table class="data-table">
+        <tr><th>Round</th><th>Candidates COMPUTED (all internal nodes)</th><th>Value actually STORED in ccp_alphas</th></tr>
+        <tr><td class="mono">1</td><td class="mono">node 0: 44.67, node 1: 12.0, node 4: <b>3.0</b></td><td class="mono good">3.0 (the minimum — node 4's)</td></tr>
+        <tr><td class="mono">2</td><td class="mono">node 0: 65.5, node 1: <b>12.0</b></td><td class="mono good">12.0 (the minimum — node 1's)</td></tr>
+        <tr><td class="mono">3</td><td class="mono">node 0: <b>119.0</b> (only one left)</td><td class="mono good">119.0 (the only candidate, wins by default)</td></tr>
+      </table>
+      <div class="callout warn"><b>Every round computes MULTIPLE candidate numbers — one per internal node still standing — but stores exactly ONE per round: the minimum.</b> Over 3 rounds, that's 3+2+1=6 numbers computed in total, but only 3 get returned to you (plus the starting 0 for the untouched full tree) — sklearn discards the "losing" candidates each round; they don't appear anywhere in the output array. This is the array you actually see:</p></div>
+      <div class="formula">path.ccp_alphas = [ 0, &nbsp; 3.0, &nbsp; 12.0, &nbsp; 119.0 ]</div>
+      <div class="callout info">One entry per ROUND, not per candidate. The array length always equals (number of internal nodes in the fully grown tree) + 1 — one breakpoint per collapse, plus the starting alpha=0 for the untouched tree.</div>
+    </div>
+    <div class="card screenshot">
+      <h3>What this looks like as actual code</h3>
+      <pre style="font-family:'JetBrains Mono',monospace; font-size:11.8px; line-height:1.6; background:#0a0d10; border:1px solid var(--card-line); border-radius:10px; padding:16px 18px; margin:14px 0; overflow-x:auto; color:#d8e2e8; white-space:pre;">tree = DecisionTreeClassifier(max_depth=<span style="color:#f4cf5e;">2</span>, random_state=<span style="color:#f4cf5e;">42</span>).fit(Xtr, ytr)
+path = tree.cost_complexity_pruning_path(Xtr, ytr)
+
+<span style="color:#9fb0bb;font-style:italic;"># path.ccp_alphas  ==  [0, 3.0, 12.0, 119.0]     (the STORED, one-per-round values)
+# path.impurities   ==  the total error R(T) of the tree AT each of those breakpoints
+#
+# internally, sklearn ran exactly the 3 rounds you just watched above:
+# round 1: compute {node0:44.67, node1:12.0, node4:3.0} -> keep only min (3.0), discard 44.67 and 12.0
+# round 2: compute {node0:65.5,  node1:12.0}             -> keep only min (12.0), discard 65.5
+# round 3: compute {node0:119.0}                          -> only one candidate, keep it</span></pre>
+    </div>
+    <div class="card">
+      <h3>How <code>ccp_alpha=a</code> actually PRUNES the tree when you call .fit()</h3>
+      <p class="lead" style="margin-top:0;">Passing a specific alpha to a fresh estimator doesn't run some separate pruning function — it walks the exact round sequence above and STOPS as soon as the next round's breakpoint would exceed your chosen alpha.</p>
+      <table class="data-table">
+        <tr><th>ccp_alpha you pass</th><th>Rounds applied</th><th>Resulting tree</th></tr>
+        <tr><td class="mono">0.0</td><td class="left mono">None — stop before round 1 even starts (0 &lt; 3.0)</td><td class="mono">T0, full tree, 7 nodes</td></tr>
+        <tr><td class="mono">5.0</td><td class="left mono">Round 1 only (3.0 &le; 5.0, but 12.0 &gt; 5.0 — stop before round 2)</td><td class="mono">T1, 5 nodes</td></tr>
+        <tr><td class="mono">50.0</td><td class="left mono">Rounds 1 and 2 (3.0 &le; 50, 12.0 &le; 50, but 119.0 &gt; 50 — stop)</td><td class="mono">T2, 3 nodes</td></tr>
+        <tr><td class="mono">200.0</td><td class="left mono">All 3 rounds (3.0, 12.0, and 119.0 are all &le; 200)</td><td class="mono">T3, 1 node (trivial leaf)</td></tr>
+      </table>
+      <div class="callout purple">This is precisely why testing every value IN <code>ccp_alphas</code> (and nothing in between) is sufficient — any alpha strictly between two consecutive breakpoints applies the exact same set of rounds and therefore produces the IDENTICAL tree. Testing alpha=30 gives you exactly T2, same as alpha=50 — there's nothing new to discover between 12.0 and 119.0.</div>
+    </div>
+    <div class="card screenshot">
+      <h3>The full tuning loop, now fully explained end to end</h3>
+      <pre style="font-family:'JetBrains Mono',monospace; font-size:11.8px; line-height:1.6; background:#0a0d10; border:1px solid var(--card-line); border-radius:10px; padding:16px 18px; margin:14px 0; overflow-x:auto; color:#d8e2e8; white-space:pre;">path = full_tree.cost_complexity_pruning_path(Xtr, ytr)
+candidates = path.ccp_alphas[:-<span style="color:#f4cf5e;">1</span>]   <span style="color:#9fb0bb;font-style:italic;"># drop the very last one -- collapses EVERYTHING to 1 leaf, rarely useful</span>
+
+best_alpha, best_score = <span style="color:#f4cf5e;">0.0</span>, -<span style="color:#f4cf5e;">1</span>
+<span style="color:#f17fb0;">for</span> a <span style="color:#f17fb0;">in</span> candidates:
+    <span style="color:#9fb0bb;font-style:italic;"># each loop iteration = grow a FRESH tree, then walk rounds up to this specific alpha</span>
+    m = DecisionTreeClassifier(random_state=<span style="color:#f4cf5e;">42</span>, ccp_alpha=a).fit(Xtr, ytr)
+    score = m.score(Xval, yval)          <span style="color:#9fb0bb;font-style:italic;"># evaluate THIS specific round's tree on held-out data</span>
+    <span style="color:#f17fb0;">if</span> score > best_score:
+        best_score, best_alpha = score, a
+
+<span style="color:#9fb0bb;font-style:italic;"># best_alpha now identifies exactly ONE tree from the sequence T0...Tk --
+# whichever round's tree scored best on validation, not on training data</span></pre>
+      <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);"><b>Confirming your exact question:</b> yes — for EACH candidate alpha (each stored breakpoint), a fresh tree is fit and scored on validation data, exactly like tuning any other hyperparameter. The only thing that makes ccp_alpha different from <code>max_depth</code> is where the candidate LIST comes from: here, it's the exact, finite, data-derived set of round-breakpoints traced out above — not a grid you guessed yourself.</div>
+    </div>
+  </section>
+  <section class="block" id="validate">
+    <div class="section-eyebrow">After The Sequence Is Built</div>
+    <h2>Once You Have T0...T3, <span class="underline">How Do You Validate?</span></h2>
+    <div class="card">
+      <p class="lead" style="margin-top:0;">Everything above built the FULL sequence of trees (T0 through the trivial single-leaf tree) and their exact breakpoint alphas. That sequence is a MENU, not an answer — pruning itself never tells you which tree to actually deploy. That decision needs held-out data, exactly like tuning any other hyperparameter.</p>
+      <div class="callout warn">One honest wrinkle worth flagging directly: the round-by-round demo above was fit on the FULL 398-row training set, to keep the numbers clean for the derivation. Properly validating means carving out part of that training data as a validation set FIRST — which means the tree itself grows on fewer rows, and the resulting alpha breakpoints genuinely change. This is not a contradiction; it's the exact same "small data change → different tree" instability the whole course started from.</div>
+    </div>
+
+    <div class="card screenshot">
+      <h3>Step 1 — split properly, THEN regenerate the path</h3>
+      <pre class="code-block"><span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> train_test_split
+<span class="kw">from</span> sklearn.tree <span class="kw">import</span> DecisionTreeClassifier
+
+<span class="cm"># train_full (398 rows) -> split further into train (298) + val (100)</span>
+X_train, X_val, y_train, y_val = <span class="fn">train_test_split</span>(
+    X_train_full, y_train_full, test_size=<span class="cm">0.25</span>, random_state=<span class="cm">42</span>, stratify=y_train_full
+)
+
+<span class="cm"># regenerate the candidate path from TRAIN ONLY -- val must never influence this</span>
+base = <span class="fn">DecisionTreeClassifier</span>(max_depth=<span class="cm">2</span>, random_state=<span class="cm">42</span>).<span class="fn">fit</span>(X_train, y_train)
+alphas = base.<span class="fn">cost_complexity_pruning_path</span>(X_train, y_train).ccp_alphas</pre>
+      <div class="output-label">Real executed output — genuinely different breakpoints than the full-data demo above</div>
+      <pre class="output-block">Train rows: 298   Val rows: 100   Test rows: 171
+
+Candidate alphas (from this smaller X_train): [0, 0.02434, 0.04328, 0.3481]</pre>
+      <div class="callout info">Compare to the earlier sequence built on the full 398 rows: [0, 3.0, 12.0, 119.0]. Genuinely different numbers — fewer training rows changed the tree's own structure, which changed every downstream alpha. This is expected, not an error.</div>
+    </div>
+
+    <div class="card screenshot">
+      <h3>Step 2 — fit EACH candidate fresh, score on validation, never on training accuracy</h3>
+      <pre class="code-block">results = []
+<span class="kw">for</span> a <span class="kw">in</span> alphas:
+    m = <span class="fn">DecisionTreeClassifier</span>(max_depth=<span class="cm">2</span>, ccp_alpha=a, random_state=<span class="cm">42</span>)
+    m.<span class="fn">fit</span>(X_train, y_train)
+    train_acc = m.<span class="fn">score</span>(X_train, y_train)
+    val_acc   = m.<span class="fn">score</span>(X_val, y_val)
+    results.<span class="fn">append</span>((a, m.<span class="fn">get_n_leaves</span>(), train_acc, val_acc))</pre>
+      <div class="output-label">Real executed output — every candidate in the sequence, fit and scored</div>
+      <pre class="output-block">alpha=0.00000  leaves=4  train_acc=0.9732  val_acc=0.9600
+alpha=0.02434  leaves=3  train_acc=0.9597  val_acc=0.9600
+alpha=0.04328  leaves=2  train_acc=0.9362  val_acc=0.8900
+alpha=0.34810  leaves=1  train_acc=0.6275  val_acc=0.6300</pre>
+      <div class="callout warn"><b>Watch training accuracy alone and you'd be misled toward always picking alpha=0</b> (0.9732, the highest) — exactly the overfitting trap this whole document has been building toward avoiding. Validation accuracy is what actually decides it, and here alpha=0 AND alpha=0.02434 tie at 0.9600 — both genuinely competitive, not a clear single winner.</div>
+    </div>
+
+    <div class="card screenshot">
+      <h3>Step 3 — pick the best, refit on train+val, evaluate ONCE on untouched test data</h3>
+      <pre class="code-block">best_alpha = <span class="fn">max</span>(results, key=<span class="kw">lambda</span> r: r[<span class="cm">3</span>])[<span class="cm">0</span>]   <span class="cm"># highest val_acc wins ties by picking the first (alpha=0 here)</span>
+
+final = <span class="fn">DecisionTreeClassifier</span>(max_depth=<span class="cm">2</span>, ccp_alpha=best_alpha, random_state=<span class="cm">42</span>)
+final.<span class="fn">fit</span>(X_train_full, y_train_full)   <span class="cm"># refit on ALL 398 rows (train+val combined), same alpha</span>
+
+test_acc = final.<span class="fn">score</span>(X_test, y_test)   <span class="cm"># the ONE time test data gets touched</span></pre>
+      <div class="output-label">Real executed output</div>
+      <pre class="output-block">Best alpha on VALIDATION: 0.00000  (leaves=4, val_acc=0.9600)
+Final model refit on train+val, leaves=4
+FINAL test accuracy (untouched): 0.9181
+
+For contrast, alpha=0 (no pruning) test accuracy: 0.9181
+</pre>
+      <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);">On this particular split, validation genuinely picked "no pruning" as best — a legitimate, honest outcome, not a failure of the method. Pruning doesn't ALWAYS help; the validation step is what tells you whether it does for YOUR specific data, rather than assuming it must.</div>
+    </div>
+
+    <div class="card">
+      <h3>The workflow, summarized</h3>
+      <div class="formula">TRAIN+VAL+TEST split &rarr; generate path from TRAIN only &rarr; fit+score every candidate on VAL &rarr; pick best &rarr; refit on TRAIN+VAL &rarr; score ONCE on TEST</div>
+      <div class="callout purple">Never let test data influence which alpha you pick — that decision belongs to validation alone, exactly the same discipline as every other hyperparameter in this course. And never trust training accuracy to make this call — it will always prefer the least-pruned tree, which is precisely the tree most likely to be overfit.</div>
+    </div>
+  </section>
+  <section class="block" id="sequence">
+    <div class="section-eyebrow">Side By Side</div>
+    <h2>Both Sequences, <span class="underline">Compared</span></h2>
+    <div class="card">
+      <table class="data-table">
+        <tr><th>Round</th><th>Classification: node collapsed</th><th>Classification alpha_t</th><th>Regression: node collapsed</th><th>Regression alpha_t</th></tr>
+        <tr><td class="mono">1</td><td class="mono good">node 4</td><td class="mono good">3.0</td><td class="mono good">node 4</td><td class="mono good">134,165.64</td></tr>
+        <tr><td class="mono">2</td><td class="mono good">node 1</td><td class="mono good">12.0</td><td class="mono good">node 1</td><td class="mono good">134,830.37</td></tr>
+        <tr><td class="mono">3</td><td class="mono good">node 0</td><td class="mono good">119.0</td><td class="mono good">node 0</td><td class="mono good">567,103.80</td></tr>
+      </table>
+      <div class="callout purple" style="font-size:14.5px;">Same tree shape (both were fit with <code>max_depth=2</code> on their respective datasets), same COLLAPSE ORDER (node 4, then node 1, then node 0) — because the underlying algorithm is identical. Only the meaning of "error" differs: misclassification counts for one, sum-of-squared-errors for the other. Verified against sklearn's own <code>cost_complexity_pruning_path()</code> in both cases — matching exactly, round for round.</div>
+    </div>
+    <div class="card">
+      <h3>Everything from this document, in one table</h3>
+      <table class="data-table">
+        <tr><th>Question</th><th>Answer</th></tr>
+        <tr><td class="left">Remove leaves one at a time, or a whole subtree?</td><td class="left mono good">Always one whole subtree, collapsed in a single move</td></tr>
+        <tr><td class="left">Where does |T_t|&minus;1 come from?</td><td class="left mono good">Leaves before, minus the 1 leaf collapsing always produces</td></tr>
+        <tr><td class="left">How many candidates are computed per round?</td><td class="left mono good">One per remaining internal node — ALL of them, every round</td></tr>
+        <tr><td class="left">How many get stored per round?</td><td class="left mono good">Exactly one — the minimum</td></tr>
+        <tr><td class="left">Does regression work differently?</td><td class="left mono good">No — identical algorithm, only "error" changes meaning (SSE instead of misclassification count)</td></tr>
+        <tr><td class="left">Is ccp_alpha tuned the same way as max_depth?</td><td class="left mono good">Same validation discipline, but candidates come from the data itself, not a guessed grid</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <div class="footnote-strip">
+    <span class="hand">&mdash; end of derivation &mdash;</span>
+    Why |T_t| &minus; 1, Classification and Regression &middot; companion notes
+  </div>
+
+</div>
+</body>
+</html>

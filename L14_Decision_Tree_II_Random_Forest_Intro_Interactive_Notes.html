@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Decision Tree II &amp; Intro to Random Forest</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Patrick+Hand&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --board:#0c1014; --card:#151b21; --card-line:#222b32;
+    --chalk:#e9eef2; --chalk-dim:#9fb0bb;
+    --cyan:#5fd8e0; --cyan-dim:#2c5a5e;
+    --pink:#f17fb0; --pink-dim:#5a2f42;
+    --yellow:#f4cf5e; --green:#8fe3a6; --green-dim:#2f4f3a;
+    --purple:#b39ddb; --purple-dim:#4a3f6b;
+    --white-marker:#f5f5f0; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{ background:var(--board); color:var(--chalk); font-family:'Inter',sans-serif; line-height:1.55; -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width:1180px; margin:0 auto; padding:0 24px 120px; }
+  h1,h2,h3,.hand{ font-family:'Caveat',cursive; font-weight:700; }
+  .hero{ padding:56px 0 30px; text-align:center; }
+  .chip{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--cyan); border:1px solid var(--cyan-dim); background:rgba(95,216,224,0.06); padding:6px 14px; border-radius:999px; margin-bottom:16px; }
+  .hero h1{ font-size:clamp(28px,5.5vw,50px); color:var(--white-marker); margin:0 0 8px; }
+  .hero h1 span{color:var(--pink);}
+  .hero p{ font-family:'Patrick Hand',cursive; color:var(--chalk-dim); font-size:17px; max-width:780px; margin:0 auto; }
+  .layout{ display:grid; grid-template-columns:260px 1fr; gap:36px; align-items:start; }
+  nav.toc{ position:sticky; top:24px; background:var(--card); border:1px solid var(--card-line); border-radius:var(--radius); padding:18px 16px; font-family:'JetBrains Mono',monospace; font-size:11px; max-height:calc(100vh - 48px); overflow-y:auto; }
+  nav.toc .toc-title{ color:var(--chalk-dim); text-transform:uppercase; letter-spacing:1.2px; font-size:10px; margin-bottom:8px; margin-top:14px; }
+  nav.toc .toc-title:first-child{margin-top:0;}
+  nav.toc a{ display:block; color:var(--chalk-dim); text-decoration:none; padding:5px 8px; border-radius:8px; margin-bottom:1px; }
+  nav.toc a:hover{color:var(--chalk); background:rgba(255,255,255,0.04);}
+  main{min-width:0;}
+  section.block{ margin-bottom:50px; scroll-margin-top:24px; }
+  .section-eyebrow{ font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--pink); margin-bottom:6px; }
+  section.block h2{ font-size:30px; color:var(--white-marker); margin:0 0 12px; }
+  section.block h2 .underline{ text-decoration:underline; text-decoration-color:var(--cyan); text-decoration-thickness:3px; }
+  p.lead{ font-size:14.5px; color:#cdd8de; max-width:820px; }
+  .card{ background:var(--card); border:1px solid var(--card-line); border-radius:var(--radius); padding:20px 22px; margin:14px 0; }
+  .card h3{ font-family:'Inter',sans-serif; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.7px; color:var(--cyan); margin:0 0 10px; }
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  .grid-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;}
+  @media (max-width:900px){ .layout{grid-template-columns:1fr;} nav.toc{position:relative; top:0; margin-bottom:20px; max-height:none;} .grid-2,.grid-3{grid-template-columns:1fr;} }
+  table.data-table{ width:100%; border-collapse:collapse; font-family:'JetBrains Mono',monospace; font-size:12px; }
+  table.data-table th{ text-align:left; color:var(--chalk-dim); font-weight:500; padding:6px 9px; border-bottom:1px solid var(--card-line); text-transform:uppercase; font-size:9.5px; letter-spacing:0.4px; }
+  table.data-table td{ padding:6px 9px; border-bottom:1px solid rgba(255,255,255,0.04); }
+  table.data-table td.hl{color:var(--yellow); font-weight:700;}
+  table.data-table td.zero{color:var(--pink); font-weight:700; background:rgba(241,127,176,0.08);}
+  table.data-table td.good{color:var(--green); font-weight:700; background:rgba(143,227,166,0.08);}
+  table.data-table td.left{text-align:left;}
+  blockquote.story{ font-family:'Patrick Hand',cursive; font-size:16.5px; color:#dbe6ec; border-left:3px solid var(--yellow); padding:6px 18px; margin:14px 0; background:rgba(244,207,94,0.04); border-radius:0 10px 10px 0; }
+  .pipeline{ display:flex; align-items:center; gap:0; overflow-x:auto; padding:10px 0 18px; }
+  .pipe-step{ flex:0 0 auto; min-width:115px; background:var(--card); border:1px solid var(--card-line); border-radius:12px; padding:12px 14px; text-align:center; }
+  .pipe-step .n{ font-family:'JetBrains Mono',monospace; color:var(--cyan); font-size:10.5px; margin-bottom:5px; }
+  .pipe-step .t{font-weight:700; font-size:12px; color:var(--white-marker);}
+  .pipe-step .d{font-size:9.5px; color:var(--chalk-dim); margin-top:3px;}
+  .pipe-arrow{ flex:0 0 auto; width:20px; text-align:center; color:var(--pink); font-size:16px; }
+  .formula{ font-family:'JetBrains Mono',monospace; background:#0a0d10; border:1px solid var(--card-line); border-radius:10px; padding:14px 20px; margin:12px 0; font-size:14px; color:var(--white-marker); overflow-x:auto; }
+  .formula.center{text-align:center;}
+  .formula .k{color:var(--yellow);} .formula .r{color:var(--cyan);} .formula .l{color:var(--pink);}
+  .formula-note{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--chalk-dim); margin-top:6px; }
+  .callout{ background:rgba(143,227,166,0.08); border:1px solid var(--green-dim); border-radius:10px; padding:12px 16px; color:var(--green); font-size:13px; font-family:'JetBrains Mono',monospace; margin:12px 0; line-height:1.6; }
+  .callout.warn{ background:rgba(244,207,94,0.08); border-color:#5a4f2f; color:var(--yellow); }
+  .callout.bad{ background:rgba(241,127,176,0.08); border-color:var(--pink-dim); color:var(--pink); }
+  .callout.info{ background:rgba(95,216,224,0.08); border-color:var(--cyan-dim); color:var(--cyan); }
+  .callout.purple{ background:rgba(179,157,219,0.08); border-color:var(--purple-dim); color:var(--purple); }
+  .step-card{ background:rgba(0,0,0,0.22); border-radius:10px; padding:14px 18px; margin:10px 0; border:1px solid var(--card-line); }
+  .step-tag{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--board); background:var(--cyan); padding:2px 8px; border-radius:6px; margin-right:8px; font-weight:700; }
+  .step-tag.p{background:var(--purple);}
+  .step-tag.y{background:var(--yellow);}
+  .step-tag.g{background:var(--green);}
+  .analogy-row{ display:flex; gap:14px; margin-top:12px; flex-wrap:wrap; }
+  .analogy{ flex:1; min-width:150px; background:var(--card); border:1px solid var(--card-line); border-radius:10px; padding:14px 16px; text-align:center; }
+  .analogy h4{font-size:14px; margin:6px 0 4px; color:var(--white-marker);}
+  .analogy p{font-size:11.5px; color:var(--chalk-dim); margin:0;}
+  .svg-card{ background:#fff; border:1px solid var(--card-line); border-radius:12px; padding:12px; }
+  .svg-caption{ text-align:center; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:#555; margin-top:8px; }
+  .footnote-strip{ margin-top:60px; border-top:1px dashed var(--card-line); padding-top:22px; text-align:center; color:var(--chalk-dim); font-family:'JetBrains Mono',monospace; font-size:12px; }
+  .footnote-strip .hand{color:var(--cyan); font-size:22px; display:block; margin-bottom:6px;}
+  .cm-table{ border-collapse:collapse; margin:14px auto; font-family:'JetBrains Mono',monospace; font-size:12.5px; }
+  .cm-table td, .cm-table th{ border:1px solid var(--card-line); padding:12px 18px; text-align:center; }
+  .cm-table .tp,.cm-table .tn{background:rgba(143,227,166,0.15); color:var(--green); font-weight:700;}
+  .cm-table .fp,.cm-table .fn{background:rgba(241,127,176,0.15); color:var(--pink); font-weight:700;}
+  .cm-table .lbl{background:#0a0d10; color:var(--chalk-dim); font-weight:700; font-size:10.5px;}
+  .matrix{ font-family:'JetBrains Mono',monospace; background:#0a0d10; border:1px solid var(--card-line); border-radius:10px; padding:16px 22px; display:inline-block; }
+
+  .num-hl{ color:var(--yellow); font-weight:700; }
+  .num-cool{ color:var(--cyan); font-weight:700; }
+  pre.code-block{ font-family:'JetBrains Mono',monospace; font-size:12.5px; line-height:1.55; background:#0a0d10; border:1px solid var(--card-line); border-radius:10px; padding:16px 18px; margin:12px 0; overflow-x:auto; color:#d8e2e8; white-space:pre; }
+  pre.code-block .kw{color:var(--pink);} pre.code-block .fn{color:var(--cyan);} pre.code-block .cm{color:var(--chalk-dim); font-style:italic;} pre.code-block .st{color:var(--yellow);}
+  details.opt{ background:rgba(179,157,219,0.05); border:1px solid var(--purple-dim); border-radius:12px; margin:16px 0; padding:4px 18px; }
+  details.opt summary{ cursor:pointer; padding:12px 0; font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:0.5px; color:var(--purple); font-weight:700; text-transform:uppercase; }
+  details.opt[open] summary{color:var(--yellow);}
+  details.opt .inner{padding:2px 0 16px;}
+  .badge-impl{display:inline-block; background:rgba(244,207,94,0.1); border:1px solid #5a4f2f; color:var(--yellow); font-family:'JetBrains Mono',monospace; font-size:10px; padding:2px 9px; border-radius:6px; margin-left:6px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="chip">05-08-2026 &middot; Module: Supervised Learning &middot; Class 14</div>
+    <h1>Decision Tree II <span>&amp; Intro to Random Forest</span></h1>
+    <div class="chip" style="background:none; border-color:var(--pink-dim); color:var(--pink); margin-top:0;">Complete class notes &middot; every number computed and verified below</div>
+  </div>
+
+  <div class="layout">
+    <nav class="toc" id="toc">
+      <div class="toc-title">Revision → New Question</div>
+      <a href="#revision">Quick recap of Class 13</a>
+      <a href="#entropy-max">Is entropy always &le; 1?</a>
+      <a href="#gini-max">Same question for Gini</a>
+      <div class="toc-title">Multi-Category Features</div>
+      <a href="#multicat">Feature with &gt;2 categories</a>
+      <a href="#onehot">One-Hot Encoding + Info Gain</a>
+      <a href="#label">Label Encoding + Info Gain</a>
+      <a href="#target-binary">Target Encoding (Binary target)</a>
+      <a href="#target-multi">Target Encoding (Multiclass target)</a>
+      <a href="#why-binary">Why sklearn is binary-only</a>
+      <div class="toc-title">Feature Importance</div>
+      <a href="#importance">Same feature, multiple depths</a>
+      <div class="toc-title">Missing Values</div>
+      <a href="#missing">How trees handle NaN internally</a>
+      <div class="toc-title">Imbalanced Data</div>
+      <a href="#imbalance">SMOTE recap + class_weight='balanced'</a>
+      <a href="#weighted-math">Weighted split, top to bottom</a>
+      <div class="toc-title">Why Ensembles?</div>
+      <a href="#variance-q">Does the tree change if data changes?</a>
+      <a href="#ensemble-intro">Ensemble Learning, introduced</a>
+      <div class="toc-title">Bagging</div>
+      <a href="#bagging-def">Definition &amp; bootstrap sampling</a>
+      <a href="#bagging-632">The 63.2% / 36.8% derivation</a>
+      <a href="#bagging-features">Bagging touches data, not features</a>
+      <a href="#rf-intro">Random Forest, in one paragraph</a>
+      <div class="toc-title">Out-of-Bag</div>
+      <a href="#oob">OOB points, shown explicitly</a>
+      <a href="#oob-score">Computing the OOB score</a>
+      <div class="toc-title">Wrap-up</div>
+      <a href="#nextclass">Coming next class</a>
+      <a href="#summary">Summary</a>
+    </nav>
+
+    <main>
+      <section class="block" id="revision">
+        <div class="section-eyebrow">Revision → New Question</div>
+        <h2>Quick Recap of <span class="underline">Class 13</span></h2>
+        <div class="card">
+          <div class="pipeline">
+            <div class="pipe-step"><div class="n">01</div><div class="t">Entropy / Gini</div><div class="d">measure node impurity</div></div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-step"><div class="n">02</div><div class="t">Information Gain</div><div class="d">parent impurity − weighted children</div></div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-step"><div class="n">03</div><div class="t">Numerical splits</div><div class="d">sort, try every midpoint threshold</div></div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-step"><div class="n">04</div><div class="t">Overfitting</div><div class="d">unlimited depth memorizes noise</div></div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-step"><div class="n">05</div><div class="t">Regression trees</div><div class="d">MSE replaces entropy/Gini</div></div>
+          </div>
+          <p class="lead" style="margin-top:0;">Every entropy number we computed last class landed somewhere between 0 and 1 — 0.971, 0.650, 0.811, 0.918... all under 1. Today we ask the question directly:</p>
+          <div class="callout purple" style="font-size:15px;"><b>Is entropy ALWAYS between 0 and 1? Does it ever cross 1? If so, when — and why?</b> The honest answer will also tell us something about Gini that most people never get taught properly.</div>
+        </div>
+      </section>
+
+      <section class="block" id="entropy-max">
+        <h2>Is Entropy Always <span class="underline">&le; 1?</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;"><b>No.</b> Entropy = 1 was never a universal ceiling — it was a coincidence of every example last class having exactly <b>2 classes</b> (Stay/Leave). The real ceiling depends on how many classes k the target has.</p>
+          <div class="formula center">H<sub>max</sub> = log<sub>2</sub>(k) &nbsp;&nbsp;&nbsp; <span class="formula-note" style="color:var(--chalk-dim);">reached only when all k classes are EQUALLY likely (perfectly mixed node)</span></div>
+        </div>
+        <div class="card screenshot">
+          <h3>Where does log₂(k) come from?</h3>
+          <p class="lead" style="margin-top:0;">When all k classes are equally likely, p<sub>i</sub> = 1/k for every class. Substitute into the entropy formula:</p>
+          <div class="step-card"><span class="step-tag">1</span> H = &minus;&Sigma; p<sub>i</sub>&middot;log<sub>2</sub>(p<sub>i</sub>) = &minus;&Sigma; (1/k)&middot;log<sub>2</sub>(1/k), summed over k identical terms</div>
+          <div class="step-card"><span class="step-tag p">2</span> H = &minus;k &middot; (1/k)&middot;log<sub>2</sub>(1/k) = &minus;log<sub>2</sub>(1/k)</div>
+          <div class="step-card"><span class="step-tag y">3</span> H = &minus;log<sub>2</sub>(1/k) = log<sub>2</sub>(k) &nbsp; <span style="color:var(--chalk-dim);">(since log(1/x) = &minus;log(x))</span></div>
+          <div class="formula center">Binary (k=2): H<sub>max</sub> = log<sub>2</sub>(2) = <span class="k">1.000</span> &nbsp;&mdash;&nbsp; <i>this is exactly the "ceiling of 1" you saw all last class</i></div>
+        </div>
+        <div class="card screenshot">
+          <h3>Now push k beyond 2 — a 3-class node</h3>
+          <p class="lead" style="margin-top:0;">A risk-scoring dataset, target = Low / Medium / High, 20 rows perfectly split 3-ways (equal counts, worst-case mixing):</p>
+          <table class="data-table">
+            <tr><th>Classes (k)</th><th>Distribution</th><th>H<sub>max</sub> = log&#8322;(k)</th></tr>
+            <tr><td class="mono">2</td><td class="mono">50/50</td><td class="mono">1.000</td></tr>
+            <tr><td class="mono hl">3</td><td class="mono hl">33.3/33.3/33.3</td><td class="mono zero">1.585</td></tr>
+            <tr><td class="mono">4</td><td class="mono">25/25/25/25</td><td class="mono zero">2.000</td></tr>
+            <tr><td class="mono">5</td><td class="mono">20 each</td><td class="mono zero">2.322</td></tr>
+            <tr><td class="mono">8</td><td class="mono">12.5 each</td><td class="mono zero">3.000</td></tr>
+          </table>
+          <div class="callout bad"><b>Entropy easily exceeds 1 the moment your target has more than 2 classes.</b> A perfectly-mixed 3-class node has entropy 1.585 — bigger than ANY binary node could ever produce, even the most impure 50/50 binary split.</div>
+        </div>
+        <div class="card screenshot">
+          <h3>A real, uneven 3-class node (not the extreme case)</h3>
+          <p class="lead" style="margin-top:0;">n=20, distribution 50% Low / 30% Medium / 20% High (uneven, not the worst case):</p>
+          <div class="step-card"><span class="step-tag">1</span> H = &minus;(0.5&middot;log&#8322;0.5 + 0.3&middot;log&#8322;0.3 + 0.2&middot;log&#8322;0.2)</div>
+          <div class="step-card"><span class="step-tag p">2</span> = &minus;(0.5&times;(&minus;1.000) + 0.3&times;(&minus;1.737) + 0.2&times;(&minus;2.322))</div>
+          <div class="step-card"><span class="step-tag y">3</span> = 0.500 + 0.521 + 0.464 = <span class="mono num-hl">1.485</span></div>
+          <div class="callout warn">1.485 is LESS than this node's own max (1.585, since it isn't perfectly 33/33/33) but still comfortably ABOVE 1 — the old binary ceiling simply doesn't apply once k=3.</div>
+        </div>
+        <div class="callout info"><b>General rule:</b> entropy's range is <b>[0, log&#8322;(k)]</b>, not [0,1]. The "[0,1]" range you memorized last class is the special case k=2. Entropy is fundamentally unbounded as k grows — log&#8322;(k) keeps climbing forever, no ceiling.</div>
+      </section>
+
+      <section class="block" id="gini-max">
+        <h2>Same Question, <span class="underline">for Gini</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Repeat the exact same derivation for Gini — set all k classes equally likely, p<sub>i</sub>=1/k, substitute into GI(y) = 1 &minus; &Sigma;p<sub>i</sub>&sup2;:</p>
+          <div class="step-card"><span class="step-tag">1</span> GI<sub>max</sub> = 1 &minus; &Sigma;(1/k)&sup2;, summed over k identical terms = 1 &minus; k&middot;(1/k&sup2;)</div>
+          <div class="step-card"><span class="step-tag p">2</span> = 1 &minus; 1/k</div>
+          <div class="formula center">GI<sub>max</sub> = (k&minus;1)/k</div>
+        </div>
+        <div class="card screenshot">
+          <table class="data-table">
+            <tr><th>Classes (k)</th><th>GI<sub>max</sub> = (k&minus;1)/k</th><th>H<sub>max</sub> = log&#8322;(k)</th></tr>
+            <tr><td class="mono">2</td><td class="mono">0.500</td><td class="mono">1.000</td></tr>
+            <tr><td class="mono">3</td><td class="mono">0.667</td><td class="mono">1.585</td></tr>
+            <tr><td class="mono">4</td><td class="mono">0.750</td><td class="mono">2.000</td></tr>
+            <tr><td class="mono">8</td><td class="mono">0.875</td><td class="mono">3.000</td></tr>
+            <tr><td class="mono">100</td><td class="mono">0.990</td><td class="mono">6.644</td></tr>
+            <tr><td class="mono">k → &infin;</td><td class="mono hl">→ 1 (never reaches it)</td><td class="mono zero">→ &infin; (unbounded)</td></tr>
+          </table>
+          <div class="callout purple"><b>A genuinely interesting contrast:</b> as the number of classes grows huge, Gini's ceiling creeps up toward 1 but can <b>never actually reach or exceed 1</b> — it's a horizontal asymptote. Entropy's ceiling, log&#8322;(k), has <b>no ceiling at all</b> — it keeps growing without bound as k grows. This is a real, structural difference between the two metrics, not just "same idea, cheaper to compute."</div>
+        </div>
+        <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);"><b>Practical takeaway:</b> whenever you compare impurity numbers across different SPLITS at the same node, both metrics behave identically (same winner). But never compare a raw entropy or Gini number in isolation and call it "high" or "low" without first checking k — 1.485 is unremarkable for a 3-class node but would be mathematically impossible for a binary one.</div>
+      </section>
+      <section class="block" id="multicat">
+        <div class="section-eyebrow">Multi-Category Features</div>
+        <h2>What If a Feature Has <span class="underline">More Than 2 Categories?</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Gender (Male/Female) split cleanly into 2 branches. Real data has features like <b>City</b> — Chennai, Mumbai, Delhi, and more. How does a tree even split on this?</p>
+          <div class="grid-2">
+            <div class="card">
+              <h3>Conceptually (tree algorithms in general)</h3>
+              <div class="callout info">A tree CAN natively branch once per category — City with 3 values gets a 3-way split in one shot: Chennai / Mumbai / Delhi as three separate children of one node. Some historical algorithms (ID3, C4.5 — see the optional box below) do exactly this.</div>
+            </div>
+            <div class="card">
+              <h3>What sklearn's DecisionTreeClassifier actually does</h3>
+              <div class="callout warn">Always <b>binary</b>, even for categorical features — it searches every way to split the categories into 2 groups: {Chennai} vs {Mumbai, Delhi}, {Mumbai} vs {Chennai, Delhi}, {Delhi} vs {Chennai, Mumbai}. <b>AND</b> it requires the column to already be numeric — you must encode City into numbers before <code>.fit()</code> even runs. <span class="badge-impl">check your sklearn version</span></div>
+            </div>
+          </div>
+          <div class="callout purple">So there are really TWO separate questions bundled together: (1) how do we turn "Chennai/Mumbai/Delhi" into numbers at all, and (2) once it's numbers, what partitions can a binary threshold search actually reach? Let's use ONE dataset and try all three encodings end to end.</div>
+        </div>
+
+        <div class="card screenshot">
+          <h3>The dataset we'll reuse for all three encodings</h3>
+          <p class="lead" style="margin-top:0;">12 customers, target = Purchased (Yes/No). Deliberately built so the parent node is a clean 50/50 (H=1.000) — easy to track gains against.</p>
+          <table class="data-table">
+            <tr><th>City</th><th>Rows (Y/N)</th><th>n</th><th>P(Yes)</th><th>Entropy of this city alone</th></tr>
+            <tr><td class="left mono">Chennai</td><td class="mono">3 Yes, 1 No</td><td class="mono">4</td><td class="mono num-hl">0.75</td><td class="mono">0.811</td></tr>
+            <tr><td class="left mono">Mumbai</td><td class="mono">1 Yes, 3 No</td><td class="mono">4</td><td class="mono num-hl">0.25</td><td class="mono">0.811</td></tr>
+            <tr><td class="left mono">Delhi</td><td class="mono">2 Yes, 2 No</td><td class="mono">4</td><td class="mono num-hl">0.50</td><td class="mono">1.000</td></tr>
+          </table>
+          <div class="formula center">Parent (all 12 rows): 6 Yes, 6 No &rarr; H<sub>parent</sub> = <span class="k">1.000</span></div>
+        </div>
+      </section>
+
+      <section class="block" id="onehot">
+        <h2>One-Hot Encoding <span class="underline">+ Info Gain</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Create one binary column per category. Each column can only ever answer "is it THIS city, or not."</p>
+          <table class="data-table">
+            <tr><th>City</th><th>City_Chennai</th><th>City_Mumbai</th><th>City_Delhi</th></tr>
+            <tr><td class="left mono">Chennai</td><td class="mono good">1</td><td class="mono">0</td><td class="mono">0</td></tr>
+            <tr><td class="left mono">Mumbai</td><td class="mono">0</td><td class="mono good">1</td><td class="mono">0</td></tr>
+            <tr><td class="left mono">Delhi</td><td class="mono">0</td><td class="mono">0</td><td class="mono good">1</td></tr>
+          </table>
+        </div>
+        <div class="card screenshot">
+          <h3>Info Gain for splitting on City_Chennai (1 vs 0)</h3>
+          <div class="step-card"><span class="step-tag">1</span> Left (Chennai=1, n=4): 3Y,1N &rarr; H=<span class="mono num-hl">0.811</span></div>
+          <div class="step-card"><span class="step-tag p">2</span> Right (Chennai=0, n=8, i.e. Mumbai+Delhi combined): Y=1+2=3, N=3+2=5 &rarr; p=0.375/0.625 &rarr; H=<span class="mono num-hl">0.955</span></div>
+          <div class="step-card"><span class="step-tag y">3</span> Weighted children = (4/12)&times;0.811 + (8/12)&times;0.955 = <span class="mono num-hl">0.907</span></div>
+          <div class="formula center">IG(City_Chennai) = 1.000 &minus; 0.907 = <span class="k">0.093</span></div>
+        </div>
+        <div class="card screenshot">
+          <h3>Info Gain for the other two one-hot columns</h3>
+          <table class="data-table">
+            <tr><th>Split (1 vs rest)</th><th>Left group</th><th>Right group</th><th>Weighted H</th><th>Info Gain</th></tr>
+            <tr><td class="left mono">City_Chennai</td><td class="mono">4 (3Y1N, H=0.811)</td><td class="mono">8 (3Y5N, H=0.955)</td><td class="mono">0.907</td><td class="mono good">0.093</td></tr>
+            <tr><td class="left mono">City_Mumbai</td><td class="mono">4 (1Y3N, H=0.811)</td><td class="mono">8 (5Y3N, H=0.955)</td><td class="mono">0.907</td><td class="mono good">0.093</td></tr>
+            <tr><td class="left mono">City_Delhi</td><td class="mono">4 (2Y2N, H=1.000)</td><td class="mono">8 (4Y4N, H=1.000)</td><td class="mono">1.000</td><td class="mono zero">0.000</td></tr>
+          </table>
+          <div class="callout bad"><b>City_Delhi gives ZERO gain.</b> Delhi is itself a perfect 50/50 (matches the parent exactly), and the remaining 8 rows (Chennai+Mumbai combined: 4Y,4N) are ALSO exactly 50/50 by coincidence of these numbers — so isolating Delhi tells the tree nothing new. Chennai and Mumbai tie for the best one-hot split, IG=0.093.</div>
+          <div class="callout info"><b>The structural limitation of one-hot:</b> each column only ever offers a "this-category-vs-everyone-else" partition. To reach a DIFFERENT grouping — say {Chennai, Delhi} vs {Mumbai} — no single one-hot column can do it in one split; the tree would need 2 levels (split on Mumbai=1 first, discard; the remaining data is already just Chennai+Delhi).</div>
+        </div>
+      </section>
+      <section class="block" id="label">
+        <h2>Label Encoding <span class="underline">+ Info Gain</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Instead of 3 columns, assign each city ONE arbitrary integer code. Say alphabetically: Chennai=0, Delhi=1, Mumbai=2.</p>
+          <table class="data-table">
+            <tr><th>City</th><th>Label code</th></tr>
+            <tr><td class="left mono">Chennai</td><td class="mono num-hl">0</td></tr>
+            <tr><td class="left mono">Delhi</td><td class="mono num-hl">1</td></tr>
+            <tr><td class="left mono">Mumbai</td><td class="mono num-hl">2</td></tr>
+          </table>
+          <p class="lead">Now City is numeric. sklearn sorts the unique values (0,1,2) and tries midpoint thresholds: <b>0.5</b> and <b>1.5</b>.</p>
+        </div>
+        <div class="card screenshot">
+          <h3>Threshold ≤ 0.5 &nbsp;→&nbsp; {Chennai} vs {Delhi, Mumbai}</h3>
+          <div class="step-card"><span class="step-tag">1</span> Left (n=4, Chennai): 3Y,1N &rarr; H=<span class="mono num-hl">0.811</span></div>
+          <div class="step-card"><span class="step-tag p">2</span> Right (n=8, Delhi+Mumbai): Y=2+1=3, N=2+3=5 &rarr; H=<span class="mono num-hl">0.955</span></div>
+          <div class="formula center">Weighted = 0.907 &nbsp;&rarr;&nbsp; IG = 1.000 &minus; 0.907 = <span class="k">0.093</span></div>
+        </div>
+        <div class="card screenshot">
+          <h3>Threshold ≤ 1.5 &nbsp;→&nbsp; {Chennai, Delhi} vs {Mumbai}</h3>
+          <div class="step-card"><span class="step-tag">1</span> Left (n=8, Chennai+Delhi): Y=3+2=5, N=1+2=3 &rarr; H=<span class="mono num-hl">0.955</span></div>
+          <div class="step-card"><span class="step-tag p">2</span> Right (n=4, Mumbai): 1Y,3N &rarr; H=<span class="mono num-hl">0.811</span></div>
+          <div class="formula center">Weighted = 0.907 &nbsp;&rarr;&nbsp; IG = 1.000 &minus; 0.907 = <span class="k">0.093</span></div>
+        </div>
+        <div class="card screenshot">
+          <h3>The partition that is IMPOSSIBLE with this label order</h3>
+          <div class="callout bad">Notice which groupings we CAN reach: {Chennai}v{Delhi,Mumbai} and {Chennai,Delhi}v{Mumbai}. We can <b>never</b> reach {Delhi} vs {Chennai,Mumbai} in a single threshold split — because Delhi's code (1) sits BETWEEN Chennai (0) and Mumbai (2). A single threshold can only ever cut the sorted line at one point, so it can only isolate whichever category sits at an END of the sorted order, never one stuck in the middle.</div>
+          <p class="lead" style="margin-top:0;">For THIS dataset it doesn't cost us anything (Delhi's split scores IG=0 anyway, as we saw with one-hot). But that's a coincidence of these numbers — in general, whether the tree can even <i>reach</i> the ideal partition depends on the luck of which alphabetical/arbitrary code each category happened to be assigned.</p>
+          <div class="callout warn"><b>This is exactly the label-encoding danger from Class 13:</b> the codes are arbitrary, so the tree's cheap one-split partitions are dictated by code order, not by anything meaningful about the categories.</div>
+        </div>
+      </section>
+      <section class="block" id="target-binary">
+        <h2>Target Encoding <span class="underline">(Binary Target)</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Instead of an arbitrary code, replace each city with its OWN training-data purchase rate — a number that actually means something.</p>
+          <table class="data-table">
+            <tr><th>City</th><th>P(Purchased=Yes | City)</th><th>Sorted order</th></tr>
+            <tr><td class="left mono">Mumbai</td><td class="mono num-hl">0.25</td><td class="mono">1st (lowest)</td></tr>
+            <tr><td class="left mono">Delhi</td><td class="mono num-hl">0.50</td><td class="mono">2nd (middle)</td></tr>
+            <tr><td class="left mono">Chennai</td><td class="mono num-hl">0.75</td><td class="mono">3rd (highest)</td></tr>
+          </table>
+          <p class="lead">Sorted encoded values: 0.25, 0.50, 0.75 &rarr; candidate thresholds: <b>0.375</b> and <b>0.625</b>.</p>
+        </div>
+        <div class="card screenshot">
+          <h3>Threshold ≤ 0.375 &nbsp;→&nbsp; {Mumbai} vs {Delhi, Chennai}</h3>
+          <div class="step-card"><span class="step-tag">1</span> Left (n=4, Mumbai): 1Y,3N &rarr; H=<span class="mono num-hl">0.811</span></div>
+          <div class="step-card"><span class="step-tag p">2</span> Right (n=8, Delhi+Chennai): Y=2+3=5, N=2+1=3 &rarr; H=<span class="mono num-hl">0.955</span></div>
+          <div class="formula center">Weighted = 0.907 &nbsp;&rarr;&nbsp; IG = <span class="k">0.093</span> &nbsp;<span style="color:var(--chalk-dim);font-size:11px;">(identical to isolating Mumbai via one-hot)</span></div>
+        </div>
+        <div class="card screenshot">
+          <h3>Threshold ≤ 0.625 &nbsp;→&nbsp; {Mumbai, Delhi} vs {Chennai}</h3>
+          <div class="step-card"><span class="step-tag">1</span> Left (n=8, Mumbai+Delhi): Y=1+2=3, N=3+2=5 &rarr; H=<span class="mono num-hl">0.955</span></div>
+          <div class="step-card"><span class="step-tag p">2</span> Right (n=4, Chennai): 3Y,1N &rarr; H=<span class="mono num-hl">0.811</span></div>
+          <div class="formula center">Weighted = 0.907 &nbsp;&rarr;&nbsp; IG = <span class="k">0.093</span> &nbsp;<span style="color:var(--chalk-dim);font-size:11px;">(identical to isolating Chennai via one-hot)</span></div>
+        </div>
+        <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);"><b>The key advantage over label encoding:</b> target encoding sorts categories BY their own outcome rate. That means the two most extreme categories (highest and lowest purchase rate — usually the most informative ones to isolate) automatically sit at the two ENDS of the sorted order, so isolating either one is always reachable with a single threshold. Compare this to label encoding, where whether you can isolate the "interesting" category in one split is just luck of the alphabet.</div>
+        <div class="callout warn">Delhi (the middle value, 0.50) is still not cheaply isolable alone in one split here — same structural limitation as label encoding for whatever sits in the middle. But since Delhi's own outcome rate exactly equals the parent's, isolating it wouldn't have helped anyway (IG=0, as we already found with one-hot).</div>
+      </section>
+      <section class="block" id="target-multi">
+        <h2>Target Encoding <span class="underline">(Multiclass Target)</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">What if the TARGET itself has more than 2 classes? A single "P(Yes)" number no longer makes sense — there's no one "Yes" to measure. New dataset: target = Risk (Low / Medium / High), City feature, 12 rows.</p>
+          <table class="data-table">
+            <tr><th>City</th><th>Rows</th><th>P(Low)</th><th>P(Medium)</th><th>P(High)</th></tr>
+            <tr><td class="left mono">Chennai</td><td class="mono">Low,Low,Medium,High</td><td class="mono num-hl">0.50</td><td class="mono">0.25</td><td class="mono">0.25</td></tr>
+            <tr><td class="left mono">Mumbai</td><td class="mono">Medium,High,High,High</td><td class="mono">0.00</td><td class="mono">0.25</td><td class="mono num-hl">0.75</td></tr>
+            <tr><td class="left mono">Delhi</td><td class="mono">Low,Medium,High,High</td><td class="mono">0.25</td><td class="mono">0.25</td><td class="mono num-hl">0.50</td></tr>
+          </table>
+          <div class="callout info"><b>Multiclass target encoding produces K columns, not one</b> — here K=3: <code>City_P(Low)</code>, <code>City_P(Medium)</code>, <code>City_P(High)</code>. The single categorical column City is REPLACED by 3 new numeric columns, each independently usable by the tree as a candidate split feature, exactly like any other numeric column.</div>
+        </div>
+
+        <div class="card screenshot">
+          <h3>Parent entropy (of the 3-class Risk target, all 12 rows)</h3>
+          <p class="lead" style="margin-top:0;">Overall counts: Low=3, Medium=3, High=6 (n=12) &rarr; p = (0.25, 0.25, 0.50). The entropy formula doesn't change — it's still H=&minus;&Sigma;p<sub>i</sub>log&#8322;(p<sub>i</sub>), just summed over k=3 classes now instead of 2.</p>
+          <div class="formula center">H<sub>parent</sub> = &minus;(0.25&times;(&minus;2) + 0.25&times;(&minus;2) + 0.5&times;(&minus;1)) = 0.5+0.5+0.5 = <span class="k">1.500</span></div>
+        </div>
+
+        <div class="card screenshot">
+          <h3>Splitting on City_P(High), threshold ≤ 0.625 &nbsp;→&nbsp; {Chennai, Delhi} vs {Mumbai}</h3>
+          <p class="lead" style="margin-top:0;">Sorted P(High) values: Chennai=0.25, Delhi=0.50, Mumbai=0.75 &rarr; candidate thresholds 0.375 and 0.625. Try the one that isolates Mumbai (the city whose High-rate stands out most):</p>
+          <div class="step-card"><span class="step-tag">1</span> Left (n=8, Chennai+Delhi): Low=2+1=3, Med=1+1=2, High=1+2=3 &rarr; p=(0.375,0.25,0.375)</div>
+          <div class="step-card"><span class="step-tag p">2</span> H<sub>left</sub> = &minus;(0.375&times;(&minus;1.415)+0.25&times;(&minus;2)+0.375&times;(&minus;1.415)) = 0.531+0.5+0.531 = <span class="mono num-hl">1.562</span></div>
+          <div class="step-card"><span class="step-tag y">3</span> Right (n=4, Mumbai): Low=0,Med=1,High=3 &rarr; p=(0,0.25,0.75) &rarr; H<sub>right</sub> = 0.5+0.311 = <span class="mono num-hl">0.811</span></div>
+          <div class="step-card"><span class="step-tag g">4</span> Weighted = (8/12)&times;1.562 + (4/12)&times;0.811 = 1.042+0.270 = <span class="mono num-hl">1.312</span></div>
+          <div class="formula center">IG = 1.500 &minus; 1.312 = <span class="k">0.188</span></div>
+        </div>
+
+        <div class="card screenshot">
+          <h3>Compare: threshold ≤ 0.375 &nbsp;→&nbsp; {Chennai} vs {Delhi, Mumbai}</h3>
+          <div class="step-card"><span class="step-tag">1</span> Left (n=4, Chennai): Low=2,Med=1,High=1 &rarr; p=(0.5,0.25,0.25) &rarr; H = 0.5+0.5+0.5 = <span class="mono num-hl">1.500</span></div>
+          <div class="step-card"><span class="step-tag p">2</span> Right (n=8, Delhi+Mumbai): Low=1,Med=2,High=5 &rarr; p=(0.125,0.25,0.625)</div>
+          <div class="step-card"><span class="step-tag y">3</span> H<sub>right</sub> = &minus;(0.125&times;(&minus;3)+0.25&times;(&minus;2)+0.625&times;(&minus;0.678)) = 0.375+0.5+0.424 = <span class="mono num-hl">1.299</span></div>
+          <div class="step-card"><span class="step-tag g">4</span> Weighted = (4/12)&times;1.5 + (8/12)&times;1.299 = 0.5+0.866 = <span class="mono num-hl">1.366</span></div>
+          <div class="formula center">IG = 1.500 &minus; 1.366 = <span class="k">0.134</span></div>
+        </div>
+
+        <table class="data-table">
+          <tr><th>Split</th><th>Info Gain</th><th>Winner?</th></tr>
+          <tr><td class="left mono">{Chennai,Delhi} vs {Mumbai}  (≤0.625)</td><td class="mono good">0.188</td><td class="good">Best split</td></tr>
+          <tr><td class="left mono">{Chennai} vs {Delhi,Mumbai}  (≤0.375)</td><td class="mono">0.134</td><td></td></tr>
+        </table>
+        <div class="callout purple"><b>Isolating Mumbai wins</b> (IG=0.188 &gt; 0.134) — makes intuitive sense too: Mumbai's class distribution (0, 0.25, 0.75) is the most different from the overall parent distribution (0.25, 0.25, 0.50) of any single city, so separating it out removes the most impurity.</div>
+        <div class="callout warn"><b>Note the practical detail:</b> with K=3 encoded columns (one per class), the tree now searches candidate thresholds across ALL THREE of <code>City_P(Low)</code>, <code>City_P(Medium)</code>, <code>City_P(High)</code> at every node — more candidate features to search than the single column binary target encoding needed, but each individual column's Information Gain is computed with the exact same formula shown here. <span class="badge-impl">In practice, K&minus;1 columns are often kept (one dropped) since the K probabilities always sum to 1 and the last is redundant — implementation detail, check your encoding library.</span></div>
+      </section>
+      <section class="block" id="why-binary">
+        <h2>Why Doesn't sklearn Support <span class="underline">Native Multiway Nodes?</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">We've now seen the tree CAN reach any grouping it needs via binary splits — just sometimes needing an extra level of depth (as with label encoding's "middle" category). So why did sklearn's implementation (CART-style) commit to binary-only, instead of letting City branch 3 ways in one shot?</p>
+          <div class="grid-2">
+            <div class="card">
+              <h3>Search cost</h3>
+              <p style="font-size:13px; color:var(--chalk-dim);">Evaluating every possible k-way grouping of categories explodes combinatorially as k grows. Binary search (2^(k&minus;1)&minus;1 partitions) stays tractable; full multiway partitioning does not.</p>
+            </div>
+            <div class="card">
+              <h3>Overfitting / fragmentation</h3>
+              <p style="font-size:13px; color:var(--chalk-dim);">A multiway split on a high-cardinality feature (say, 50 cities) fragments data into 50 tiny groups in ONE step — most will be too small to generalize. Binary splits fragment gradually, one cut at a time.</p>
+            </div>
+            <div class="card">
+              <h3>Unseen categories</h3>
+              <p style="font-size:13px; color:var(--chalk-dim);">A rigid k-way branch breaks the moment a brand-new category appears at test time (which branch does it go down?). A binary "in subset S or not" rule degrades more gracefully.</p>
+            </div>
+            <div class="card">
+              <h3>Pruning compatibility</h3>
+              <p style="font-size:13px; color:var(--chalk-dim);">Cost-complexity pruning (a later topic) is mathematically defined over binary trees — every prune operation collapses exactly 2 children into 1 parent leaf, a clean, uniform operation.</p>
+            </div>
+          </div>
+          <div class="callout info"><b>"Decision Tree" is a broad family, not one fixed algorithm.</b> CART (what sklearn implements) chose binary-only for the reasons above. Older algorithms made a different choice — see the optional section below if you're curious how they worked.</div>
+        </div>
+
+        <details class="opt">
+          <summary>Optional — What is ID3, and how does it actually work?</summary>
+          <div class="inner">
+            <p class="lead" style="margin-top:0;"><b>ID3 (Iterative Dichotomiser 3)</b> is one of the earliest decision tree algorithms (1986, Ross Quinlan) — the direct ancestor of the ideas you learned last class. It uses Entropy and Information Gain exactly as we've computed them, but makes different engineering choices than CART/sklearn.</p>
+            <table class="data-table">
+              <tr><th>Aspect</th><th>ID3</th><th>CART (sklearn)</th></tr>
+              <tr><td class="left">Categorical splits</td><td>Native multiway — one branch per category value, in one step</td><td>Always binary — subset-vs-rest</td></tr>
+              <tr><td class="left">Numerical features</td><td class="zero">Not handled natively — must be discretized/binned first</td><td class="good">Handled directly via threshold search</td></tr>
+              <tr><td class="left">Impurity measure</td><td>Entropy / Information Gain only</td><td>Gini (default) or Entropy, your choice</td></tr>
+              <tr><td class="left">Pruning</td><td class="zero">No built-in pruning — prone to overfitting</td><td class="good">Pre- and post-pruning (cost-complexity)</td></tr>
+              <tr><td class="left">Missing values</td><td class="zero">Not handled</td><td>Imputation needed <span class="badge-impl">version-specific</span></td></tr>
+            </table>
+            <div class="callout warn"><b>ID3's well-known weakness:</b> Information Gain is naturally biased toward high-cardinality features. An ID column (every row a unique value) would get chosen as the "best" root split under raw IG — splitting into one branch per row makes every branch perfectly pure (H=0), giving maximum possible gain, despite the feature being completely useless for generalization. This flaw was directly why Quinlan's NEXT algorithm, C4.5, introduced <b>Gain Ratio</b> (Information Gain divided by a penalty for how many branches the split creates) to correct for it.</div>
+            <div class="callout purple">This is exactly why, decades later, CART's binary-split-only design (which naturally limits branching per node to 2, no matter the feature's cardinality) sidesteps ID3's high-cardinality bias almost by construction — one more reason binary won out in the implementation that became sklearn's default.</div>
+          </div>
+        </details>
+      </section>
+      <section class="block" id="importance">
+        <div class="section-eyebrow">Feature Importance</div>
+        <h2>When the Same Feature Appears <span class="underline">at Multiple Depths</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Predicting loan default using Age and Income. Notice: <b>Age is used at the ROOT, and again 3 levels deeper.</b> How much credit should Age get overall?</p>
+          <div class="svg-card"><svg viewBox="0 0 620 340" width="100%" height="auto">
+            <rect x="230" y="10" width="160" height="46" rx="8" fill="#1D5FD1" opacity="0.12" stroke="#1D5FD1" stroke-width="1.5"/>
+            <text x="310" y="30" font-size="12" font-family="monospace" text-anchor="middle" fill="#1D5FD1" font-weight="bold">Age &lt; 35 ?</text>
+            <text x="310" y="46" font-size="9.5" font-family="monospace" text-anchor="middle" fill="#888">n=100, Gini=0.500</text>
+            <line x1="270" y1="56" x2="110" y2="105" stroke="#555" stroke-width="1.3"/>
+            <text x="150" y="82" font-size="10.5" font-family="monospace" fill="#1F7A56" font-weight="bold">Yes</text>
+            <line x1="350" y1="56" x2="480" y2="105" stroke="#555" stroke-width="1.3"/>
+            <text x="420" y="82" font-size="10.5" font-family="monospace" fill="#C0392B" font-weight="bold">No</text>
+
+            <rect x="35" y="105" width="150" height="42" rx="7" fill="#1F7A56" opacity="0.15" stroke="#1F7A56" stroke-width="1.3"/>
+            <text x="110" y="126" font-size="11.5" font-family="monospace" text-anchor="middle" fill="#1F7A56" font-weight="bold">Leaf</text>
+            <text x="110" y="141" font-size="9" font-family="monospace" text-anchor="middle" fill="#888">n=40, Gini=0.300</text>
+
+            <rect x="405" y="105" width="180" height="42" rx="7" fill="#f4a300" opacity="0.14" stroke="#f4a300" stroke-width="1.3"/>
+            <text x="495" y="126" font-size="11.5" font-family="monospace" text-anchor="middle" fill="#a97400" font-weight="bold">Income &lt; 70K ?</text>
+            <text x="495" y="141" font-size="9" font-family="monospace" text-anchor="middle" fill="#888">n=60, Gini=0.420</text>
+
+            <line x1="450" y1="147" x2="330" y2="195" stroke="#555" stroke-width="1.3"/>
+            <text x="380" y="172" font-size="10.5" font-family="monospace" fill="#1F7A56" font-weight="bold">Yes</text>
+            <line x1="540" y1="147" x2="560" y2="195" stroke="#555" stroke-width="1.3"/>
+            <text x="562" y="172" font-size="10.5" font-family="monospace" fill="#C0392B" font-weight="bold">No</text>
+
+            <rect x="215" y="195" width="230" height="42" rx="7" fill="#1D5FD1" opacity="0.12" stroke="#1D5FD1" stroke-width="1.3"/>
+            <text x="330" y="216" font-size="11.5" font-family="monospace" text-anchor="middle" fill="#1D5FD1" font-weight="bold">Age &lt; 50 ?</text>
+            <text x="330" y="231" font-size="9" font-family="monospace" text-anchor="middle" fill="#888">n=25, Gini=0.200</text>
+
+            <rect x="475" y="195" width="130" height="42" rx="7" fill="#C0392B" opacity="0.12" stroke="#C0392B" stroke-width="1.3"/>
+            <text x="540" y="216" font-size="11.5" font-family="monospace" text-anchor="middle" fill="#C0392B" font-weight="bold">Leaf</text>
+            <text x="540" y="231" font-size="9" font-family="monospace" text-anchor="middle" fill="#888">n=35, Gini=0.380</text>
+
+            <line x1="280" y1="237" x2="150" y2="285" stroke="#555" stroke-width="1.3"/>
+            <text x="185" y="262" font-size="10.5" font-family="monospace" fill="#1F7A56" font-weight="bold">Yes</text>
+            <line x1="380" y1="237" x2="440" y2="285" stroke="#555" stroke-width="1.3"/>
+            <text x="400" y="262" font-size="10.5" font-family="monospace" fill="#C0392B" font-weight="bold">No</text>
+
+            <rect x="70" y="285" width="150" height="42" rx="7" fill="#1F7A56" opacity="0.15" stroke="#1F7A56" stroke-width="1.3"/>
+            <text x="145" y="306" font-size="11.5" font-family="monospace" text-anchor="middle" fill="#1F7A56" font-weight="bold">Leaf</text>
+            <text x="145" y="321" font-size="9" font-family="monospace" text-anchor="middle" fill="#888">n=15, Gini=0.100</text>
+
+            <rect x="365" y="285" width="150" height="42" rx="7" fill="#C0392B" opacity="0.12" stroke="#C0392B" stroke-width="1.3"/>
+            <text x="440" y="306" font-size="11.5" font-family="monospace" text-anchor="middle" fill="#C0392B" font-weight="bold">Leaf</text>
+            <text x="440" y="321" font-size="9" font-family="monospace" text-anchor="middle" fill="#888">n=10, Gini=0.320</text>
+          </svg></div>
+          <div class="svg-caption">Age appears TWICE — root (blue) and one level under Income (blue again, depth 3). Both are genuinely different thresholds (35, then 50), chosen fresh each time.</div>
+        </div>
+
+        <div class="card screenshot">
+          <h3>Step 1 — impurity decrease at the root (Age &lt; 35)</h3>
+          <div class="step-card"><span class="step-tag">1</span> &Delta;I = 0.500 &minus; [(40/100)&times;0.300 + (60/100)&times;0.420] = 0.500 &minus; (0.120+0.252) = 0.500&minus;0.372 = <span class="mono num-hl">0.128</span></div>
+          <div class="step-card"><span class="step-tag p">2</span> Contribution = &Delta;I &times; (n_node/N_total) = 0.128 &times; (100/100) = <span class="mono num-hl">0.128</span></div>
+        </div>
+        <div class="card screenshot">
+          <h3>Step 2 — impurity decrease at "Income &lt; 70K"</h3>
+          <div class="step-card"><span class="step-tag">1</span> &Delta;I = 0.420 &minus; [(25/60)&times;0.200 + (35/60)&times;0.380] = 0.420 &minus; (0.0833+0.2217) = 0.420&minus;0.305 = <span class="mono num-hl">0.115</span></div>
+          <div class="step-card"><span class="step-tag p">2</span> Contribution = 0.115 &times; (60/100) = <span class="mono num-hl">0.069</span></div>
+        </div>
+        <div class="card screenshot">
+          <h3>Step 3 — impurity decrease at "Age &lt; 50" (Age's SECOND appearance)</h3>
+          <div class="step-card"><span class="step-tag">1</span> &Delta;I = 0.200 &minus; [(15/25)&times;0.100 + (10/25)&times;0.320] = 0.200 &minus; (0.060+0.128) = 0.200&minus;0.188 = <span class="mono num-hl">0.012</span></div>
+          <div class="step-card"><span class="step-tag p">2</span> Contribution = 0.012 &times; (25/100) = <span class="mono num-hl">0.003</span></div>
+        </div>
+        <div class="card screenshot">
+          <h3>Step 4 — sum contributions PER FEATURE, then normalize</h3>
+          <table class="data-table">
+            <tr><th>Feature</th><th>Node(s) it appears in</th><th>Raw total contribution</th></tr>
+            <tr><td class="left mono">Age</td><td class="left mono">Root (0.128) + "Age&lt;50" (0.003)</td><td class="mono num-hl">0.131</td></tr>
+            <tr><td class="left mono">Income</td><td class="left mono">"Income&lt;70K" (0.069)</td><td class="mono num-hl">0.069</td></tr>
+          </table>
+          <div class="formula center">Sum of raw contributions = 0.131 + 0.069 = <span class="k">0.200</span></div>
+          <div class="step-card"><span class="step-tag g">Normalize</span> Age = 0.131 / 0.200 = <span class="mono num-hl">0.655</span> &nbsp;&nbsp;&nbsp; Income = 0.069 / 0.200 = <span class="mono num-hl">0.345</span></div>
+          <div class="formula center">feature_importances_ = { Age: <span class="k">0.655</span>, Income: <span class="k">0.345</span> } &nbsp;&nbsp; (sums to 1.000 ✓)</div>
+        </div>
+        <div class="callout purple"><b>The number that matters most:</b> Age's SECOND appearance (depth 3) only contributed 0.003 — barely anything — compared to 0.128 at the root. Age's total (0.131) is still completely dominated by its root split. <b>Feature importance is a sum of weighted impurity drops across every node that feature touches, normalized to 1 — never a count of how many times it appears.</b> A feature used once at the root can vastly outweigh one used several times deep in the tree.</div>
+      </section>
+      <section class="block" id="missing">
+        <div class="section-eyebrow">Missing Values</div>
+        <h2>How Trees Handle Missing Numerical Values <span class="underline">Internally</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Age is missing (NaN) for some rows. What does the tree-building algorithm actually do with those rows when searching for the best Age threshold?</p>
+          <div class="callout warn"><b>THIS IS IMPLEMENTATION / VERSION SPECIFIC</b> <span class="badge-impl">check your library</span> — the classic sklearn <code>DecisionTreeClassifier</code>/<code>Regressor</code> historically required imputation BEFORE <code>.fit()</code> — it could not silently ignore or route NaN rows. Some newer estimators (e.g. <code>HistGradientBoostingClassifier</code>) DO support native missing-value routing. The two mechanisms below describe how "native" handling works conceptually, wherever it's supported.</div>
+        </div>
+        <div class="card screenshot">
+          <h3>Mechanism 1 — threshold search simply skips the missing rows</h3>
+          <p class="lead" style="margin-top:0;">Age values for 10 rows: 22, 25, NaN, 28, 31, NaN, 35, 40, 45, NaN. Sorting for candidate thresholds only uses the 7 non-missing values:</p>
+          <div class="formula center">sorted (non-missing) = 22, 25, 28, 31, 35, 40, 45 &rarr; candidate thresholds = 23.5, 26.5, 29.5, 33, 37.5, 42.5</div>
+          <p class="lead">The 3 NaN rows are set aside during THIS search — they don't distort which threshold looks best, because they contribute no information either way about where the split should sit.</p>
+        </div>
+        <div class="card screenshot">
+          <h3>Mechanism 2 — learn WHICH DIRECTION missing values should default to</h3>
+          <p class="lead" style="margin-top:0;">Once a candidate threshold is chosen (say Age &lt; 30), the algorithm still needs to decide: when a row's Age is missing, does it go left or right? Native implementations try BOTH and keep whichever gives higher gain:</p>
+          <div class="step-card"><span class="step-tag">1</span> Try: "send all 3 missing-Age rows LEFT" &rarr; compute Information Gain for this configuration</div>
+          <div class="step-card"><span class="step-tag p">2</span> Try: "send all 3 missing-Age rows RIGHT" &rarr; compute Information Gain for this configuration</div>
+          <div class="step-card"><span class="step-tag y">3</span> Keep whichever direction gave the higher gain — this becomes a LEARNED, permanent part of that specific split (e.g. "Age &lt; 30, and if missing → go right")</div>
+          <div class="callout info">This is fundamentally different from imputation. Imputation guesses a specific NUMBER (like the median) and treats missing as if it were that number. This mechanism never guesses a value at all — it only decides a ROUTING DIRECTION, learned to maximize gain, per split, independently at every node.</div>
+        </div>
+        <div class="card screenshot">
+          <h3>Why this is a good intuition to hold onto</h3>
+          <div class="grid-2">
+            <div class="card"><h3 style="color:var(--green);">If missingness itself is informative</h3><p style="font-size:13px; color:var(--chalk-dim);">e.g. Income is missing more often for unemployed applicants — routing missing rows toward whichever branch fits that pattern lets the tree implicitly use "missingness" as a signal, without an explicit indicator column.</p></div>
+            <div class="card"><h3 style="color:var(--pink);">If missingness is random</h3><p style="font-size:13px; color:var(--chalk-dim);">the two directions will score nearly identically in Information Gain, and the tie-break barely matters — the tree just picks whichever side is marginally better, with little consequence either way.</p></div>
+          </div>
+          <div class="callout purple">Either way, the tree's own training process is what decides the routing — nobody hand-picks median-fill or mode-fill in advance. That's the core intuition: <b>missing values become just another branch decision, learned the same way every other split is learned — by maximizing Information Gain.</b></div>
+        </div>
+      </section>
+      <section class="block" id="imbalance">
+        <div class="section-eyebrow">Imbalanced Data</div>
+        <h2>Decision Trees on <span class="underline">Imbalanced Data</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Fraud dataset: 90 legitimate transactions, 10 fraud (90/10 split). A tree trained normally will happily predict "Not Fraud" everywhere and still score 90% accuracy — completely useless in practice. Two approaches, one you've already learned, one new:</p>
+          <div class="grid-2">
+            <div class="card"><h3>Already covered — resampling</h3><p style="font-size:13px; color:var(--chalk-dim);"><b>SMOTE / oversampling:</b> synthetically generate more minority-class (Fraud) rows — or duplicate/oversample existing ones — BEFORE training, so the tree sees a more balanced dataset directly. Changes the DATA, not the algorithm.</p></div>
+            <div class="card"><h3>New today — class_weight='balanced'</h3><p style="font-size:13px; color:var(--chalk-dim);">Don't touch the data at all. Instead, tell the impurity calculation itself to <b>count minority-class rows as "worth more"</b> when computing Gini/Entropy and the leaf's majority vote. Changes the ALGORITHM's internal math, not the data.</p></div>
+          </div>
+        </div>
+        <div class="card screenshot">
+          <h3>The class_weight='balanced' formula</h3>
+          <div class="formula center">weight(class i) = n_samples / (n_classes &times; n_samples in class i)</div>
+          <p class="lead" style="margin-top:0;">100 rows total, 90 "Not Fraud", 10 "Fraud", n_classes=2:</p>
+          <div class="step-card"><span class="step-tag">1</span> weight(Not Fraud) = 100 / (2&times;90) = <span class="mono num-hl">0.556</span></div>
+          <div class="step-card"><span class="step-tag p">2</span> weight(Fraud) = 100 / (2&times;10) = <span class="mono num-hl">5.000</span></div>
+          <div class="callout info">Every single Fraud row now counts as if it were <b>9 times "heavier"</b> (5.000 / 0.556 ≈ 9) than a Not-Fraud row, everywhere in the tree's impurity math — root all the way down to every leaf.</div>
+        </div>
+      </section>
+
+      <section class="block" id="weighted-math">
+        <h2>Weighted Splitting, <span class="underline">Top to Bottom</span></h2>
+        <div class="card screenshot">
+          <h3>Take one real node: 60 Not-Fraud, 10 Fraud (n=70)</h3>
+          <div class="grid-2">
+            <div class="card"><h3 style="color:var(--cyan);">UNWEIGHTED Gini (what we've always computed)</h3>
+              <div class="step-card"><span class="step-tag">1</span> p(NotFraud)=60/70=0.857, p(Fraud)=10/70=0.143</div>
+              <div class="step-card"><span class="step-tag p">2</span> Gini = 1&minus;(0.857&sup2;+0.143&sup2;) = 1&minus;(0.735+0.020) = <span class="mono num-hl">0.245</span></div>
+              <div class="callout warn">Looks almost pure — mostly Not-Fraud, low impurity.</div>
+            </div>
+            <div class="card"><h3 style="color:var(--pink);">WEIGHTED Gini (class_weight='balanced')</h3>
+              <div class="step-card"><span class="step-tag">1</span> weighted count NotFraud = 60&times;0.556 = <span class="mono num-hl">33.33</span></div>
+              <div class="step-card"><span class="step-tag p">2</span> weighted count Fraud = 10&times;5.000 = <span class="mono num-hl">50.00</span></div>
+              <div class="step-card"><span class="step-tag y">3</span> weighted total = 83.33 &rarr; p(NotFraud)=0.400, p(Fraud)=<span class="mono num-hl">0.600</span></div>
+              <div class="step-card"><span class="step-tag g">4</span> Gini = 1&minus;(0.400&sup2;+0.600&sup2;) = 1&minus;(0.16+0.36) = <span class="mono num-hl">0.480</span></div>
+              <div class="callout bad">Looks nearly balanced, leaning FRAUD — a completely different picture of the same 70 rows.</div>
+            </div>
+          </div>
+        </div>
+        <div class="card screenshot">
+          <h3>Visualizing the flip</h3>
+          <div class="svg-card"><svg viewBox="0 0 500 160" width="100%" height="auto">
+            <text x="10" y="20" font-size="11" font-family="monospace" fill="#333" font-weight="bold">UNWEIGHTED mass</text>
+            <rect x="10" y="30" width="240" height="28" rx="5" fill="#eee"/>
+            <rect x="10" y="30" width="205.7" height="28" rx="5" fill="#1D5FD1" opacity="0.6"/>
+            <rect x="215.7" y="30" width="34.3" height="28" fill="#C0392B" opacity="0.7"/>
+            <text x="110" y="49" font-size="10" font-family="monospace" fill="#fff" font-weight="bold">NotFraud 85.7%</text>
+            <text x="10" y="75" font-size="9.5" font-family="monospace" fill="#555">Majority vote → predict NOT FRAUD (60 &gt; 10)</text>
+
+            <text x="270" y="20" font-size="11" font-family="monospace" fill="#333" font-weight="bold">WEIGHTED mass</text>
+            <rect x="270" y="30" width="220" height="28" rx="5" fill="#eee"/>
+            <rect x="270" y="30" width="88" height="28" rx="5" fill="#1D5FD1" opacity="0.6"/>
+            <rect x="358" y="30" width="132" height="28" fill="#C0392B" opacity="0.7"/>
+            <text x="400" y="49" font-size="10" font-family="monospace" fill="#fff" font-weight="bold">Fraud 60%</text>
+            <text x="270" y="75" font-size="9.5" font-family="monospace" fill="#555">Weighted vote → predict FRAUD (50.0 &gt; 33.33)</text>
+            <text x="10" y="110" font-size="10" font-family="monospace" fill="#a97400" font-weight="bold">Same 70 rows. Same node. Opposite leaf prediction.</text>
+          </svg></div>
+          <div class="callout purple"><b>The leaf's prediction literally flips.</b> Unweighted: 60 vs 10 raw votes &rarr; predict "Not Fraud". Weighted: 33.33 vs 50.00 weighted votes &rarr; predict "Fraud". The exact same 70 training rows produce an OPPOSITE leaf decision purely because of how much each row "counts."</div>
+        </div>
+        <div class="card screenshot">
+          <h3>How this changes things from the ROOT down, not just one leaf</h3>
+          <p class="lead" style="margin-top:0;">Because EVERY node's impurity is now computed with weighted counts, this doesn't just relabel one leaf after the fact — the tree searches for splits differently from the very first node onward:</p>
+          <div class="step-card"><span class="step-tag">1</span> At the root, a split that isolates even a SMALL number of Fraud rows now produces a much bigger apparent impurity reduction than it would unweighted (because each isolated Fraud row "counts" as 9 unweighted rows).</div>
+          <div class="step-card"><span class="step-tag p">2</span> This means splits that separate out Fraud-heavy subgroups — even small ones — are more likely to WIN the Information Gain competition at every level, not just at the leaves.</div>
+          <div class="step-card"><span class="step-tag y">3</span> The resulting tree structure itself can end up genuinely different (different root feature, different thresholds) — not just the same tree with re-labeled leaves.</div>
+          <div class="callout info">This is exactly why <code>class_weight='balanced'</code> is often preferred over pure oversampling in production: it changes the LEARNING SIGNAL throughout the whole tree-building process, using the real, un-duplicated data — no synthetic rows, no risk of a resampling method accidentally creating unrealistic synthetic points.</div>
+        </div>
+      </section>
+      <section class="block" id="variance-q">
+        <div class="section-eyebrow">Why Ensembles?</div>
+        <h2>If the Input Data Changes a Little, <span class="underline">Does the Tree Change a Lot?</span></h2>
+        <div class="card">
+          <div class="callout bad" style="font-size:15px;"><b>Yes — drastically, in fact.</b> Drop just a handful of training rows, or nudge a few values, and the entire tree can come out looking structurally different.</div>
+          <p class="lead" style="margin-top:0;">Here's why: the very FIRST split is chosen by comparing candidate thresholds on THIS specific sample. A tiny data change can shift which threshold wins narrowly at the root — and once the root split changes, every node beneath it is now operating on a completely different subset of rows. The disagreement doesn't stay local; it <b>cascades</b> down through the whole tree.</p>
+          <div class="callout warn"><b>This property has a name: high variance.</b> A model is "high variance" when small changes to the training data cause large changes in the learned model / its predictions. Decision trees — especially deep, unrestricted ones — are a textbook example.</div>
+        </div>
+        <div class="card screenshot">
+          <h3>Why doesn't "just make the tree simpler" fix this?</h3>
+          <p class="lead" style="margin-top:0;">Restricting depth (max_depth, min_samples_leaf) does reduce variance — but it does so by making splits less sensitive to the data, which ALSO makes the tree unable to capture genuinely complex patterns. That's <b>trading variance for bias</b> (Class 13's overfitting sweep), not eliminating variance for free.</p>
+          <div class="callout purple">We want a way to keep trees expressive (able to fit complex patterns — low bias) while ALSO not being so sensitive to which exact rows happened to be in the training set (fixing high variance). Simplifying a single tree can't do both at once. This is exactly the gap ensemble learning is built to close.</div>
+        </div>
+      </section>
+
+      <section class="block" id="ensemble-intro">
+        <h2>Ensemble Learning, <span class="underline">Introduced</span></h2>
+        <div class="card">
+          <div class="formula center">Ensemble = combine multiple models into ONE stronger predictor</div>
+          <div class="analogy-row">
+            <div class="analogy"><h4>One analyst</h4><p>Ask ONE stock analyst for a tip. You get one opinion, with their personal biases and blind spots baked in.</p></div>
+            <div class="analogy"><h4>200 analysts, averaged</h4><p>Ask 200 independent analysts and average their views. Individual quirks and errors tend to cancel out — the crowd's average is typically steadier than any single loud voice.</p></div>
+          </div>
+          <p class="lead">This is exactly the mathematical trick we need: <b>train many trees, each unstable on its own, then combine their predictions.</b> The instability (variance) of individual trees partially cancels out when you average — while each individual tree stays expressive (low bias) because we never had to simplify any single one of them.</p>
+        </div>
+        <div class="card screenshot">
+          <h3>Four ensemble families — scope for this course</h3>
+          <table class="data-table">
+            <tr><th>Technique</th><th>In this course?</th><th>One-line idea</th></tr>
+            <tr><td class="left mono">Bagging</td><td class="good">Yes — today</td><td class="left">Train many models in parallel on resampled data, average/vote</td></tr>
+            <tr><td class="left mono">Boosting</td><td class="good">Yes — upcoming class</td><td class="left">Train models sequentially, each fixing the previous one's errors</td></tr>
+            <tr><td class="left mono">Stacking</td><td class="zero">Out of scope</td><td class="left">A meta-model learns how to best blend several different model types</td></tr>
+            <tr><td class="left mono">Cascading</td><td class="zero">Out of scope</td><td class="left">Stage-wise filtering — each stage only handles what the previous one passed through</td></tr>
+          </table>
+          <div class="callout info">Today: full depth on <b>Bagging</b>, plus enough of <b>Random Forest</b> to see where bagging leads. Boosting gets its own dedicated class later.</div>
+        </div>
+      </section>
+      <section class="block" id="bagging-def">
+        <div class="section-eyebrow">Bagging</div>
+        <h2>Bagging = <span class="underline">Bootstrap Aggregating</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Two ideas glued into one word. <b>Bootstrap</b> = a specific way of resampling the data. <b>Aggregating</b> = combining predictions afterward. Take them one at a time.</p>
+          <h3>Sampling WITH replacement vs WITHOUT replacement</h3>
+          <div class="grid-2">
+            <div class="card"><h3 style="color:var(--green);">WITHOUT replacement</h3><p style="font-size:13px; color:var(--chalk-dim);">Draw a row, set it aside — it can never be drawn again. Draw all N rows this way and you get back the exact original dataset (just reordered). No duplicates possible, nothing missing.</p></div>
+            <div class="card"><h3 style="color:var(--pink);">WITH replacement (bootstrap)</h3><p style="font-size:13px; color:var(--chalk-dim);">Draw a row, note it, put it BACK before the next draw. The same row can be drawn again — possibly several times — while some other row might never get drawn at all.</p></div>
+          </div>
+        </div>
+        <div class="card screenshot">
+          <h3>Concrete example — 10 rows, IDs 1 to 10</h3>
+          <div class="formula center">Original: 1  2  3  4  5  6  7  8  9  10</div>
+          <div class="formula center" style="color:var(--green);">WITHOUT replacement (shuffle): 7  2  9  1  10  4  8  3  5  6 &nbsp;&mdash;&nbsp; same 10 unique IDs, just reordered</div>
+          <div class="formula center" style="color:var(--pink);">WITH replacement (bootstrap): 1  2  2  4  5  5  7  9  10  10 &nbsp;&mdash;&nbsp; rows 2, 5, 10 duplicated; rows 3, 6, 8 missing entirely</div>
+          <div class="callout warn">Rows 3, 6, 8 being left out isn't a bug — it's the entire mechanism bagging depends on. These leftover rows are called <b>Out-of-Bag (OOB)</b> rows, and we'll use them properly in a moment.</div>
+        </div>
+      </section>
+
+      <section class="block" id="bagging-632">
+        <h2>The <span class="underline">63.2% / 36.8%</span> Derivation</h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;"><b>Question:</b> for one bootstrap sample of size n, drawn with replacement from n rows, what fraction of rows get left out entirely?</p>
+          <div class="step-card"><span class="step-tag">1</span> Probability a SPECIFIC row is missed on one draw = (1 &minus; 1/n)</div>
+          <div class="step-card"><span class="step-tag p">2</span> There are n independent draws total &rarr; probability that row is missed in ALL n draws = (1 &minus; 1/n)<sup>n</sup></div>
+          <div class="formula center">P(a given row is OOB) = (1 &minus; 1/n)<sup>n</sup> &nbsp;&nbsp;&nbsp; lim<sub>n&rarr;&infin;</sub> (1&minus;1/n)<sup>n</sup> = e<sup>&minus;1</sup> &asymp; 0.368</div>
+        </div>
+        <div class="card screenshot">
+          <h3>Checking convergence numerically</h3>
+          <table class="data-table">
+            <tr><th>n</th><th>(1 &minus; 1/n)<sup>n</sup></th></tr>
+            <tr><td class="mono">10</td><td class="mono">0.9<sup>10</sup> &asymp; 0.3487</td></tr>
+            <tr><td class="mono">50</td><td class="mono">0.98<sup>50</sup> &asymp; 0.3642</td></tr>
+            <tr><td class="mono">1,000</td><td class="mono">0.999<sup>1000</sup> &asymp; 0.3677</td></tr>
+            <tr><td class="mono hl">n → &infin;</td><td class="mono zero">→ 0.3679 (36.8%)</td></tr>
+          </table>
+        </div>
+        <div class="card screenshot">
+          <h3>Visualizing it</h3>
+          <div class="svg-card"><svg viewBox="0 0 400 100" width="100%" height="auto">
+            <rect x="20" y="20" width="360" height="34" rx="6" fill="#eee"/>
+            <rect x="20" y="20" width="227.5" height="34" rx="6" fill="#1D5FD1" opacity="0.6"/>
+            <rect x="247.5" y="20" width="132.5" height="34" fill="#C0392B" opacity="0.7"/>
+            <text x="130" y="42" font-size="11" font-family="monospace" text-anchor="middle" fill="#fff" font-weight="bold">63.2% IN-BAG (training)</text>
+            <text x="315" y="42" font-size="10" font-family="monospace" text-anchor="middle" fill="#fff" font-weight="bold">36.8% OOB</text>
+            <text x="20" y="80" font-size="9.5" font-family="monospace" fill="#555">For EVERY tree, roughly two-thirds of rows train it — the other third is automatically "held out," at zero extra cost.</text>
+          </svg></div>
+        </div>
+        <div class="card">
+          <h3>Why deliberately sample WITH replacement at all?</h3>
+          <div class="callout takeaway" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);"><b>Because we WANT each bootstrap sample to be slightly different from the original</b> — different enough that a tree trained on it turns out slightly different too. We just proved trees are unstable (high variance): small data changes cascade into structurally different trees. Bagging deliberately manufactures many such different-but-related datasets on purpose, so it can average the resulting different-but-related trees together afterward.</div>
+          <div class="callout bad"><b>What if we sampled WITHOUT replacement instead (using all N rows every time)?</b> Every "bootstrap" sample would be identical to the original dataset (just reordered) — row order doesn't matter to a tree. Every tree trained this way would come out IDENTICAL. Averaging 100 identical trees gives you back... the same single tree. Zero benefit.</div>
+        </div>
+      </section>
+
+      <section class="block" id="bagging-features">
+        <h2>Does Bagging Touch <span class="underline">Features Too?</span></h2>
+        <div class="card">
+          <div class="callout info" style="font-size:15px;"><b>No.</b> Bagging only resamples ROWS (via bootstrap). Every model still sees ALL the original features, every time. This is a deliberate, important distinction.</div>
+          <p class="lead" style="margin-top:0;">Because bagging only changes which rows a model trains on — never which algorithm or which features — it is completely algorithm-agnostic. You can bag <i>any</i> base learner:</p>
+          <table class="data-table">
+            <tr><th>Base learner</th><th>Bagged version</th></tr>
+            <tr><td class="left mono">Decision Tree</td><td class="left mono">Bagged Trees (the classic case — leads to Random Forest, next)</td></tr>
+            <tr><td class="left mono">Logistic Regression</td><td class="left mono">BaggingClassifier(estimator=LogisticRegression())</td></tr>
+            <tr><td class="left mono">KNN</td><td class="left mono">BaggingClassifier(estimator=KNeighborsClassifier())</td></tr>
+          </table>
+          <div class="callout purple">Whatever algorithm you bag, the mechanism never changes: bootstrap the rows, train one model per bootstrap sample, aggregate (vote/average) the predictions.</div>
+        </div>
+      </section>
+
+      <section class="block" id="rf-intro">
+        <h2>Random Forest, <span class="underline">In One Paragraph</span></h2>
+        <div class="card">
+          <div class="formula center">Random Forest = Bagging of Decision Trees + Random Feature (Column) Subsampling at every split</div>
+          <p class="lead" style="margin-top:0;">On top of everything bagging already does (bootstrap the rows), Random Forest adds ONE more layer: at every single split, only a random SUBSET of columns/features is even considered as a candidate — not all of them. This means every tree in the forest sees different rows AND, at every node, a different random slice of features. The full mechanics of why this extra randomness matters, and the exact hyperparameters that control it, is <b>the main topic of next class</b> — for today, just anchor the one-line definition above.</p>
+        </div>
+      </section>
+      <section class="block" id="oob">
+        <div class="section-eyebrow">Out-of-Bag</div>
+        <h2>OOB Points, <span class="underline">Shown Explicitly</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">8 training rows, 4 bootstrap trees. For each tree, some rows are IN-BAG (used to train it) and some are OOB (left out entirely, by chance, for that specific tree). Let's see every single row × tree combination.</p>
+          <table class="data-table">
+            <tr><th>Row</th><th>True label</th><th>Tree 1</th><th>Tree 2</th><th>Tree 3</th><th>Tree 4</th></tr>
+            <tr><td class="mono">1</td><td class="mono">Y</td><td class="mono zero">OOB</td><td class="mono good">in-bag</td><td class="mono good">in-bag</td><td class="mono good">in-bag</td></tr>
+            <tr><td class="mono">2</td><td class="mono">N</td><td class="mono good">in-bag</td><td class="mono zero">OOB</td><td class="mono good">in-bag</td><td class="mono good">in-bag</td></tr>
+            <tr><td class="mono">3</td><td class="mono">Y</td><td class="mono zero">OOB</td><td class="mono good">in-bag</td><td class="mono good">in-bag</td><td class="mono good">in-bag</td></tr>
+            <tr><td class="mono">4</td><td class="mono">N</td><td class="mono good">in-bag</td><td class="mono zero">OOB</td><td class="mono good">in-bag</td><td class="mono zero">OOB</td></tr>
+            <tr><td class="mono">5</td><td class="mono">Y</td><td class="mono good">in-bag</td><td class="mono good">in-bag</td><td class="mono zero">OOB</td><td class="mono good">in-bag</td></tr>
+            <tr><td class="mono">6</td><td class="mono">N</td><td class="mono good">in-bag</td><td class="mono good">in-bag</td><td class="mono good">in-bag</td><td class="mono good">in-bag</td></tr>
+            <tr><td class="mono">7</td><td class="mono">Y</td><td class="mono good">in-bag</td><td class="mono good">in-bag</td><td class="mono good">in-bag</td><td class="mono zero">OOB</td></tr>
+            <tr><td class="mono">8</td><td class="mono">N</td><td class="mono good">in-bag</td><td class="mono good">in-bag</td><td class="mono zero">OOB</td><td class="mono good">in-bag</td></tr>
+          </table>
+          <div class="callout info"><b>Read this table row by row:</b> Row 1 was left out of Tree 1's bootstrap sample (OOB, pink) but WAS included when training Trees 2, 3, and 4 (in-bag, green). Row 4 happens to be OOB for BOTH Tree 2 and Tree 4 — it will get an OOB prediction from two different trees, which we can aggregate. Row 6 was never left out of anything across these 4 trees — pure chance, it simply has no OOB prediction available from this particular forest.</div>
+        </div>
+      </section>
+
+      <section class="block" id="oob-score">
+        <h2>Computing the <span class="underline">OOB Score</span></h2>
+        <div class="card screenshot">
+          <h3>Step 1 — for each row, ask ONLY the trees where it was OOB</h3>
+          <table class="data-table">
+            <tr><th>Row</th><th>True</th><th>OOB in which tree(s)?</th><th>Their prediction(s)</th><th>OOB majority vote</th><th>Correct?</th></tr>
+            <tr><td class="mono">1</td><td class="mono">Y</td><td class="mono">Tree 1</td><td class="mono">Y</td><td class="mono good">Y</td><td class="good">✓</td></tr>
+            <tr><td class="mono">2</td><td class="mono">N</td><td class="mono">Tree 2</td><td class="mono">N</td><td class="mono good">N</td><td class="good">✓</td></tr>
+            <tr><td class="mono">3</td><td class="mono">Y</td><td class="mono">Tree 1</td><td class="mono">N</td><td class="mono zero">N</td><td class="zero">✗</td></tr>
+            <tr><td class="mono">4</td><td class="mono">N</td><td class="mono">Tree 2, Tree 4</td><td class="mono">N, N</td><td class="mono good">N</td><td class="good">✓</td></tr>
+            <tr><td class="mono">5</td><td class="mono">Y</td><td class="mono">Tree 3</td><td class="mono">Y</td><td class="mono good">Y</td><td class="good">✓</td></tr>
+            <tr><td class="mono">6</td><td class="mono">N</td><td class="mono">— none —</td><td class="mono">—</td><td class="mono">excluded</td><td>—</td></tr>
+            <tr><td class="mono">7</td><td class="mono">Y</td><td class="mono">Tree 4</td><td class="mono">N</td><td class="mono zero">N</td><td class="zero">✗</td></tr>
+            <tr><td class="mono">8</td><td class="mono">N</td><td class="mono">Tree 3</td><td class="mono">N</td><td class="mono good">N</td><td class="good">✓</td></tr>
+          </table>
+          <div class="callout purple"><b>Row 4 is the interesting one:</b> it's OOB for BOTH Tree 2 and Tree 4. We only ask those two (never Tree 1 or Tree 3, since row 4 was in-bag — i.e. memorized — for those). Both happen to say "N" here, so the OOB majority vote is a clean "N" — matches the true label.</div>
+        </div>
+        <div class="card screenshot">
+          <h3>Step 2 — aggregate across ALL rows to get the OOB score</h3>
+          <div class="step-card"><span class="step-tag">1</span> Row 6 has NO OOB tree available (never left out across these 4 trees) — excluded from the OOB score entirely, exactly like it was never in the dataset for this calculation.</div>
+          <div class="step-card"><span class="step-tag p">2</span> Evaluable rows = 7 (rows 1,2,3,4,5,7,8). Correct predictions = 5 (rows 1,2,4,5,8). Incorrect = 2 (rows 3,7).</div>
+          <div class="formula center">OOB score = correct / evaluable = 5 / 7 = <span class="k">0.714</span></div>
+          <div class="callout info">This number — 0.714 — was computed WITHOUT setting aside a single dedicated validation row. Every one of the 8 rows contributed to training the forest as a whole (via whichever trees included it); it just wasn't asked to score itself using a tree that had already memorized it.</div>
+        </div>
+        <div class="card">
+          <h3>Why this genuinely substitutes for a validation set</h3>
+          <div class="flow" style="display:flex; flex-direction:column; gap:8px;">
+            <div class="step-card">Every row IS used for training — by whichever ~63.2% of trees happened to include it</div>
+            <div class="step-card">The SAME row is simultaneously unseen (OOB) for the other ~36.8% of trees</div>
+            <div class="step-card">For scoring, each row only "asks" the trees that never saw it — exactly like asking a model to predict on genuinely unseen data</div>
+            <div class="step-card" style="border-color:var(--cyan);">Aggregate across all rows &rarr; OOB score &asymp; an honest, unbiased estimate of test-set performance, at ZERO extra data cost</div>
+          </div>
+          <div class="callout warn"><b>One caveat worth remembering:</b> if you tune many hyperparameters by repeatedly watching the OOB score, you can still indirectly overfit your hyperparameter CHOICES to that estimate over many iterations — so a final, completely untouched test set is still good practice for the number you actually report, exactly as with cross-validation.</div>
+        </div>
+      </section>
+      <section class="block" id="nextclass">
+        <div class="section-eyebrow">Wrapping up</div>
+        <h2>Coming <span class="underline">Next Class</span></h2>
+        <div class="card">
+          <div class="pipeline">
+            <div class="pipe-step"><div class="n">01</div><div class="t">Random Forest, in depth</div><div class="d">bootstrap + feature subsampling, hyperparameters, why it decorrelates trees</div></div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-step"><div class="n">02</div><div class="t">Coding: Decision Tree</div><div class="d">sklearn end to end, encodings, pruning, feature importance in code</div></div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-step"><div class="n">03</div><div class="t">Coding: Random Forest</div><div class="d">training, OOB score in sklearn, tuning n_estimators &amp; max_features</div></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="block" id="summary">
+        <h2>Summary</h2>
+        <div class="card">
+          <table class="data-table">
+            <tr><th>Topic</th><th>One-line takeaway</th></tr>
+            <tr><td class="left">Entropy's real range</td><td>[0, log&#8322;(k)] — the "max = 1" rule only applies when k=2 classes</td></tr>
+            <tr><td class="left">Gini's real range</td><td>[0, (k&minus;1)/k] — approaches but never reaches 1 as k grows, unlike entropy which is unbounded</td></tr>
+            <tr><td class="left">One-hot encoding</td><td>Each column only offers a "this-category-vs-rest" split; needs extra depth for other groupings</td></tr>
+            <tr><td class="left">Label encoding</td><td>Arbitrary code order determines which partitions are reachable in one split — often unlucky</td></tr>
+            <tr><td class="left">Target encoding</td><td>Sorts categories by outcome rate, so the two most extreme categories are always reachable; multiclass needs K encoded columns, one per class</td></tr>
+            <tr><td class="left">Why sklearn is binary-only</td><td>Search cost, fragmentation, unseen categories, pruning compatibility — CART's deliberate design choice</td></tr>
+            <tr><td class="left">ID3 (optional)</td><td>Native multiway splits, no pruning, no numeric handling, biased toward high-cardinality features</td></tr>
+            <tr><td class="left">Feature importance</td><td>Sum of weighted impurity drops across every node a feature touches, normalized — never a usage count</td></tr>
+            <tr><td class="left">Missing values (numerical)</td><td>Threshold search skips NaN; native handling learns which DIRECTION missing rows should route, per split</td></tr>
+            <tr><td class="left">Imbalanced data</td><td>SMOTE/oversampling changes the DATA; class_weight='balanced' changes the MATH — both can flip leaf predictions</td></tr>
+            <tr><td class="left">High variance</td><td>Small data changes cascade into structurally different trees — the core motivation for ensembles</td></tr>
+            <tr><td class="left">Bagging</td><td>Bootstrap (with replacement) + Aggregating; ~63.2% in-bag / ~36.8% OOB per tree; touches rows only, not features</td></tr>
+            <tr><td class="left">Random Forest</td><td>Bagging of trees + random feature subsampling at every split (full depth next class)</td></tr>
+            <tr><td class="left">OOB score</td><td>Each row scored only by the trees that never trained on it — a free, near-unbiased validation estimate</td></tr>
+          </table>
+        </div>
+      </section>
+
+      <div class="footnote-strip">
+        <span class="hand">&mdash; end of class &mdash;</span>
+        Decision Tree II &amp; Intro to Random Forest &middot; 05 August 2026
+      </div>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>K-Nearest Neighbors — From Lines to Neighbors — Class 11 Notes</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Patrick+Hand&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --board:#0c1014; --card:#151b21; --card-line:#222b32;
+    --chalk:#e9eef2; --chalk-dim:#9fb0bb;
+    --cyan:#5fd8e0; --cyan-dim:#2c5a5e;
+    --pink:#f17fb0; --pink-dim:#5a2f42;
+    --yellow:#f4cf5e; --green:#8fe3a6; --green-dim:#2f4f3a;
+    --purple:#b39ddb; --purple-dim:#4a3f6b;
+    --white-marker:#f5f5f0; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{ background:var(--board); color:var(--chalk); font-family:'Inter',sans-serif; line-height:1.55; -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width:1180px; margin:0 auto; padding:0 24px 120px; }
+  h1,h2,h3,.hand{ font-family:'Caveat',cursive; font-weight:700; }
+  .hero{ padding:56px 0 30px; text-align:center; }
+  .chip{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--cyan); border:1px solid var(--cyan-dim); background:rgba(95,216,224,0.06); padding:6px 14px; border-radius:999px; margin-bottom:16px; }
+  .hero h1{ font-size:clamp(28px,5.5vw,50px); color:var(--white-marker); margin:0 0 8px; }
+  .hero h1 span{color:var(--pink);}
+  .hero p{ font-family:'Patrick Hand',cursive; color:var(--chalk-dim); font-size:17px; max-width:780px; margin:0 auto; }
+  .layout{ display:grid; grid-template-columns:260px 1fr; gap:36px; align-items:start; }
+  nav.toc{ position:sticky; top:24px; background:var(--card); border:1px solid var(--card-line); border-radius:var(--radius); padding:18px 16px; font-family:'JetBrains Mono',monospace; font-size:11px; max-height:calc(100vh - 48px); overflow-y:auto; }
+  nav.toc .toc-title{ color:var(--chalk-dim); text-transform:uppercase; letter-spacing:1.2px; font-size:10px; margin-bottom:8px; margin-top:14px; }
+  nav.toc .toc-title:first-child{margin-top:0;}
+  nav.toc a{ display:block; color:var(--chalk-dim); text-decoration:none; padding:5px 8px; border-radius:8px; margin-bottom:1px; }
+  nav.toc a:hover{color:var(--chalk); background:rgba(255,255,255,0.04);}
+  main{min-width:0;}
+  section.block{ margin-bottom:50px; scroll-margin-top:24px; }
+  .section-eyebrow{ font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--pink); margin-bottom:6px; }
+  section.block h2{ font-size:30px; color:var(--white-marker); margin:0 0 12px; }
+  section.block h2 .underline{ text-decoration:underline; text-decoration-color:var(--cyan); text-decoration-thickness:3px; }
+  p.lead{ font-size:14.5px; color:#cdd8de; max-width:820px; }
+  .card{ background:var(--card); border:1px solid var(--card-line); border-radius:var(--radius); padding:20px 22px; margin:14px 0; }
+  .card h3{ font-family:'Inter',sans-serif; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.7px; color:var(--cyan); margin:0 0 10px; }
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  .grid-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;}
+  @media (max-width:900px){ .layout{grid-template-columns:1fr;} nav.toc{position:relative; top:0; margin-bottom:20px; max-height:none;} .grid-2,.grid-3{grid-template-columns:1fr;} }
+  table.data-table{ width:100%; border-collapse:collapse; font-family:'JetBrains Mono',monospace; font-size:12px; }
+  table.data-table th{ text-align:left; color:var(--chalk-dim); font-weight:500; padding:6px 9px; border-bottom:1px solid var(--card-line); text-transform:uppercase; font-size:9.5px; letter-spacing:0.4px; }
+  table.data-table td{ padding:6px 9px; border-bottom:1px solid rgba(255,255,255,0.04); }
+  table.data-table td.hl{color:var(--yellow); font-weight:700;}
+  table.data-table td.zero{color:var(--pink); font-weight:700; background:rgba(241,127,176,0.08);}
+  table.data-table td.good{color:var(--green); font-weight:700; background:rgba(143,227,166,0.08);}
+  blockquote.story{ font-family:'Patrick Hand',cursive; font-size:16.5px; color:#dbe6ec; border-left:3px solid var(--yellow); padding:6px 18px; margin:14px 0; background:rgba(244,207,94,0.04); border-radius:0 10px 10px 0; }
+  .pipeline{ display:flex; align-items:center; gap:0; overflow-x:auto; padding:10px 0 18px; }
+  .pipe-step{ flex:0 0 auto; min-width:115px; background:var(--card); border:1px solid var(--card-line); border-radius:12px; padding:12px 14px; text-align:center; }
+  .pipe-step .n{ font-family:'JetBrains Mono',monospace; color:var(--cyan); font-size:10.5px; margin-bottom:5px; }
+  .pipe-step .t{font-weight:700; font-size:12px; color:var(--white-marker);}
+  .pipe-step .d{font-size:9.5px; color:var(--chalk-dim); margin-top:3px;}
+  .pipe-arrow{ flex:0 0 auto; width:20px; text-align:center; color:var(--pink); font-size:16px; }
+  .formula{ font-family:'JetBrains Mono',monospace; background:#0a0d10; border:1px solid var(--card-line); border-radius:10px; padding:14px 20px; margin:12px 0; font-size:14px; color:var(--white-marker); overflow-x:auto; }
+  .formula.center{text-align:center;}
+  .formula .k{color:var(--yellow);} .formula .r{color:var(--cyan);} .formula .l{color:var(--pink);}
+  .formula-note{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--chalk-dim); margin-top:6px; }
+  .callout{ background:rgba(143,227,166,0.08); border:1px solid var(--green-dim); border-radius:10px; padding:12px 16px; color:var(--green); font-size:13px; font-family:'JetBrains Mono',monospace; margin:12px 0; line-height:1.6; }
+  .callout.warn{ background:rgba(244,207,94,0.08); border-color:#5a4f2f; color:var(--yellow); }
+  .callout.bad{ background:rgba(241,127,176,0.08); border-color:var(--pink-dim); color:var(--pink); }
+  .callout.info{ background:rgba(95,216,224,0.08); border-color:var(--cyan-dim); color:var(--cyan); }
+  .callout.purple{ background:rgba(179,157,219,0.08); border-color:var(--purple-dim); color:var(--purple); }
+  .step-card{ background:rgba(0,0,0,0.22); border-radius:10px; padding:14px 18px; margin:10px 0; border:1px solid var(--card-line); }
+  .step-tag{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--board); background:var(--cyan); padding:2px 8px; border-radius:6px; margin-right:8px; font-weight:700; }
+  .step-tag.p{background:var(--purple);}
+  .step-tag.y{background:var(--yellow);}
+  .step-tag.g{background:var(--green);}
+  .analogy-row{ display:flex; gap:14px; margin-top:12px; flex-wrap:wrap; }
+  .analogy{ flex:1; min-width:150px; background:var(--card); border:1px solid var(--card-line); border-radius:10px; padding:14px 16px; text-align:center; }
+  .analogy h4{font-size:14px; margin:6px 0 4px; color:var(--white-marker);}
+  .analogy p{font-size:11.5px; color:var(--chalk-dim); margin:0;}
+  .svg-card{ background:#fff; border:1px solid var(--card-line); border-radius:12px; padding:12px; }
+  .svg-caption{ text-align:center; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:#555; margin-top:8px; }
+  .footnote-strip{ margin-top:60px; border-top:1px dashed var(--card-line); padding-top:22px; text-align:center; color:var(--chalk-dim); font-family:'JetBrains Mono',monospace; font-size:12px; }
+  .footnote-strip .hand{color:var(--cyan); font-size:22px; display:block; margin-bottom:6px;}
+  .cm-table{ border-collapse:collapse; margin:14px auto; font-family:'JetBrains Mono',monospace; font-size:12.5px; }
+  .cm-table td, .cm-table th{ border:1px solid var(--card-line); padding:12px 18px; text-align:center; }
+  .cm-table .tp,.cm-table .tn{background:rgba(143,227,166,0.15); color:var(--green); font-weight:700;}
+  .cm-table .fp,.cm-table .fn{background:rgba(241,127,176,0.15); color:var(--pink); font-weight:700;}
+  .cm-table .lbl{background:#0a0d10; color:var(--chalk-dim); font-weight:700; font-size:10.5px;}
+  .matrix{ font-family:'JetBrains Mono',monospace; background:#0a0d10; border:1px solid var(--card-line); border-radius:10px; padding:16px 22px; display:inline-block; }
+
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="chip">24-07-2026 &middot; Module: Supervised Learning</div>
+    <h1>K-Nearest Neighbors &mdash; <span>From Lines to Neighbors</span></h1>
+    <div class="chip" style="background:none; border-color:var(--pink-dim); color:var(--pink); margin-top:0;">Class 11 &middot; Intuition, distance metrics, choosing K, weighted KNN, outliers &amp; class imbalance</div>
+  </div>
+
+  <div class="layout">
+    <nav class="toc" id="toc">
+      <div class="toc-title">Where we left off</div>
+      <a href="#recap">Recap: what logistic regression draws</a>
+      <a href="#butwhatif">But what if there's no straight line?</a>
+      <div class="toc-title">The core idea</div>
+      <a href="#houseprice">House price &mdash; ask your neighbors</a>
+      <a href="#whatisknn">What KNN actually stands for</a>
+      <div class="toc-title">Finding "nearest"</div>
+      <a href="#neighbors">What is a neighbor, how do we measure "near"?</a>
+      <a href="#euclidean">Euclidean distance</a>
+      <a href="#manhattan">Manhattan distance</a>
+      <a href="#otherdist">Optional: other distance metrics</a>
+      <div class="toc-title">From neighbors to a prediction</div>
+      <a href="#sorttopk">Sort it, take the top K</a>
+      <a href="#regvsclass">Regression: mean &middot; Classification: majority</a>
+      <div class="toc-title">The full workflow</div>
+      <a href="#fullflow">What data do you actually use?</a>
+      <a href="#choosingk">Choosing K &mdash; sklearn default &amp; tuning</a>
+      <div class="toc-title">K, overfitting, underfitting</div>
+      <a href="#rangek">The range of K</a>
+      <a href="#underfitk">Underfitting: K = all the data</a>
+      <a href="#overfitk">Overfitting: K = 1, explained properly</a>
+      <a href="#bestk">Finding the best K</a>
+      <div class="toc-title">Weighted KNN</div>
+      <a href="#wknnidea">The idea, and why we need it</a>
+      <a href="#wknnoverfit">Does WKNN fix K=1 overfitting?</a>
+      <a href="#wknnreg">WKNN for regression &mdash; formula + example</a>
+      <a href="#wknnclass">WKNN for classification &mdash; formula + example</a>
+      <a href="#wknnk">Is K chosen the same way in WKNN?</a>
+      <div class="toc-title">Things that break KNN</div>
+      <a href="#outliers">Outliers in KNN &mdash; detect &amp; handle</a>
+      <a href="#imbalance">Class imbalance &mdash; where KNN fails</a>
+      <a href="#imbalancewknn">Does WKNN survive imbalance?</a>
+      <div class="toc-title">Looking ahead</div>
+      <a href="#oversampling">Oversampling &amp; undersampling &mdash; intro</a>
+      <a href="#nextclass">Coming next class</a>
+      <div class="toc-title">Wrap-up</div>
+      <a href="#summary">Class 11 summary</a>
+    </nav>
+
+    <main>
+
+
+      <section class="block" id="recap">
+        <div class="section-eyebrow">Where we left off</div>
+        <h2>Recap &mdash; <span class="underline">what logistic regression actually draws</span></h2>
+        <p class="lead">Every model we've built so far &mdash; Linear Regression, Logistic Regression &mdash; works the same way underneath: find the best <b>weights</b>, and draw a straight <b>line (2D), plane (3D), or hyperplane (higher-D)</b> that either fits the trend or separates the classes.</p>
+        <div class="card">
+          <h3>Logistic regression's whole job, in one sentence</h3>
+          <p class="lead" style="margin-top:0;">Find one straight boundary such that &mdash; as much as possible &mdash; every point of Class A lands on one side, and every point of Class B lands on the other.</p>
+          <div class="svg-card">
+            <svg viewBox="0 0 330 200" width="100%" height="auto">
+              <line x1="25" y1="195" x2="305" y2="15" stroke="#1D5FD1" stroke-width="2.5"/>
+              <path d="M61.0,87.0 l18,18 M79.0,87.0 l-18,18" stroke="#1F7A56" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M59.599999999999994,90.3 l18,18 M77.6,90.3 l-18,18" stroke="#1F7A56" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M85.0,68.8 l18,18 M103.0,68.8 l-18,18" stroke="#1F7A56" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M109.9,62.3 l18,18 M127.9,62.3 l-18,18" stroke="#1F7A56" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M67.7,39.1 l18,18 M85.7,39.1 l-18,18" stroke="#1F7A56" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M48.3,77.7 l18,18 M66.3,77.7 l-18,18" stroke="#1F7A56" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M80.7,37.1 l18,18 M98.7,37.1 l-18,18" stroke="#1F7A56" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M120.19999999999999,45.2 l18,18 M138.2,45.2 l-18,18" stroke="#1F7A56" stroke-width="2.4" stroke-linecap="round"/>
+
+              <path d="M218.3,121.69999999999999 l18,18 M236.3,121.69999999999999 l-18,18" stroke="#C0392B" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M237.6,141.6 l18,18 M255.6,141.6 l-18,18" stroke="#C0392B" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M235.0,119.6 l18,18 M253.0,119.6 l-18,18" stroke="#C0392B" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M206.6,118.8 l18,18 M224.6,118.8 l-18,18" stroke="#C0392B" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M210.5,111.1 l18,18 M228.5,111.1 l-18,18" stroke="#C0392B" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M195.9,168.5 l18,18 M213.9,168.5 l-18,18" stroke="#C0392B" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M267.4,114.2 l18,18 M285.4,114.2 l-18,18" stroke="#C0392B" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M183.2,115.3 l18,18 M201.2,115.3 l-18,18" stroke="#C0392B" stroke-width="2.4" stroke-linecap="round"/>
+
+              <text x="55" y="30" font-size="11" fill="#1F7A56" font-family="monospace" font-weight="bold">Class A</text>
+              <text x="235" y="188" font-size="11" fill="#C0392B" font-family="monospace" font-weight="bold">Class B</text>
+            </svg>
+          </div>
+          <div class="svg-caption">One straight line. Every Class A point sits above it, every Class B point sits below it &mdash; a clean, verified separation.</div>
+        </div>
+        <div class="callout info">This works beautifully &mdash; <b>as long as such a line actually exists.</b> That's the entire assumption logistic regression is built on: linear separability.</div>
+      </section>
+
+      <section class="block" id="butwhatif">
+        <h2>But what if <span class="underline">there's no straight line?</span></h2>
+        <p class="lead">What happens when Class A and Class B are arranged so that NO straight line, anywhere, in any direction, can separate them?</p>
+        <div class="card">
+          <h3>The classic pattern no straight line can ever cut: one class surrounds the other</h3>
+          <div class="svg-card">
+            <svg viewBox="0 0 330 200" width="100%" height="auto">
+              <path d="M193.0,93.0 l14,14 M207.0,93.0 l-14,14" stroke="#1F7A56" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M182.7,109.1 l14,14 M196.7,109.1 l-14,14" stroke="#1F7A56" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M158.0,115.8 l14,14 M172.0,115.8 l-14,14" stroke="#1F7A56" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M133.3,109.1 l14,14 M147.3,109.1 l-14,14" stroke="#1F7A56" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M123.0,93.0 l14,14 M137.0,93.0 l-14,14" stroke="#1F7A56" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M133.3,76.9 l14,14 M147.3,76.9 l-14,14" stroke="#1F7A56" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M158.0,70.2 l14,14 M172.0,70.2 l-14,14" stroke="#1F7A56" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M182.7,76.9 l14,14 M196.7,76.9 l-14,14" stroke="#1F7A56" stroke-width="2.4" stroke-linecap="round"/>
+
+              <path d="M236.0,93.0 l14,14 M250.0,93.0 l-14,14" stroke="#C0392B" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M221.1,122.80000000000001 l14,14 M235.1,122.80000000000001 l-14,14" stroke="#C0392B" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M182.1,141.2 l14,14 M196.1,141.2 l-14,14" stroke="#C0392B" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M133.9,141.2 l14,14 M147.9,141.2 l-14,14" stroke="#C0392B" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M94.9,122.80000000000001 l14,14 M108.9,122.80000000000001 l-14,14" stroke="#C0392B" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M80.0,93.0 l14,14 M94.0,93.0 l-14,14" stroke="#C0392B" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M94.9,63.2 l14,14 M108.9,63.2 l-14,14" stroke="#C0392B" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M133.9,44.8 l14,14 M147.9,44.8 l-14,14" stroke="#C0392B" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M182.1,44.8 l14,14 M196.1,44.8 l-14,14" stroke="#C0392B" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M221.1,63.2 l14,14 M235.1,63.2 l-14,14" stroke="#C0392B" stroke-width="2.4" stroke-linecap="round"/>
+
+              <text x="150" y="103" font-size="10.5" fill="#1F7A56" font-family="monospace" font-weight="bold" text-anchor="middle">Class A</text>
+              <text x="150" y="20" font-size="10.5" fill="#C0392B" font-family="monospace" font-weight="bold" text-anchor="middle">Class B (ring around A)</text>
+            </svg>
+          </div>
+          <div class="svg-caption">Class A sits in a tight cluster in the middle. Class B forms a ring all the way around it. Draw any straight line you like &mdash; it will always cut through both classes.</div>
+        </div>
+        <div class="callout bad">No matter how you rotate or shift a straight line, it always has Class B on BOTH sides of it (since B surrounds A on every side) &mdash; so it can never isolate Class A cleanly. Logistic regression's core assumption has broken down completely here.</div>
+        <div class="callout purple">The different approach: instead of learning one global rule that applies everywhere, <b>just look at what's physically closest to the point you're asking about, right now, locally.</b> This is the entire idea behind KNN.</div>
+      </section>
+
+
+      <section class="block" id="houseprice">
+        <div class="section-eyebrow">The intuition</div>
+        <h2>House Price &mdash; <span class="underline">just ask your neighbors</span></h2>
+        <blockquote class="story">You've just moved to a new locality and want to guess what your house is roughly worth. You don't build a formula. You do the obvious human thing: <b>you look at a few houses nearby that are similar in size and distance from the city</b>, check what they sold for, and average it out in your head. "The house next door sold for 50L, the one two streets down sold for 52L... mine's probably around there too."</blockquote>
+        <div class="card">
+          <h3>That instinct IS the algorithm</h3>
+          <p class="lead" style="margin-top:0;">No line. No equation to fit. No coefficients to learn. Just: <b>find similar examples, look at what happened to them, use that as your answer.</b> This is exactly what K-Nearest-Neighbors does &mdash; formalized into four precise steps we'll build one at a time today.</p>
+          <div class="pipeline">
+            <div class="pipe-step"><div class="n">01</div><div class="t">Measure distance</div><div class="d">to every known house</div></div>
+            <div class="pipe-arrow">&rarr;</div>
+            <div class="pipe-step"><div class="n">02</div><div class="t">Sort</div><div class="d">closest to farthest</div></div>
+            <div class="pipe-arrow">&rarr;</div>
+            <div class="pipe-step"><div class="n">03</div><div class="t">Take top K</div><div class="d">the K nearest houses</div></div>
+            <div class="pipe-arrow">&rarr;</div>
+            <div class="pipe-step"><div class="n">04</div><div class="t">Combine</div><div class="d">average (reg) / vote (class)</div></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="block" id="whatisknn">
+        <h2>What <span class="underline">KNN</span> actually stands for</h2>
+        <div class="card">
+          <div class="formula center">K &ndash; Nearest &ndash; Neighbors</div>
+          <table class="data-table">
+            <tr><th>Letter</th><th>Meaning</th></tr>
+            <tr><td class="hl">K</td><td>How many neighbors to consult (a number YOU choose &mdash; 1, 3, 5, 11...)</td></tr>
+            <tr><td class="hl">Nearest</td><td>Ranked by distance &mdash; closest first</td></tr>
+            <tr><td class="hl">Neighbors</td><td>Other examples from your training data</td></tr>
+          </table>
+          <div class="callout">KNN is often called a <b>"lazy learner"</b> or <b>instance-based learner</b> &mdash; it doesn't learn any weights, coefficients, or equation in advance. It just stores the training data and does all its "work" at prediction time, by comparing the new point to everything it has on file.</div>
+        </div>
+        <div class="analogy-row">
+          <div class="analogy"><h4>House Price (Regression)</h4><p>Predicting a house PRICE &rarr; average the K nearest houses' prices</p></div>
+          <div class="analogy"><h4>Buy / No-Buy (Classification)</h4><p>Predicting a customer's label &rarr; majority vote among K nearest customers</p></div>
+        </div>
+      </section>
+
+
+      <section class="block" id="neighbors">
+        <div class="section-eyebrow">Finding "nearest"</div>
+        <h2>What is a "neighbor," and <span class="underline">how do we measure "near"?</span></h2>
+        <p class="lead">A neighbor is just another row from your training data. "Near" needs a precise number &mdash; that number is called a <b>distance metric</b>. Let's build a small, real dataset we'll use for the rest of this class.</p>
+        <div class="card">
+          <h3>Our running example: 8 houses on record</h3>
+          <table class="data-table">
+            <tr><th>House</th><th>Size (x100 sq.ft)</th><th>Distance from city (km)</th><th>Price (Rs Lakh)</th></tr>
+            <tr><td>H1</td><td>10</td><td>2</td><td>50</td></tr>
+<tr><td>H2</td><td>12</td><td>3</td><td>55</td></tr>
+<tr><td>H3</td><td>8</td><td>1</td><td>48</td></tr>
+<tr><td>H4</td><td>15</td><td>5</td><td>65</td></tr>
+<tr><td>H5</td><td>9</td><td>8</td><td>40</td></tr>
+<tr><td>H6</td><td>20</td><td>10</td><td>80</td></tr>
+<tr><td>H7</td><td>11</td><td>2.5</td><td>52</td></tr>
+<tr><td>H8</td><td>7</td><td>6</td><td>35</td></tr>
+            <tr><td class="hl">Query</td><td class="hl">10</td><td class="hl">3</td><td class="hl">? (predict this)</td></tr>
+          </table>
+        </div>
+        <div class="card">
+          <h3>The 8 houses, plotted (query marked with a diamond)</h3>
+          <div class="svg-card">
+            <svg viewBox="0 0 340 250" width="100%" height="auto">
+      <line x1="40" y1="210" x2="310" y2="210" stroke="#999" stroke-width="1"/>
+      <line x1="40" y1="20" x2="40" y2="210" stroke="#999" stroke-width="1"/>
+      <text x="150" y="235" font-size="10" fill="#555" font-family="monospace">Size (x100 sq.ft)</text>
+      <text x="10" y="120" font-size="10" fill="#555" font-family="monospace" transform="rotate(-90 10 120)">Distance from city (km)</text>
+      <circle cx="162.7" cy="175.5" r="5.5" fill="#1D5FD1"/>
+<rect x="156.8" y="181.0" width="11.8" height="14.5" fill="white" opacity="0.82" rx="2"/><text x="162.7" y="191.5" font-size="9.5" font-family="monospace" fill="#1D5FD1" text-anchor="middle" font-weight="normal">H1</text>
+<circle cx="187.3" cy="158.2" r="5.5" fill="#1D5FD1"/>
+<rect x="200.3" y="147.7" width="11.8" height="14.5" fill="white" opacity="0.82" rx="2"/><text x="203.3" y="158.2" font-size="9.5" font-family="monospace" fill="#1D5FD1" text-anchor="start" font-weight="normal">H2</text>
+<circle cx="138.2" cy="192.7" r="5.5" fill="#1D5FD1"/>
+<rect x="120.1" y="195.3" width="11.8" height="14.5" fill="white" opacity="0.82" rx="2"/><text x="128.9" y="205.8" font-size="9.5" font-family="monospace" fill="#1D5FD1" text-anchor="end" font-weight="normal">H3</text>
+<circle cx="224.1" cy="123.6" r="5.5" fill="#1D5FD1"/>
+<rect x="235.0" y="105.3" width="11.8" height="14.5" fill="white" opacity="0.82" rx="2"/><text x="238.0" y="115.8" font-size="9.5" font-family="monospace" fill="#1D5FD1" text-anchor="start" font-weight="normal">H4</text>
+<circle cx="150.5" cy="71.8" r="5.5" fill="#1D5FD1"/>
+<rect x="142.3" y="45.5" width="11.8" height="14.5" fill="white" opacity="0.82" rx="2"/><text x="148.2" y="56.0" font-size="9.5" font-family="monospace" fill="#1D5FD1" text-anchor="middle" font-weight="normal">H5</text>
+<circle cx="285.5" cy="37.3" r="5.5" fill="#1D5FD1"/>
+<rect x="293.9" y="15.5" width="11.8" height="14.5" fill="white" opacity="0.82" rx="2"/><text x="296.9" y="26.0" font-size="9.5" font-family="monospace" fill="#1D5FD1" text-anchor="start" font-weight="normal">H6</text>
+<circle cx="175.0" cy="166.8" r="5.5" fill="#1D5FD1"/>
+<rect x="185.1" y="165.5" width="11.8" height="14.5" fill="white" opacity="0.82" rx="2"/><text x="188.1" y="176.0" font-size="9.5" font-family="monospace" fill="#1D5FD1" text-anchor="start" font-weight="normal">H7</text>
+<circle cx="125.9" cy="106.4" r="5.5" fill="#1D5FD1"/>
+<rect x="107.9" y="82.8" width="11.8" height="14.5" fill="white" opacity="0.82" rx="2"/><text x="116.6" y="93.3" font-size="9.5" font-family="monospace" fill="#1D5FD1" text-anchor="end" font-weight="normal">H8</text>
+
+      <path d="M155.7,158.2 L162.7,151.2 L169.7,158.2 L162.7,165.2 Z" fill="#C0392B"/>
+<rect x="147.2" y="117.2" width="31.0" height="15.0" fill="white" opacity="0.82" rx="2"/><text x="162.7" y="128.2" font-size="10" font-family="monospace" fill="#C0392B" text-anchor="middle" font-weight="bold">QUERY</text>
+    </svg>
+          </div>
+          <div class="svg-caption">Which of these 8 houses is genuinely "closest" to our query? We need a real number to say for sure.</div>
+        </div>
+      </section>
+
+      <section class="block" id="euclidean">
+        <h2>Euclidean Distance &mdash; <span class="underline">the straight-line distance</span></h2>
+        <p class="lead">The direct, shortest-possible distance between two points &mdash; exactly the geometry you learned in school (draw a ruler-straight line from A to B and measure it). Sometimes called <i>"as the crow flies"</i> since a bird can fly straight over obstacles, unlike a person on the ground.</p>
+        <div class="card">
+          <div class="formula center">d(A,B) = &radic;( (size<sub>A</sub>&minus;size<sub>B</sub>)&sup2; + (dist<sub>A</sub>&minus;dist<sub>B</sub>)&sup2; )</div>
+          <h3>Every house's Euclidean distance from the query, sorted</h3>
+          <table class="data-table">
+            <tr><th>House</th><th>|&Delta;Size|</th><th>|&Delta;Dist|</th><th>Sum of squares</th><th>&radic; = Euclidean</th></tr>
+            <tr><td>H1</td><td class="mono">0.0</td><td class="mono">1.0</td><td class="mono">1.00</td><td class="mono hl">1.00</td></tr>
+<tr><td>H7</td><td class="mono">1.0</td><td class="mono">0.5</td><td class="mono">1.25</td><td class="mono hl">1.12</td></tr>
+<tr><td>H2</td><td class="mono">2.0</td><td class="mono">0.0</td><td class="mono">4.00</td><td class="mono hl">2.00</td></tr>
+<tr><td>H3</td><td class="mono">2.0</td><td class="mono">2.0</td><td class="mono">8.00</td><td class="mono hl">2.83</td></tr>
+<tr><td>H8</td><td class="mono">3.0</td><td class="mono">3.0</td><td class="mono">18.00</td><td class="mono hl">4.24</td></tr>
+<tr><td>H5</td><td class="mono">1.0</td><td class="mono">5.0</td><td class="mono">26.00</td><td class="mono hl">5.10</td></tr>
+<tr><td>H4</td><td class="mono">5.0</td><td class="mono">2.0</td><td class="mono">29.00</td><td class="mono hl">5.39</td></tr>
+<tr><td>H6</td><td class="mono">10.0</td><td class="mono">7.0</td><td class="mono">149.00</td><td class="mono hl">12.21</td></tr>
+          </table>
+          <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);"><b>H1 is the single closest house</b> (distance 1.00), followed closely by H7 (1.12) and H2 (2.00). H6 is by far the most different (12.21 away) &mdash; makes sense, it's a huge house very far from the city.</div>
+        </div>
+      </section>
+
+      <section class="block" id="manhattan">
+        <h2>Manhattan Distance &mdash; <span class="underline">distance along a grid, no diagonals allowed</span></h2>
+        <p class="lead">Add up the horizontal gap and the vertical gap separately &mdash; you're not allowed to cut diagonally between them. Named after Manhattan's street grid, where a taxi can only drive along blocks (north-south, then east-west), never straight through a building.</p>
+        <div class="card">
+          <div class="formula center">d(A,B) = |size<sub>A</sub>&minus;size<sub>B</sub>| + |dist<sub>A</sub>&minus;dist<sub>B</sub>|</div>
+          <h3>Every house's Manhattan distance from the query, sorted</h3>
+          <table class="data-table">
+            <tr><th>House</th><th>|&Delta;Size|</th><th>|&Delta;Dist|</th><th>Sum = Manhattan</th></tr>
+            <tr><td>H1</td><td class="mono">0.0</td><td class="mono">1.0</td><td class="mono hl">1.00</td></tr>
+<tr><td>H7</td><td class="mono">1.0</td><td class="mono">0.5</td><td class="mono hl">1.50</td></tr>
+<tr><td>H2</td><td class="mono">2.0</td><td class="mono">0.0</td><td class="mono hl">2.00</td></tr>
+<tr><td>H3</td><td class="mono">2.0</td><td class="mono">2.0</td><td class="mono hl">4.00</td></tr>
+<tr><td>H5</td><td class="mono">1.0</td><td class="mono">5.0</td><td class="mono hl">6.00</td></tr>
+<tr><td>H8</td><td class="mono">3.0</td><td class="mono">3.0</td><td class="mono hl">6.00</td></tr>
+<tr><td>H4</td><td class="mono">5.0</td><td class="mono">2.0</td><td class="mono hl">7.00</td></tr>
+<tr><td>H6</td><td class="mono">10.0</td><td class="mono">7.0</td><td class="mono hl">17.00</td></tr>
+          </table>
+          <div class="callout warn">Notice: <b>Manhattan distance is always &ge; Euclidean distance</b> for the same two points (H1: 1.00 vs 1.00 tie since one delta is 0; H7: 1.50 vs 1.12; H3: 4.00 vs 2.83). The straight line is always the shortest possible route &mdash; a grid path can only be equal to or longer than it, never shorter.</div>
+        </div>
+      </section>
+
+
+      <section class="block" id="otherdist">
+        <h2>Optional &mdash; <span class="underline">other distance metrics</span></h2>
+        <p class="lead">Euclidean and Manhattan cover most numeric cases. But other data shapes need other rulers &mdash; a quick reference, not required for the exam, but good to know exists.</p>
+        <div class="card">
+          <table class="data-table">
+            <tr><th>Metric</th><th>Formula (idea)</th><th>Used when...</th></tr>
+            <tr><td>Minkowski</td><td>(&Sigma;|A-B|<sup>p</sup>)<sup>1/p</sup></td><td>The general form &mdash; p=1 gives Manhattan, p=2 gives Euclidean</td></tr>
+            <tr><td>Chebyshev</td><td>max(|A-B|)</td><td>Only the single worst dimension matters (e.g. quality control)</td></tr>
+            <tr><td>Cosine</td><td>angle between vectors</td><td>Text/embeddings &mdash; direction matters more than magnitude</td></tr>
+            <tr><td>Hamming</td><td>count of mismatches</td><td>Binary / categorical features (one-hot flags)</td></tr>
+          </table>
+          <div class="callout info">We'll go deep on all of these (with worked examples and visualizations) in a dedicated distance-metrics session. For today, Euclidean and Manhattan are all you need to fully understand KNN.</div>
+        </div>
+      </section>
+
+      <section class="block" id="sorttopk">
+        <div class="section-eyebrow">From neighbors to a prediction</div>
+        <h2>Sort it, <span class="underline">take the top K</span></h2>
+        <p class="lead">Once every training point has a distance attached, the next two steps are almost mechanical.</p>
+        <div class="step-card"><span class="step-tag">1</span> <b>Sort</b> all 8 houses by their Euclidean distance, smallest first (already done in the table above): H1, H7, H2, H3, H8, H5, H4, H6.</div>
+        <div class="step-card"><span class="step-tag p">2</span> <b>Pick K</b> &mdash; say K=3. Take just the first 3 rows of that sorted list: <b>H1, H7, H2</b>. Everything else (H3, H8, H5, H4, H6) is completely ignored, no matter how "similar" they might otherwise seem.</div>
+        <div class="card">
+          <h3>Visually: the K=3 neighborhood around our query</h3>
+          <div class="svg-card">
+            <svg viewBox="0 0 340 250" width="100%" height="auto">
+      <line x1="40" y1="210" x2="310" y2="210" stroke="#999" stroke-width="1"/>
+      <line x1="40" y1="20" x2="40" y2="210" stroke="#999" stroke-width="1"/>
+      <text x="150" y="235" font-size="10" fill="#555" font-family="monospace">Size (x100 sq.ft)</text>
+      <text x="10" y="120" font-size="10" fill="#555" font-family="monospace" transform="rotate(-90 10 120)">Distance from city (km)</text>
+      <line x1="162.7" y1="158.2" x2="162.7" y2="175.5" stroke="#f4a300" stroke-width="1.3" stroke-dasharray="3,2"/>
+<circle cx="162.7" cy="175.5" r="5.5" fill="#1F7A56"/>
+<rect x="156.8" y="181.0" width="11.8" height="14.5" fill="white" opacity="0.82" rx="2"/><text x="162.7" y="191.5" font-size="9.5" font-family="monospace" fill="#1F7A56" text-anchor="middle" font-weight="normal">H1</text>
+<line x1="162.7" y1="158.2" x2="187.3" y2="158.2" stroke="#f4a300" stroke-width="1.3" stroke-dasharray="3,2"/>
+<circle cx="187.3" cy="158.2" r="5.5" fill="#1F7A56"/>
+<rect x="200.3" y="147.7" width="11.8" height="14.5" fill="white" opacity="0.82" rx="2"/><text x="203.3" y="158.2" font-size="9.5" font-family="monospace" fill="#1F7A56" text-anchor="start" font-weight="normal">H2</text>
+<circle cx="138.2" cy="192.7" r="5.5" fill="#1D5FD1"/>
+<rect x="120.1" y="195.3" width="11.8" height="14.5" fill="white" opacity="0.82" rx="2"/><text x="128.9" y="205.8" font-size="9.5" font-family="monospace" fill="#1D5FD1" text-anchor="end" font-weight="normal">H3</text>
+<circle cx="224.1" cy="123.6" r="5.5" fill="#1D5FD1"/>
+<rect x="235.0" y="105.3" width="11.8" height="14.5" fill="white" opacity="0.82" rx="2"/><text x="238.0" y="115.8" font-size="9.5" font-family="monospace" fill="#1D5FD1" text-anchor="start" font-weight="normal">H4</text>
+<circle cx="150.5" cy="71.8" r="5.5" fill="#1D5FD1"/>
+<rect x="142.3" y="45.5" width="11.8" height="14.5" fill="white" opacity="0.82" rx="2"/><text x="148.2" y="56.0" font-size="9.5" font-family="monospace" fill="#1D5FD1" text-anchor="middle" font-weight="normal">H5</text>
+<circle cx="285.5" cy="37.3" r="5.5" fill="#1D5FD1"/>
+<rect x="293.9" y="15.5" width="11.8" height="14.5" fill="white" opacity="0.82" rx="2"/><text x="296.9" y="26.0" font-size="9.5" font-family="monospace" fill="#1D5FD1" text-anchor="start" font-weight="normal">H6</text>
+<line x1="162.7" y1="158.2" x2="175.0" y2="166.8" stroke="#f4a300" stroke-width="1.3" stroke-dasharray="3,2"/>
+<circle cx="175.0" cy="166.8" r="5.5" fill="#1F7A56"/>
+<rect x="185.1" y="165.5" width="11.8" height="14.5" fill="white" opacity="0.82" rx="2"/><text x="188.1" y="176.0" font-size="9.5" font-family="monospace" fill="#1F7A56" text-anchor="start" font-weight="normal">H7</text>
+<circle cx="125.9" cy="106.4" r="5.5" fill="#1D5FD1"/>
+<rect x="107.9" y="82.8" width="11.8" height="14.5" fill="white" opacity="0.82" rx="2"/><text x="116.6" y="93.3" font-size="9.5" font-family="monospace" fill="#1D5FD1" text-anchor="end" font-weight="normal">H8</text>
+
+      <path d="M155.7,158.2 L162.7,151.2 L169.7,158.2 L162.7,165.2 Z" fill="#C0392B"/>
+<rect x="147.2" y="117.2" width="31.0" height="15.0" fill="white" opacity="0.82" rx="2"/><text x="162.7" y="128.2" font-size="10" font-family="monospace" fill="#C0392B" text-anchor="middle" font-weight="bold">QUERY</text>
+    </svg>
+          </div>
+          <div class="svg-caption">Dashed lines = the 3 nearest houses (K=3). Everything else is simply not consulted.</div>
+        </div>
+      </section>
+
+      <section class="block" id="regvsclass">
+        <h2>From neighbors to an answer &mdash; <span class="underline">mean vs majority</span></h2>
+        <div class="grid-2">
+          <div class="card">
+            <h3>Regression &mdash; average the neighbors' values</h3>
+            <div class="formula center">predicted price = mean( price<sub>H1</sub>, price<sub>H7</sub>, price<sub>H2</sub> )</div>
+            <div class="formula center">= (50 + 52 + 55) / 3 = <span class="k">52.33</span></div>
+            <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);">Our query house is predicted at <b>Rs 52.33 Lakh</b> &mdash; simply the average of its 3 nearest neighbors' actual sale prices.</div>
+          </div>
+          <div class="card">
+            <h3>Classification &mdash; majority vote among the neighbors</h3>
+            <p class="lead" style="margin-top:0; font-size:13px;">If instead we were predicting a category (say, "Premium" vs "Budget" house), we'd just count labels among the K nearest neighbors and go with whichever appears most.</p>
+            <div class="formula center">3 neighbors vote: 2 say "Budget", 1 says "Premium" &rarr; predicted = <span class="k">Budget</span></div>
+            <div class="callout">This is literally a vote &mdash; whichever label has the most supporters among the K neighbors wins. Ties (e.g. 2 vs 2 with K=4) are usually broken by picking the label of the single closest point, or by reducing K by one.</div>
+          </div>
+        </div>
+      </section>
+
+
+      <section class="block" id="fullflow">
+        <div class="section-eyebrow">Putting it together</div>
+        <h2>What data do you actually use? <span class="underline">The full flow</span></h2>
+        <p class="lead">A query doesn't get compared against "everything you've ever seen" &mdash; it's compared against your <b>training set</b> specifically, exactly like every other algorithm in this course.</p>
+        <div class="pipeline">
+          <div class="pipe-step"><div class="n">DATA</div><div class="t">Train / Val / Test split</div><div class="d">same as always</div></div>
+          <div class="pipe-arrow">&rarr;</div>
+          <div class="pipe-step"><div class="n">FIT</div><div class="t">.fit(X_train, y_train)</div><div class="d">KNN just stores this</div></div>
+          <div class="pipe-arrow">&rarr;</div>
+          <div class="pipe-step"><div class="n">QUERY</div><div class="t">New point arrives</div><div class="d">e.g. our query house</div></div>
+          <div class="pipe-arrow">&rarr;</div>
+          <div class="pipe-step"><div class="n">DISTANCE</div><div class="t">vs every TRAIN row</div><div class="d">never the query itself</div></div>
+          <div class="pipe-arrow">&rarr;</div>
+          <div class="pipe-step"><div class="n">PREDICT</div><div class="t">Top-K &rarr; mean/vote</div><div class="d">the final answer</div></div>
+        </div>
+        <div class="callout info">"Training" a KNN model is almost a non-event &mdash; <code>.fit()</code> just stores <code>X_train</code> and <code>y_train</code> in memory (optionally building a fast lookup structure like a KD-Tree). All the real computation happens later, at <code>.predict()</code> time, against the stored training data.</div>
+      </section>
+
+      <section class="block" id="choosingk">
+        <h2>Choosing K &mdash; <span class="underline">sklearn's default, and your job as the modeler</span></h2>
+        <div class="card">
+          <h3>sklearn's default</h3>
+          <div class="formula center">KNeighborsClassifier(n_neighbors=<span class="k">5</span>) &nbsp;&nbsp;|&nbsp;&nbsp; KNeighborsRegressor(n_neighbors=<span class="k">5</span>)</div>
+          <p class="lead" style="margin-top:0;">Both default to <b>K=5</b> if you don't specify it. That's a reasonable generic starting point &mdash; but it is NOT guaranteed to be the best K for your specific dataset.</p>
+        </div>
+        <div class="card">
+          <h3>K is a hyperparameter &mdash; YOU must tune it</h3>
+          <p class="lead" style="margin-top:0;">Exactly like <code>alpha</code> in Ridge/Lasso: K is not learned from the training data automatically. You try several values of K, measure performance on your <b>validation set</b> for each, and keep whichever K generalizes best.</p>
+          <div class="step-card"><span class="step-tag">1</span> Fit KNN on the training set with K=1, check validation accuracy/error.</div>
+          <div class="step-card"><span class="step-tag">2</span> Repeat for K=3, 5, 7, 9, ... up to some reasonable range.</div>
+          <div class="step-card"><span class="step-tag p">3</span> Plot validation performance vs K. Pick the K at the best point (we'll see exactly what this looks like shortly).</div>
+        </div>
+      </section>
+
+
+      <section class="block" id="rangek">
+        <div class="section-eyebrow">K, overfitting, underfitting</div>
+        <h2>The <span class="underline">range of K</span></h2>
+        <div class="card">
+          <table class="data-table">
+            <tr><th>Rule of thumb</th><th>Why</th></tr>
+            <tr><td>K must be &le; number of training points</td><td>You can't ask for more neighbors than exist</td></tr>
+            <tr><td>Prefer odd K for binary classification</td><td>Avoids exact ties in the majority vote</td></tr>
+            <tr><td>A common starting point: K &asymp; &radic;n</td><td>For our 8-house data, &radic;8 &asymp; 2.8 &mdash; so try K around 2-3 first, then sweep a range</td></tr>
+            <tr><td>Typical search range in practice</td><td>K = 1, 3, 5, 7, ... up to ~20-30, validated properly (never guessed)</td></tr>
+          </table>
+        </div>
+      </section>
+
+      <section class="block" id="underfitk">
+        <h2>Underfitting &mdash; <span class="underline">K = all the data</span></h2>
+        <p class="lead">Push K all the way up to K = n (every single training point becomes a "neighbor," always). Watch what happens.</p>
+        <div class="grid-2">
+          <div class="card">
+            <h3>Regression: K=8 (all houses)</h3>
+            <div class="formula center">predicted price = mean(all 8 prices) = <span class="k">53.12</span></div>
+            <div class="callout bad"><b>Every possible query house</b> &mdash; big or small, near the city or far &mdash; gets predicted at exactly Rs 53.12L. The location of the query stops mattering entirely. The model has stopped "looking locally" and just repeats the same global average forever.</div>
+          </div>
+          <div class="card">
+            <h3>Classification: K=9 (all customers)</h3>
+            <div class="formula center">Global vote: 4 Yes vs 5 No &rarr; majority = <span class="k">No</span></div>
+            <div class="callout bad">Every possible query customer gets predicted "<b>No</b>" &mdash; regardless of their actual age or spending pattern &mdash; simply because No happens to be the overall majority class in the training data.</div>
+          </div>
+        </div>
+        <div class="callout warn"><b>This is underfitting, textbook-clean:</b> the model has become too rigid to react to the specific input at all. It has collapsed to "always predict the global average / global majority" &mdash; exactly as flat and unhelpful as a straight horizontal line would be for a regression problem with real curvature.</div>
+      </section>
+
+      <section class="block" id="overfitk">
+        <h2>Overfitting &mdash; <span class="underline">K = 1, explained properly</span></h2>
+        <div class="callout purple"><b>The puzzle worth sitting with:</b> KNN doesn't "train" anything &mdash; there's no gradient descent, no weights, no loss function being minimized. So when K=1 "overfits," what is actually overfitting? There's no model to have memorized anything... or is there?</div>
+        <div class="card">
+          <h3>The resolution: "training" in KNN means something different, not nothing</h3>
+          <p class="lead" style="margin-top:0;">Overfitting, defined generally (not just for weight-based models), means: <b>the prediction is overly sensitive to the specific noise/idiosyncrasies of individual training points, rather than reflecting the true general pattern.</b> KNN with K=1 fits this definition exactly &mdash; just mechanically instead of via gradients.</p>
+          <p class="lead">With K=1, a query's prediction is decided by <b>exactly one single training point</b> &mdash; whichever happens to be closest. There is zero opportunity for other nearby points to "outvote" or "average out" that one point's noise, mislabeling, or measurement error. One weird data point can hijack the answer for an entire neighborhood around it.</p>
+        </div>
+        <div class="card">
+          <h3>Watch it happen &mdash; our Buy / No-Buy customers, with one noisy label</h3>
+          <table class="data-table">
+            <tr><th>Customer</th><th>Age</th><th>Spend (Rs '000)</th><th>Label</th><th>Distance from query</th></tr>
+            <tr><td>C9</td><td>28</td><td>18</td><td class="zero">No &nbsp;(mislabeled &mdash; sits right in the "Yes" zone)</td><td class="mono">2.00</td></tr>
+            <tr><td>C7</td><td>27</td><td>22</td><td class="good">Yes</td><td class="mono">2.24</td></tr>
+            <tr><td>C1</td><td>25</td><td>20</td><td class="good">Yes</td><td class="mono">3.00</td></tr>
+          </table>
+          <div class="svg-card">
+            <svg viewBox="0 0 340 240" width="100%" height="auto">
+      <line x1="40" y1="210" x2="310" y2="210" stroke="#999" stroke-width="1"/>
+      <line x1="40" y1="20" x2="40" y2="210" stroke="#999" stroke-width="1"/>
+      <text x="150" y="228" font-size="10" fill="#555" font-family="monospace">Age (years)</text>
+      <text x="10" y="120" font-size="10" fill="#555" font-family="monospace" transform="rotate(-90 10 120)">Monthly Spend (Rs '000)</text>
+      <circle cx="100.0" cy="83.3" r="6" fill="#1F7A56" stroke="none" stroke-width="0"/>
+<rect x="74.2" y="72.8" width="11.8" height="14.5" fill="white" opacity="0.82" rx="2"/><text x="83.0" y="83.3" font-size="9.5" font-family="monospace" fill="#1F7A56" text-anchor="end" font-weight="normal">C1</text>
+<circle cx="220.0" cy="115.0" r="6" fill="#C0392B" stroke="none" stroke-width="0"/>
+<rect x="233.2" y="109.5" width="11.8" height="14.5" fill="white" opacity="0.82" rx="2"/><text x="236.2" y="120.0" font-size="9.5" font-family="monospace" fill="#C0392B" text-anchor="start" font-weight="normal">C2</text>
+<circle cx="88.0" cy="96.0" r="6" fill="#1F7A56" stroke="none" stroke-width="0"/>
+<rect x="63.6" y="92.1" width="11.8" height="14.5" fill="white" opacity="0.82" rx="2"/><text x="72.3" y="102.6" font-size="9.5" font-family="monospace" fill="#1F7A56" text-anchor="end" font-weight="normal">C3</text>
+<circle cx="262.0" cy="159.3" r="6" fill="#C0392B" stroke="none" stroke-width="0"/>
+<rect x="274.0" y="156.8" width="11.8" height="14.5" fill="white" opacity="0.82" rx="2"/><text x="277.0" y="167.3" font-size="9.5" font-family="monospace" fill="#C0392B" text-anchor="start" font-weight="normal">C4</text>
+<circle cx="130.0" cy="51.7" r="6" fill="#1F7A56" stroke="none" stroke-width="0"/>
+<rect x="133.0" y="25.3" width="11.8" height="14.5" fill="white" opacity="0.82" rx="2"/><text x="136.0" y="35.8" font-size="9.5" font-family="monospace" fill="#1F7A56" text-anchor="start" font-weight="normal">C5</text>
+<circle cx="238.0" cy="146.7" r="6" fill="#C0392B" stroke="none" stroke-width="0"/>
+<rect x="250.0" y="144.1" width="11.8" height="14.5" fill="white" opacity="0.82" rx="2"/><text x="253.0" y="154.6" font-size="9.5" font-family="monospace" fill="#C0392B" text-anchor="start" font-weight="normal">C6</text>
+<circle cx="112.0" cy="70.7" r="6" fill="#1F7A56" stroke="none" stroke-width="0"/>
+<rect x="95.9" y="44.8" width="11.8" height="14.5" fill="white" opacity="0.82" rx="2"/><text x="104.7" y="55.3" font-size="9.5" font-family="monospace" fill="#1F7A56" text-anchor="end" font-weight="normal">C7</text>
+<circle cx="250.0" cy="134.0" r="6" fill="#C0392B" stroke="none" stroke-width="0"/>
+<rect x="262.9" y="129.6" width="11.8" height="14.5" fill="white" opacity="0.82" rx="2"/><text x="265.9" y="140.1" font-size="9.5" font-family="monospace" fill="#C0392B" text-anchor="start" font-weight="normal">C8</text>
+<line x1="118.0" y1="83.3" x2="118.0" y2="96.0" stroke="#f4a300" stroke-width="1.3" stroke-dasharray="3,2"/>
+<circle cx="118.0" cy="96.0" r="6" fill="#C0392B" stroke="black" stroke-width="1.5"/>
+<rect x="88.5" y="102.5" width="58.9" height="14.5" fill="white" opacity="0.82" rx="2"/><text x="118.0" y="113.0" font-size="9.5" font-family="monospace" fill="#C0392B" text-anchor="middle" font-weight="normal">C9 (noisy)</text>
+
+      <path d="M111.0,83.3 L118.0,76.3 L125.0,83.3 L118.0,90.3 Z" fill="#1D5FD1"/>
+<rect x="157.5" y="70.3" width="31.0" height="15.0" fill="white" opacity="0.82" rx="2"/><text x="173.0" y="81.3" font-size="10" font-family="monospace" fill="#1D5FD1" text-anchor="middle" font-weight="bold">QUERY</text>
+    </svg>
+          </div>
+          <div class="svg-caption">Query customer (blue diamond). C9 (ringed in black) is a mislabeled "No" sitting in the middle of a "Yes" neighborhood.</div>
+          <div class="formula center">K=1 &rarr; single nearest neighbor is C9 &rarr; predicted = <span class="l">No</span> &nbsp;&nbsp;<b>(WRONG)</b></div>
+          <div class="formula center">K=3 &rarr; neighbors are C9(No), C7(Yes), C1(Yes) &rarr; majority = <span class="k">Yes</span> &nbsp;&nbsp;<b>(correct)</b></div>
+          <div class="callout bad">K=1 blindly trusted a single noisy point with zero skepticism. The moment we let K=3 neighbors vote, the two genuine "Yes" neighbors outvoted the one noisy "No" &mdash; the noise got smoothed out. <b>That smoothing-out effect is precisely what K=1 is missing</b>, and precisely why it overfits.</div>
+        </div>
+        <div class="card">
+          <h3>Why K=1's "training accuracy" is deceptively perfect</h3>
+          <p class="lead" style="margin-top:0;">If you naively check how well a K=1 model "fits" the training data itself (each training point's nearest neighbor, including itself, at distance 0), you get <b>100% training accuracy every single time</b>, no matter how messy the data is &mdash; every point's closest match is trivially itself. This looks like a perfect fit. It is NOT evidence of a good model &mdash; it's evidence of nothing more than memorization. The real test is always unseen/validation data, where K=1's hypersensitivity to single points shows up as poor, jagged, unstable predictions.</p>
+        </div>
+        <div class="card">
+          <h3>The decision boundary itself tells the whole story</h3>
+          <p class="lead" style="margin-top:0;">Imagine Class A (green) sitting above and Class B (red) sitting below, with one noisy red point poking up into A's territory (circled in amber). Here's what the boundary between "predict A" and "predict B" looks like at three different values of K:</p>
+          <div class="svg-card"><div style="display:flex; gap:14px; flex-wrap:wrap;">
+      <div style="flex:1; min-width:200px;">
+          <svg viewBox="0 0 315 150" width="100%" height="auto" style="border:1px solid #ddd; border-radius:8px;">
+            
+      <path d="M30,65 L70,62 L100,60 L112,50 L118,58 L124,50 L135,62 L165,64 L210,62 L250,60 L285,65" fill="none" stroke="#C0392B" stroke-width="2.6"/>
+      <path d="M30,30 l10,10 M40,30 l-10,10" stroke="#1F7A56" stroke-width="2.2"/><path d="M65,25 l10,10 M75,25 l-10,10" stroke="#1F7A56" stroke-width="2.2"/><path d="M110,32 l10,10 M120,32 l-10,10" stroke="#1F7A56" stroke-width="2.2"/><path d="M155,27 l10,10 M165,27 l-10,10" stroke="#1F7A56" stroke-width="2.2"/><path d="M200,30 l10,10 M210,30 l-10,10" stroke="#1F7A56" stroke-width="2.2"/><path d="M240,25 l10,10 M250,25 l-10,10" stroke="#1F7A56" stroke-width="2.2"/><path d="M275,30 l10,10 M285,30 l-10,10" stroke="#1F7A56" stroke-width="2.2"/>
+      <path d="M30,90 l10,10 M40,90 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M70,100 l10,10 M80,100 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M110,95 l10,10 M120,95 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M155,105 l10,10 M165,105 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M200,97 l10,10 M210,97 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M240,103 l10,10 M250,103 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M275,95 l10,10 M285,95 l-10,10" stroke="#C0392B" stroke-width="2.2"/>
+      <path d="M113,50 l10,10 M123,50 l-10,10" stroke="#C0392B" stroke-width="3"/>
+      <circle cx="118" cy="55" r="11" fill="none" stroke="#f4a300" stroke-width="1.3" stroke-dasharray="2,2"/>
+    
+          </svg>
+          <div style="text-align:center; font-family:monospace; font-size:10.5px; color:#C0392B; font-weight:bold; margin-top:4px;">K = 1 (overfit)</div>
+          <div style="text-align:center; font-family:monospace; font-size:9px; color:#777;">boundary dives to hug the single noisy point</div>
+        </div>
+      <div style="flex:1; min-width:200px;">
+          <svg viewBox="0 0 315 150" width="100%" height="auto" style="border:1px solid #ddd; border-radius:8px;">
+            
+      <path d="M30,68 C100,64 160,66 220,65 C250,64 270,66 285,65" fill="none" stroke="#1D5FD1" stroke-width="2.8"/>
+      <path d="M30,30 l10,10 M40,30 l-10,10" stroke="#1F7A56" stroke-width="2.2"/><path d="M65,25 l10,10 M75,25 l-10,10" stroke="#1F7A56" stroke-width="2.2"/><path d="M110,32 l10,10 M120,32 l-10,10" stroke="#1F7A56" stroke-width="2.2"/><path d="M155,27 l10,10 M165,27 l-10,10" stroke="#1F7A56" stroke-width="2.2"/><path d="M200,30 l10,10 M210,30 l-10,10" stroke="#1F7A56" stroke-width="2.2"/><path d="M240,25 l10,10 M250,25 l-10,10" stroke="#1F7A56" stroke-width="2.2"/><path d="M275,30 l10,10 M285,30 l-10,10" stroke="#1F7A56" stroke-width="2.2"/>
+      <path d="M30,90 l10,10 M40,90 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M70,100 l10,10 M80,100 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M110,95 l10,10 M120,95 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M155,105 l10,10 M165,105 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M200,97 l10,10 M210,97 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M240,103 l10,10 M250,103 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M275,95 l10,10 M285,95 l-10,10" stroke="#C0392B" stroke-width="2.2"/>
+      <path d="M113,50 l10,10 M123,50 l-10,10" stroke="#C0392B" stroke-width="3"/>
+    
+          </svg>
+          <div style="text-align:center; font-family:monospace; font-size:10.5px; color:#1D5FD1; font-weight:bold; margin-top:4px;">Good K (sweet spot)</div>
+          <div style="text-align:center; font-family:monospace; font-size:9px; color:#777;">smooth, ignores the noisy point, follows the real pattern</div>
+        </div>
+      <div style="flex:1; min-width:200px;">
+          <svg viewBox="0 0 315 150" width="100%" height="auto" style="border:1px solid #ddd; border-radius:8px;">
+            
+      <rect x="20" y="20" width="275" height="115" fill="#1D5FD1" opacity="0.10"/>
+      <text x="157" y="82" font-size="10.5" fill="#1D5FD1" font-family="monospace" text-anchor="middle" font-weight="bold">entire region predicted</text>
+      <text x="157" y="96" font-size="10.5" fill="#1D5FD1" font-family="monospace" text-anchor="middle" font-weight="bold">"majority class", always</text>
+      <path d="M30,30 l10,10 M40,30 l-10,10" stroke="#1F7A56" stroke-width="2.2"/><path d="M65,25 l10,10 M75,25 l-10,10" stroke="#1F7A56" stroke-width="2.2"/><path d="M110,32 l10,10 M120,32 l-10,10" stroke="#1F7A56" stroke-width="2.2"/><path d="M155,27 l10,10 M165,27 l-10,10" stroke="#1F7A56" stroke-width="2.2"/><path d="M200,30 l10,10 M210,30 l-10,10" stroke="#1F7A56" stroke-width="2.2"/><path d="M240,25 l10,10 M250,25 l-10,10" stroke="#1F7A56" stroke-width="2.2"/><path d="M275,30 l10,10 M285,30 l-10,10" stroke="#1F7A56" stroke-width="2.2"/>
+      <path d="M30,90 l10,10 M40,90 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M70,100 l10,10 M80,100 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M110,95 l10,10 M120,95 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M155,105 l10,10 M165,105 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M200,97 l10,10 M210,97 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M240,103 l10,10 M250,103 l-10,10" stroke="#C0392B" stroke-width="2.2"/><path d="M275,95 l10,10 M285,95 l-10,10" stroke="#C0392B" stroke-width="2.2"/>
+      <path d="M113,50 l10,10 M123,50 l-10,10" stroke="#C0392B" stroke-width="3"/>
+    
+          </svg>
+          <div style="text-align:center; font-family:monospace; font-size:10.5px; color:#1F7A56; font-weight:bold; margin-top:4px;">K = n (underfit)</div>
+          <div style="text-align:center; font-family:monospace; font-size:9px; color:#777;">no local boundary at all -- one flat global answer</div>
+        </div>
+    </div></div>
+          <table class="data-table" style="margin-top:14px;">
+            <tr><th>Panel</th><th>What the boundary does</th><th>Why</th></tr>
+            <tr><td class="zero">K = 1</td><td>Dives down into a little pocket just to wrap around the ONE noisy point, then comes back up</td><td>That single noisy point IS someone's nearest neighbor for queries right around it &mdash; K=1 has no second opinion to override it</td></tr>
+            <tr><td class="good">Good K</td><td>Stays smooth and straight, cutting cleanly between the two real clusters</td><td>The noisy point is outvoted by its genuine neighbors &mdash; enough votes are being averaged to cancel out the one outlier</td></tr>
+            <tr><td>K = n</td><td>No local boundary survives at all &mdash; the whole region collapses to one flat prediction</td><td>Every query, no matter where it lands, gets the same global majority class &mdash; local structure is completely ignored</td></tr>
+          </table>
+          <div class="callout">This jagged little "pocket" around the noisy point in the K=1 panel IS the overfitting, made visible &mdash; not weights memorized, but a decision surface so locally reactive that it bends around one single training point's exact position. The flat panel on the right is underfitting, made equally visible &mdash; a boundary so rigid it doesn't bend around anything at all, real pattern included.</div>
+        </div>
+      </section>
+
+      <section class="block" id="bestk">
+        <h2>Finding the <span class="underline">best value of K</span></h2>
+        <p class="lead">Exactly like tuning alpha in Ridge/Lasso: sweep K across a range, measure error on the <b>validation set</b> at each value, and look for the sweet spot between the two failure modes we just saw.</p>
+        <div class="card">
+          <div class="svg-card">
+            <svg viewBox="0 0 340 240" width="100%" height="auto">
+      <line x1="40" y1="210" x2="310" y2="210" stroke="#999" stroke-width="1"/>
+      <line x1="40" y1="20" x2="40" y2="210" stroke="#999" stroke-width="1"/>
+      <text x="150" y="228" font-size="10" fill="#555" font-family="monospace">K (number of neighbors)</text>
+      <text x="10" y="120" font-size="10" fill="#555" font-family="monospace" transform="rotate(-90 10 120)">Error</text>
+      <path d="M40.0,63.8 L49.3,92.9 L58.6,115.6 L67.9,133.3 L77.2,147.0 L86.6,157.7 L95.9,166.0 L105.2,172.5 L114.5,177.6 L123.8,181.5 L133.1,184.6 L142.4,187.0 L151.7,188.8 L161.0,190.3 L170.3,191.4 L179.7,192.3 L189.0,193.0 L198.3,193.5 L207.6,193.9 L216.9,194.2 L226.2,194.5 L235.5,194.7 L244.8,194.8 L254.1,195.0 L263.4,195.1 L272.8,195.1 L282.1,195.2 L291.4,195.2 L300.7,195.3 L310.0,195.3" fill="none" stroke="#1F7A56" stroke-width="2.3"/>
+      <path d="M40.0,61.7 L49.3,82.9 L58.6,99.7 L67.9,113.1 L77.2,123.7 L86.6,132.0 L95.9,138.3 L105.2,143.0 L114.5,146.4 L123.8,148.7 L133.1,150.1 L142.4,150.6 L151.7,150.4 L161.0,149.6 L170.3,148.3 L179.7,146.5 L189.0,144.2 L198.3,141.5 L207.6,138.4 L216.9,135.0 L226.2,131.2 L235.5,127.1 L244.8,122.7 L254.1,118.0 L263.4,113.0 L272.8,107.7 L282.1,102.2 L291.4,96.3 L300.7,90.2 L310.0,83.8" fill="none" stroke="#C0392B" stroke-width="2.6"/>
+      <line x1="142.4" y1="20" x2="142.4" y2="210" stroke="#f4a300" stroke-width="1.4" stroke-dasharray="4,3"/>
+      <text x="117.4" y="15" font-size="9.5" fill="#f4a300" font-family="monospace">best K~12</text>
+      <text x="230" y="45" font-size="9.5" fill="#C0392B" font-family="monospace">validation error</text>
+      <text x="230" y="190" font-size="9.5" fill="#1F7A56" font-family="monospace">training error</text>
+      <text x="45" y="35" font-size="9" fill="#888" font-family="monospace">overfit zone</text>
+      <text x="255" y="205" font-size="9" fill="#888" font-family="monospace">underfit zone</text>
+    </svg>
+          </div>
+          <div class="svg-caption">Training error keeps falling as K shrinks toward 1 (memorization). Validation error is U-shaped &mdash; that's where the real answer lives.</div>
+          <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);">Small K (left side) &rarr; low training error, high validation error &rarr; <b>overfitting</b>. Large K (right side) &rarr; both errors high and close together &rarr; <b>underfitting</b>. The best K sits at the bottom of the validation curve &mdash; found empirically, never guessed.</div>
+        </div>
+      </section>
+
+
+      <section class="block" id="wknnidea">
+        <div class="section-eyebrow">Weighted KNN</div>
+        <h2>The idea &mdash; <span class="underline">and why we need it</span></h2>
+        <p class="lead">Plain KNN treats every one of the K neighbors as equally important &mdash; the closest neighbor and the K-th closest neighbor get an identical vote/weight. That feels wrong: shouldn't a neighbor who is almost on top of your query matter more than one who is barely inside the K cutoff?</p>
+        <div class="card">
+          <h3>The fix: weight each neighbor by how close it is</h3>
+          <div class="formula center">weight = 1 / distance &nbsp;&nbsp;(closer &rarr; bigger weight, farther &rarr; smaller weight)</div>
+          <div class="svg-card">
+            <svg viewBox="0 0 340 240" width="100%" height="auto">
+      <line x1="40" y1="210" x2="310" y2="210" stroke="#999" stroke-width="1"/>
+      <line x1="40" y1="20" x2="40" y2="210" stroke="#999" stroke-width="1"/>
+      <text x="150" y="228" font-size="10" fill="#555" font-family="monospace">Distance from query</text>
+      <text x="10" y="120" font-size="10" fill="#555" font-family="monospace" transform="rotate(-90 10 120)">Weight = 1/distance</text>
+      <path d="M42.2,20.0 L44.5,20.0 L46.8,20.0 L49.0,20.0 L51.2,58.0 L53.5,83.3 L55.8,101.4 L58.0,115.0 L60.2,125.6 L62.5,134.0 L64.8,140.9 L67.0,146.7 L69.2,151.5 L71.5,155.7 L73.8,159.3 L76.0,162.5 L78.2,165.3 L80.5,167.8 L82.8,170.0 L85.0,172.0 L87.2,173.8 L89.5,175.5 L91.8,177.0 L94.0,178.3 L96.2,179.6 L98.5,180.8 L100.8,181.9 L103.0,182.9 L105.2,183.8 L107.5,184.7 L109.8,185.5 L112.0,186.2 L114.2,187.0 L116.5,187.6 L118.8,188.3 L121.0,188.9 L123.2,189.5 L125.5,190.0 L127.8,190.5 L130.0,191.0 L132.2,191.5 L134.5,191.9 L136.8,192.3 L139.0,192.7 L141.2,193.1 L143.5,193.5 L145.8,193.8 L148.0,194.2 L150.2,194.5 L152.5,194.8 L154.8,195.1 L157.0,195.4 L159.2,195.7 L161.5,195.9 L163.8,196.2 L166.0,196.4 L168.2,196.7 L170.5,196.9 L172.8,197.1 L175.0,197.3 L177.2,197.5 L179.5,197.7 L181.8,197.9 L184.0,198.1 L186.2,198.3 L188.5,198.5 L190.8,198.7 L193.0,198.8 L195.3,199.0 L197.5,199.1 L199.8,199.3 L202.0,199.4 L204.2,199.6 L206.5,199.7 L208.8,199.9 L211.0,200.0 L213.2,200.1 L215.5,200.3 L217.8,200.4 L220.0,200.5 L222.2,200.6 L224.5,200.7 L226.8,200.8 L229.0,201.0 L231.2,201.1 L233.5,201.2 L235.8,201.3 L238.0,201.4 L240.2,201.5 L242.5,201.6 L244.8,201.6 L247.0,201.7 L249.2,201.8 L251.5,201.9 L253.8,202.0 L256.0,202.1 L258.2,202.2 L260.5,202.2 L262.8,202.3 L265.0,202.4 L267.2,202.5 L269.5,202.5 L271.8,202.6 L274.0,202.7 L276.2,202.8 L278.5,202.8 L280.8,202.9 L283.0,203.0 L285.2,203.0 L287.5,203.1 L289.8,203.2 L292.0,203.2 L294.2,203.3 L296.5,203.3 L298.8,203.4 L301.0,203.4 L303.2,203.5 L305.5,203.6 L307.8,203.6 L310.0,203.7" fill="none" stroke="#1D5FD1" stroke-width="2.5"/>
+      <text x="60" y="45" font-size="9.5" fill="#C0392B" font-family="monospace">very close -> huge weight</text>
+      <text x="220" y="195" font-size="9.5" fill="#1F7A56" font-family="monospace">far -> tiny weight</text>
+    </svg>
+          </div>
+          <div class="svg-caption">As distance shrinks toward 0, weight shoots up. As distance grows, weight fades toward 0 &mdash; but never quite reaches it.</div>
+          <div class="callout">Instead of a hard cutoff ("you're one of the K nearest, so you get one full vote"), every neighbor contributes <i>some</i> influence, scaled smoothly by how close it actually is. This is a strictly richer signal than plain KNN's "all K neighbors count equally, everyone else counts zero."</div>
+        </div>
+      </section>
+
+      <section class="block" id="wknnoverfit">
+        <h2>Does Weighted KNN fix K=1 overfitting? <span class="underline">The nuanced answer</span></h2>
+        <p class="lead">Your exact question: <i>"if a closer point gets MORE weight, won't a very close noisy/mislabeled point get even MORE precedence, not less? Doesn't that make things worse?"</i> Let's actually check, with real numbers.</p>
+        <div class="card">
+          <h3>First: at K=1, weighting changes nothing at all</h3>
+          <div class="callout bad">With K=1 there is only ONE neighbor being considered &mdash; giving it "weight 1/distance" instead of "weight 1" doesn't change who wins, because there's no second vote to compare against. <b>Weighted KNN does NOT fix K=1 overfitting</b> &mdash; if your single nearest neighbor is noisy, weighting is irrelevant, you still get fooled every time.</div>
+        </div>
+        <div class="card">
+          <h3>Where weighting actually helps: K &ge; 3, with a MODERATELY close noisy point</h3>
+          <p class="lead" style="margin-top:0;">Back to our Buy/No-Buy example. At K=3, the neighbors are C9 (noisy, No, distance 2.00), C7 (Yes, distance 2.24), C1 (Yes, distance 3.00):</p>
+          <table class="data-table">
+            <tr><th>Customer</th><th>Label</th><th>Distance</th><th>Weight = 1/distance</th></tr>
+            <tr><td>C9</td><td class="zero">No</td><td class="mono">2.00</td><td class="mono">0.500</td></tr>
+            <tr><td>C7</td><td class="good">Yes</td><td class="mono">2.24</td><td class="mono">0.447</td></tr>
+            <tr><td>C1</td><td class="good">Yes</td><td class="mono">3.00</td><td class="mono">0.333</td></tr>
+          </table>
+          <div class="formula center">Yes total weight = 0.447+0.333 = <span class="k">0.781</span> &nbsp;&nbsp;vs&nbsp;&nbsp; No total weight = <span class="l">0.500</span> &rarr; predicted = <span class="k">Yes (correct!)</span></div>
+          <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);">Even though C9 is the single closest point (so it gets the single highest weight), the COMBINED weight of the two genuine "Yes" neighbors still wins. Weighted KNN resisted the noise here.</div>
+        </div>
+        <div class="card">
+          <h3>But your instinct is right &mdash; think of it as a tug-of-war</h3>
+          <p class="lead" style="margin-top:0;"><b>Picture a tug-of-war rope.</b> On one side stand C7 and C1 together, pulling with a combined strength of <span class="hl">0.781</span> &mdash; that number never changes, no matter what C9 does. On the other side stands C9 <i>alone</i>. Right now C9 is 2.00 units away, so it only pulls with strength 0.500 &mdash; not enough to win. But watch what happens as we drag C9 closer and closer to the query, making it pull harder each time:</p>
+          <div class="svg-card"><svg viewBox="0 0 340 200" width="100%" height="auto">
+      
+          <text x="2" y="34" font-size="9.5" font-family="monospace" fill="#333">d=2.0</text>
+          <rect x="55" y="20" width="66.9" height="12" fill="#1F7A56"/>
+          <text x="126.9" y="30" font-size="8.5" font-family="monospace" fill="#1F7A56">Yes team: 0.781</text>
+          <rect x="55" y="35" width="42.9" height="12" fill="#e8a598"/>
+          <text x="102.9" y="45" font-size="8.5" font-family="monospace" fill="#C0392B">C9 alone: 0.500</text>
+          <text x="290" y="38" font-size="9.5" font-family="monospace" font-weight="bold" fill="#1F7A56">Yes wins</text>
+        
+          <text x="2" y="68" font-size="9.5" font-family="monospace" fill="#333">d=1.5</text>
+          <rect x="55" y="54" width="66.9" height="12" fill="#1F7A56"/>
+          <text x="126.9" y="64" font-size="8.5" font-family="monospace" fill="#1F7A56">Yes team: 0.781</text>
+          <rect x="55" y="69" width="57.1" height="12" fill="#e8a598"/>
+          <text x="117.1" y="79" font-size="8.5" font-family="monospace" fill="#C0392B">C9 alone: 0.667</text>
+          <text x="290" y="72" font-size="9.5" font-family="monospace" font-weight="bold" fill="#1F7A56">Yes wins</text>
+        
+          <text x="2" y="102" font-size="9.5" font-family="monospace" fill="#333">d=1.282</text>
+          <rect x="55" y="88" width="66.9" height="12" fill="#1F7A56"/>
+          <text x="126.9" y="98" font-size="8.5" font-family="monospace" fill="#1F7A56">Yes team: 0.781</text>
+          <rect x="55" y="103" width="66.9" height="12" fill="#e8a598"/>
+          <text x="126.9" y="113" font-size="8.5" font-family="monospace" fill="#C0392B">C9 alone: 0.780</text>
+          <text x="290" y="106" font-size="9.5" font-family="monospace" font-weight="bold" fill="#1F7A56">Yes wins</text>
+        
+          <text x="2" y="136" font-size="9.5" font-family="monospace" fill="#333">d=1.0</text>
+          <rect x="55" y="122" width="66.9" height="12" fill="#a8d5bd"/>
+          <text x="126.9" y="132" font-size="8.5" font-family="monospace" fill="#1F7A56">Yes team: 0.781</text>
+          <rect x="55" y="137" width="85.7" height="12" fill="#C0392B"/>
+          <text x="145.7" y="147" font-size="8.5" font-family="monospace" fill="#C0392B">C9 alone: 1.000</text>
+          <text x="290" y="140" font-size="9.5" font-family="monospace" font-weight="bold" fill="#C0392B">C9 WINS</text>
+        
+          <text x="2" y="170" font-size="9.5" font-family="monospace" fill="#333">d=0.5</text>
+          <rect x="55" y="156" width="66.9" height="12" fill="#a8d5bd"/>
+          <text x="126.9" y="166" font-size="8.5" font-family="monospace" fill="#1F7A56">Yes team: 0.781</text>
+          <rect x="55" y="171" width="171.4" height="12" fill="#C0392B"/>
+          <text x="231.4" y="181" font-size="8.5" font-family="monospace" fill="#C0392B">C9 alone: 2.000</text>
+          <text x="290" y="174" font-size="9.5" font-family="monospace" font-weight="bold" fill="#C0392B">C9 WINS</text>
+        
+    </svg></div>
+          <div class="svg-caption">Top bar in each row = the combined "Yes team" pull (always 0.781). Bottom bar = C9 pulling alone, growing as it gets closer. The moment C9's own bar passes the Yes team's bar, C9 wins the tug-of-war by itself.</div>
+          <p class="lead">Reading the five rows top to bottom: at distance 2.00, 1.50, and 1.28, C9's solo pull still loses to the Yes team's combined pull &mdash; <b>weighted KNN correctly says "Yes."</b> But once C9 is dragged to distance 1.00 (and closer), its solo pull becomes strong enough to beat the Yes team's combined pull all by itself &mdash; <b>weighted KNN flips to the wrong answer, "No."</b></p>
+          <div class="callout warn"><b>Your intuition was exactly correct.</b> Weighted KNN is more ROBUST than plain KNN &mdash; it takes a much closer noisy point to fool it, since that one point now has to out-PULL the combined strength of every other neighbor, not just out-RANK them. But it is NOT immune. An extremely close noisy point can still win the tug-of-war alone.</div>
+          <div class="callout purple"><b>The precise, general statement:</b> plain KNN (K=1) is fooled by ANY nearest noisy point, no matter its exact distance &mdash; it only cares about rank ("who's closest"), not magnitude ("how much closer"). Weighted KNN is fooled only when a noisy point is disproportionately closer than everything else combined &mdash; a much narrower, harder-to-trigger failure condition. Weighted KNN raises the bar for being fooled; it doesn't remove the possibility entirely.</div>
+        </div>
+      </section>
+
+
+      <section class="block" id="wknnreg">
+        <h2>Weighted KNN for Regression &mdash; <span class="underline">formula and worked example</span></h2>
+        <div class="card">
+          <div class="formula center">y_pred = &Sigma;( w<sub>i</sub> &times; y<sub>i</sub> ) / &Sigma;( w<sub>i</sub> ) &nbsp;&nbsp;&nbsp; where w<sub>i</sub> = 1 / distance<sub>i</sub></div>
+          <p class="lead" style="margin-top:0;">Instead of a plain average, this is a <b>weighted</b> average &mdash; every neighbor's price is multiplied by its own weight before summing, then divided by the total weight (so everything stays on the correct scale).</p>
+          <h3>K=3 worked example</h3>
+          <table class="data-table">
+            <tr><th>House</th><th>Price</th><th>Distance</th><th>Weight (1/d)</th><th>Weight x Price</th></tr>
+            <tr><td>H1</td><td class="mono">50</td><td class="mono">1.00</td><td class="mono">1.000</td><td class="mono">50.00</td></tr>
+<tr><td>H7</td><td class="mono">52</td><td class="mono">1.12</td><td class="mono">0.894</td><td class="mono">46.51</td></tr>
+<tr><td>H2</td><td class="mono">55</td><td class="mono">2.00</td><td class="mono">0.500</td><td class="mono">27.50</td></tr>
+          </table>
+          <div class="formula center">y_pred = (1.000x50 + 0.894x52 + 0.500x55) / (1.000 + 0.894 + 0.500)</div>
+          <div class="formula center">= 124.01 / 2.394 = <span class="k">51.79</span></div>
+          <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);">Plain KNN (K=3) predicted <b>52.33</b>. Weighted KNN predicts <b>51.79</b> &mdash; slightly lower, because H1 (the closest, cheapest of the three at Rs50L) now pulls harder than the plain average allowed, while H2 (farthest of the three, most expensive at Rs55L) has its influence reduced.</div>
+          <h3>K=5 worked example (further neighbors join in, weighted much less)</h3>
+          <table class="data-table">
+            <tr><th>House</th><th>Price</th><th>Distance</th><th>Weight (1/d)</th><th>Weight x Price</th></tr>
+            <tr><td>H1</td><td class="mono">50</td><td class="mono">1.00</td><td class="mono">1.000</td><td class="mono">50.00</td></tr>
+<tr><td>H7</td><td class="mono">52</td><td class="mono">1.12</td><td class="mono">0.894</td><td class="mono">46.51</td></tr>
+<tr><td>H2</td><td class="mono">55</td><td class="mono">2.00</td><td class="mono">0.500</td><td class="mono">27.50</td></tr>
+<tr><td>H3</td><td class="mono">48</td><td class="mono">2.83</td><td class="mono">0.354</td><td class="mono">16.97</td></tr>
+<tr><td>H8</td><td class="mono">35</td><td class="mono">4.24</td><td class="mono">0.236</td><td class="mono">8.25</td></tr>
+          </table>
+          <div class="formula center">y_pred = 149.23 / 2.984 = <span class="k">50.02</span> &nbsp;&nbsp;(plain mean was 48.00)</div>
+          <div class="callout">Notice how much more the weighted prediction (K=5: 50.02) resembles the tight K=3 answer than the plain K=5 mean (48.00) does. That's the entire point of weighting: <b>far-away neighbors are still consulted, but they can no longer drag the answer as hard as very close ones can.</b> Weighting makes the prediction much less sensitive to exactly which K you pick.</div>
+        </div>
+      </section>
+
+      <section class="block" id="wknnclass">
+        <h2>Weighted KNN for Classification &mdash; <span class="underline">formula and worked example</span></h2>
+        <div class="card">
+          <div class="formula center">predicted class = argmax<sub>c</sub> &Sigma;( w<sub>i</sub> &times; [y<sub>i</sub> = c] ) &nbsp;&nbsp;&nbsp; sum the weights of neighbors belonging to each class, pick the class with the bigger total</div>
+          <p class="lead" style="margin-top:0;">Instead of "count votes," it's "sum weights per class." We already computed this in the previous section &mdash; here it is laid out as the general recipe:</p>
+          <table class="data-table">
+            <tr><th>Class</th><th>Neighbors contributing</th><th>Sum of their weights</th></tr>
+            <tr><td class="good">Yes</td><td>C7 (0.447) + C1 (0.333)</td><td class="mono good">0.781</td></tr>
+            <tr><td class="zero">No</td><td>C9 (0.500)</td><td class="mono zero">0.500</td></tr>
+          </table>
+          <div class="formula center">argmax(0.781, 0.500) = <span class="k">Yes</span></div>
+        </div>
+        <div class="card">
+          <h3>How this differs from plain regression / plain classification</h3>
+          <table class="data-table">
+            <tr><th></th><th>Plain KNN</th><th>Weighted KNN</th></tr>
+            <tr><td>Regression combine step</td><td>simple mean of K prices</td><td>weighted average, weight = 1/distance</td></tr>
+            <tr><td>Classification combine step</td><td>count of labels ("votes"), each worth 1</td><td>sum of weights per label, each neighbor's "vote" worth 1/distance</td></tr>
+            <tr><td>Sensitivity to far-but-included neighbors</td><td>full influence, same as close ones</td><td>heavily discounted, but never fully zero</td></tr>
+            <tr><td>Sensitivity to exact K choice</td><td>high &mdash; adding one more neighbor changes the average/vote a lot</td><td>lower &mdash; newly added far neighbors barely move the answer</td></tr>
+          </table>
+        </div>
+      </section>
+
+      <section class="block" id="wknnk">
+        <h2>Is K in Weighted KNN <span class="underline">chosen the same way?</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Yes &mdash; K is still a hyperparameter you tune via the validation set, exactly as before (sklearn default is still K=5 for <code>KNeighborsClassifier(weights='distance')</code> / <code>KNeighborsRegressor(weights='distance')</code>). Nothing about the tuning PROCESS changes.</p>
+          <div class="callout info">What DOES change: because far neighbors are automatically down-weighted, weighted KNN's validation curve tends to be <b>flatter and more forgiving around the best K</b> &mdash; picking K=7 instead of the true best K=5 hurts you less under weighting than under plain voting, since those extra 2 neighbors barely get a say anyway. It's still worth tuning properly, but weighted KNN is more forgiving of a slightly-off K choice.</div>
+        </div>
+      </section>
+
+
+      <section class="block" id="outliers">
+        <div class="section-eyebrow">Things that break KNN</div>
+        <h2>Outliers in KNN &mdash; <span class="underline">what, how to detect, what to do</span></h2>
+        <div class="card">
+          <h3>What is an outlier, in KNN's specific context?</h3>
+          <p class="lead" style="margin-top:0;">Any training point that sits <b>far from its own class's natural cluster</b> &mdash; either because of a genuine one-off unusual case, a data entry error, or a mislabeling. C9 from our classification example (a "No" customer sitting deep inside the "Yes" neighborhood) is exactly this kind of outlier.</p>
+        </div>
+        <div class="card">
+          <h3>Why outliers hurt KNN specifically (more than some other models)</h3>
+          <p class="lead" style="margin-top:0;">KNN has no global fitting step that could "average out" or "smooth over" one bad point using the whole dataset's pattern (the way a regression line is shaped by every point at once). An outlier just sits there in feature space, fully able to become <i>the</i> nearest neighbor for any future query that happens to land near it &mdash; poisoning predictions locally, indefinitely, with no correction mechanism.</p>
+        </div>
+        <div class="card">
+          <h3>How to detect outliers before they cause damage</h3>
+          <div class="step-card"><span class="step-tag">1</span> <b>Visualize</b> (2D/3D scatter, or pairplots) &mdash; a point sitting alone, far from same-class peers, is visually obvious in low dimensions.</div>
+          <div class="step-card"><span class="step-tag p">2</span> <b>Distance-based check:</b> for every training point, compute the distance to its own nearest neighbor(s). Points whose nearest neighbor is unusually far away are structurally isolated &mdash; classic outlier signature.</div>
+          <div class="step-card"><span class="step-tag y">3</span> <b>Label-disagreement check</b> (for classification): for every point, look at its own K nearest OTHER points &mdash; if the vast majority disagree with its label (like C9's neighbors all being "Yes"), that point is very likely mislabeled noise.</div>
+          <div class="step-card"><span class="step-tag g">4</span> <b>Statistical checks</b> on individual numeric features: z-score beyond ~3, or IQR-based fences, flag individually extreme values worth double-checking.</div>
+        </div>
+        <div class="card">
+          <h3>What to do once you've found one</h3>
+          <table class="data-table">
+            <tr><th>Situation</th><th>What to do</th></tr>
+            <tr><td>Genuine data entry error</td><td>Fix it if you can verify the correct value; otherwise remove the row</td></tr>
+            <tr><td>Genuinely rare but valid case</td><td>Keep it, but consider Weighted KNN and/or a slightly larger K so it can't dominate alone</td></tr>
+            <tr><td>Likely mislabeled (like our C9)</td><td>Re-verify the label with the source of truth; if wrong, fix or remove</td></tr>
+            <tr><td>Can't tell / not verifiable</td><td>Favor a larger K and Weighted KNN &mdash; both dilute a single bad point's influence, as we proved above</td></tr>
+          </table>
+        </div>
+      </section>
+
+      <section class="block" id="imbalance">
+        <h2>Class Imbalance &mdash; <span class="underline">where plain KNN fails</span></h2>
+        <p class="lead">KNN's vote is a raw head-count. If one class vastly outnumbers another in the training data, that imbalance leaks directly into every single neighborhood, everywhere in feature space &mdash; even in regions that "belong" to the minority class.</p>
+        <div class="card">
+          <h3>The visual failure mode &mdash; a concrete K=11 example</h3>
+          <div class="svg-card">
+            <svg viewBox="0 0 330 220" width="100%" height="auto">
+      <circle cx="130.0" cy="95.0" r="61.7" fill="none" stroke="#888" stroke-width="1.2" stroke-dasharray="4,3"/>
+      <circle cx="278.7" cy="101.4" r="4" fill="#1D5FD1" opacity="0.4"/><circle cx="178.2" cy="30.4" r="4" fill="#1D5FD1" opacity="0.4"/><circle cx="199.6" cy="100.4" r="4" fill="#1D5FD1" opacity="0.4"/><circle cx="175.9" cy="119.5" r="5" fill="#1D5FD1" opacity="1.0"/><circle cx="218.9" cy="78.0" r="4" fill="#1D5FD1" opacity="0.4"/><circle cx="160.1" cy="95.7" r="5" fill="#1D5FD1" opacity="1.0"/><circle cx="231.0" cy="126.8" r="4" fill="#1D5FD1" opacity="0.4"/><circle cx="141.3" cy="76.4" r="5" fill="#1D5FD1" opacity="1.0"/><circle cx="233.2" cy="157.2" r="4" fill="#1D5FD1" opacity="0.4"/><circle cx="198.6" cy="89.5" r="4" fill="#1D5FD1" opacity="0.4"/><circle cx="249.3" cy="100.7" r="4" fill="#1D5FD1" opacity="0.4"/><circle cx="232.7" cy="156.5" r="4" fill="#1D5FD1" opacity="0.4"/><circle cx="228.4" cy="112.2" r="4" fill="#1D5FD1" opacity="0.4"/><circle cx="233.0" cy="90.7" r="4" fill="#1D5FD1" opacity="0.4"/><circle cx="192.0" cy="92.8" r="4" fill="#1D5FD1" opacity="0.4"/><circle cx="190.8" cy="95.4" r="5" fill="#1D5FD1" opacity="1.0"/><circle cx="191.6" cy="98.6" r="5" fill="#1D5FD1" opacity="1.0"/><circle cx="204.0" cy="111.9" r="4" fill="#1D5FD1" opacity="0.4"/><circle cx="213.3" cy="152.1" r="4" fill="#1D5FD1" opacity="0.4"/><circle cx="130.4" cy="148.9" r="5" fill="#1D5FD1" opacity="1.0"/><circle cx="189.3" cy="73.0" r="4" fill="#1D5FD1" opacity="0.4"/><circle cx="192.2" cy="112.8" r="4" fill="#1D5FD1" opacity="0.4"/><circle cx="248.0" cy="78.2" r="4" fill="#1D5FD1" opacity="0.4"/><circle cx="209.8" cy="113.5" r="4" fill="#1D5FD1" opacity="0.4"/><circle cx="124.2" cy="74.4" r="5" fill="#1D5FD1" opacity="1.0"/><circle cx="227.0" cy="130.9" r="4" fill="#1D5FD1" opacity="0.4"/><circle cx="248.9" cy="126.0" r="4" fill="#1D5FD1" opacity="0.4"/><circle cx="217.8" cy="113.7" r="4" fill="#1D5FD1" opacity="0.4"/><circle cx="254.4" cy="84.7" r="4" fill="#1D5FD1" opacity="0.4"/><circle cx="193.6" cy="121.6" r="4" fill="#1D5FD1" opacity="0.4"/><path d="M56.6,98.6 l10,10 M66.6,98.6 l-10,10" stroke="#C0392B" stroke-width="2.0" opacity="0.4"/><path d="M70.7,73.7 l10,10 M80.7,73.7 l-10,10" stroke="#C0392B" stroke-width="2.6" opacity="1.0"/><path d="M123.8,60.1 l10,10 M133.8,60.1 l-10,10" stroke="#C0392B" stroke-width="2.6" opacity="1.0"/><path d="M75.5,103.1 l10,10 M85.5,103.1 l-10,10" stroke="#C0392B" stroke-width="2.6" opacity="1.0"/><path d="M65.6,67.2 l10,10 M75.6,67.2 l-10,10" stroke="#C0392B" stroke-width="2.0" opacity="0.4"/><path d="M94.3,83.2 l10,10 M104.3,83.2 l-10,10" stroke="#C0392B" stroke-width="2.6" opacity="1.0"/>
+      <path d="M123,95 L130,88 L137,95 L130,102 Z" fill="#f4a300" stroke="black" stroke-width="1"/>
+      <rect x="114.5" y="106.0" width="31.0" height="15.0" fill="white" opacity="0.82" rx="2"/><text x="130.0" y="117.0" font-size="10" font-family="monospace" fill="#f4a300" text-anchor="middle" font-weight="bold">QUERY</text>
+      <rect x="61.5" y="119.5" width="137.0" height="13.5" fill="white" opacity="0.82" rx="2"/><text x="130.0" y="129.0" font-size="8.5" font-family="monospace" fill="#f4a300" text-anchor="middle" font-weight="normal">(truly minority territory)</text>
+      <text x="235" y="25" font-size="10.5" fill="#1D5FD1" font-family="monospace" font-weight="bold">Majority class (30 pts)</text>
+      <text x="20" y="205" font-size="10.5" fill="#C0392B" font-family="monospace" font-weight="bold">Minority class (6 pts)</text>
+      <text x="70.3" y="27.3" font-size="9" fill="#888" font-family="monospace">K=11 neighborhood (dashed circle)</text>
+    </svg>
+          </div>
+          <div class="svg-caption">30 majority points vs 6 minority points. The query genuinely sits in "minority territory" &mdash; but its K=11 neighborhood (dashed circle) reaches far enough to sweep in majority points too.</div>
+          <div class="formula center">K=11 nearest neighbors: <span class="l">7 Majority</span> vs <span class="good">4 Minority</span> &rarr; plain vote predicts <span class="l">Majority (WRONG)</span></div>
+          <div class="callout bad">Even though the query sits closest to the minority cluster, K=11 reaches out far enough to scoop up 7 majority-class points from the surrounding sea, against only 4 minority points &mdash; and because plain KNN counts every neighbor as one equal vote, those 7 majority votes numerically overwhelm the 4 closer, more relevant minority votes.</div>
+        </div>
+        <div class="card">
+          <h3>Why this specifically gets worse as K grows</h3>
+          <p class="lead" style="margin-top:0;">Small K stays local enough to still "see" the minority cluster correctly. As K grows toward the underfitting end of the spectrum, you are (by definition) sweeping in a wider and wider neighborhood &mdash; and a wider neighborhood in imbalanced data disproportionately pulls in more majority-class points, simply because there are so many more of them everywhere. <b>Imbalance and the underfitting end of K compound each other.</b></p>
+        </div>
+      </section>
+
+      <section class="block" id="imbalancewknn">
+        <h2>Does Weighted KNN <span class="underline">survive class imbalance?</span></h2>
+        <div class="card">
+          <h3>Partially &mdash; it helps, but it is not a fix. Same K=11 example, now weighted:</h3>
+          <p class="lead" style="margin-top:0;">Weighted KNN gives closer points more say. Let's check if that rescues our K=11 example above, using weight = 1/distance for all 11 neighbors:</p>
+          <div class="svg-card"><svg viewBox="0 0 260 200" width="100%" height="auto">
+      <line x1="30" y1="175" x2="230" y2="175" stroke="#999" stroke-width="1"/>
+      <rect x="60" y="50.3" width="50" height="124.7" fill="#1D5FD1"/>
+      <rect x="150" y="110.1" width="50" height="64.9" fill="#C0392B"/>
+      <text x="85" y="192" font-size="10" fill="#1D5FD1" font-family="monospace" text-anchor="middle">Majority</text>
+      <text x="175" y="192" font-size="10" fill="#C0392B" font-family="monospace" text-anchor="middle">Minority</text>
+      <text x="85" y="43.3" font-size="11" fill="#1D5FD1" font-family="monospace" text-anchor="middle" font-weight="bold">0.196</text>
+      <text x="175" y="103.1" font-size="11" fill="#C0392B" font-family="monospace" text-anchor="middle" font-weight="bold">0.102</text>
+      <text x="130" y="15" font-size="10.5" fill="#333" font-family="monospace" text-anchor="middle">Sum of weights at K=11 (weight = 1/distance)</text>
+    </svg></div>
+          <div class="formula center">Majority total weight = <span class="l">0.196</span> &nbsp;&nbsp;vs&nbsp;&nbsp; Minority total weight = <span class="good">0.102</span> &rarr; weighted KNN ALSO predicts <span class="l">Majority (STILL WRONG)</span></div>
+          <div class="callout bad"><b>Weighting did not save us here.</b> Even after discounting every majority point by its distance, there are simply enough of them, spread closely enough, that their combined weight still beats the minority cluster's combined weight. Distance-discounting reduced the gap (compare 7-vs-4 head count to 0.196-vs-0.102 weight &mdash; the ratio did shrink) but didn't flip the outcome.</div>
+        </div>
+        <div class="card">
+          <h3>The general rule this demonstrates</h3>
+          <p class="lead" style="margin-top:0;">Weighted KNN fixes imbalance problems that are really about DISTANCE (a few very-close relevant neighbors buried under many farther irrelevant ones, where those far ones are few enough that discounting them is sufficient). It does NOT fix imbalance problems that are really about RAW COUNT (the majority class is so numerous that even individually-discounted, their sheer numbers add up to more combined weight than the whole minority cluster can muster).</p>
+          <div class="callout warn"><b>Sheer count can still out-muscle proximity:</b> a hundred distant majority points, each contributing a small weight, can still out-total two or three close minority points. For that, you need to change the DATA's balance itself, not the algorithm &mdash; which is exactly where we're headed next.</div>
+        </div>
+      </section>
+
+
+      <section class="block" id="oversampling">
+        <div class="section-eyebrow">Looking ahead</div>
+        <h2>Oversampling &amp; Undersampling &mdash; <span class="underline">a quick introduction</span></h2>
+        <p class="lead">If plain and weighted KNN both struggle when one class is simply too rare, the fix is to <b>change the training data's balance itself</b> before KNN ever sees it. Two opposite ways to do that:</p>
+        <div class="grid-2">
+          <div class="card">
+            <h3>Oversampling &mdash; add more minority examples</h3>
+            <p class="lead" style="margin-top:0; font-size:13px;">Duplicate (or synthetically generate) minority-class points until the two classes are closer in count. More minority points nearby means minority votes/weights can finally compete on equal footing.</p>
+          </div>
+          <div class="card">
+            <h3>Undersampling &mdash; remove some majority examples</h3>
+            <p class="lead" style="margin-top:0; font-size:13px;">Randomly drop majority-class points until the counts balance out. Fewer majority points means fewer of them can sweep into a query's neighborhood and swamp the vote.</p>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Visualizing the class-count shift</h3>
+          <div class="svg-card">
+            <svg viewBox="0 0 340 210" width="100%" height="auto">
+      <line x1="20" y1="185" x2="320" y2="185" stroke="#999" stroke-width="1"/>
+      <text x="30" y="20" font-size="10.5" fill="#333" font-family="monospace" font-weight="bold">Before</text>
+<rect x="30" y="35.0" width="35" height="150.0" fill="#1D5FD1"/>
+<text x="30" y="198" font-size="8.5" fill="#1D5FD1" font-family="monospace">Maj:900</text>
+<rect x="72" y="168.3" width="35" height="16.7" fill="#C0392B"/>
+<text x="72" y="198" font-size="8.5" fill="#C0392B" font-family="monospace">Min:100</text>
+<text x="140" y="20" font-size="10.5" fill="#333" font-family="monospace" font-weight="bold">Oversampling</text>
+<rect x="140" y="35.0" width="35" height="150.0" fill="#1D5FD1"/>
+<text x="140" y="198" font-size="8.5" fill="#1D5FD1" font-family="monospace">Maj:900</text>
+<rect x="182" y="35.0" width="35" height="150.0" fill="#C0392B"/>
+<text x="182" y="198" font-size="8.5" fill="#C0392B" font-family="monospace">Min:900*</text>
+<text x="250" y="20" font-size="10.5" fill="#333" font-family="monospace" font-weight="bold">Undersampling</text>
+<rect x="250" y="168.3" width="35" height="16.7" fill="#1D5FD1"/>
+<text x="250" y="198" font-size="8.5" fill="#1D5FD1" font-family="monospace">Maj:100*</text>
+<rect x="292" y="168.3" width="35" height="16.7" fill="#C0392B"/>
+<text x="292" y="198" font-size="8.5" fill="#C0392B" font-family="monospace">Min:100</text>
+    </svg>
+          </div>
+          <div class="svg-caption">Oversampling grows the minority bar to match. Undersampling shrinks the majority bar to match. (*synthetic/duplicated points)</div>
+          <div class="callout info">Simple duplication for oversampling has a real weakness &mdash; it just repeats the exact same points, adding no new information, and can make KNN even MORE overconfident about those specific spots. That weakness is exactly what next class's technique, <b>SMOTE</b>, is built to fix &mdash; by generating new, synthetic minority points along the lines between real ones, instead of just copying.</div>
+        </div>
+      </section>
+
+      <section class="block" id="nextclass">
+        <h2>Coming <span class="underline">next class</span></h2>
+        <div class="pipeline">
+          <div class="pipe-step"><div class="n">01</div><div class="t">SMOTE</div><div class="d">synthetic minority oversampling, in depth</div></div>
+          <div class="pipe-arrow">&rarr;</div>
+          <div class="pipe-step"><div class="n">02</div><div class="t">Code walkthrough</div><div class="d">sklearn + imblearn, end to end</div></div>
+          <div class="pipe-arrow">&rarr;</div>
+          <div class="pipe-step"><div class="n">03</div><div class="t">Curse of Dimensionality</div><div class="d">why KNN struggles in high-D, proven with real numbers</div></div>
+        </div>
+      </section>
+
+      <section class="block" id="summary">
+        <div class="section-eyebrow">Wrapping up</div>
+        <h2>Class 11 summary</h2>
+        <div class="card">
+          <table class="data-table">
+            <tr><th>Concept</th><th>One-line takeaway</th></tr>
+            <tr><td>Why KNN at all</td><td>When no straight line/hyperplane can separate the classes, stop trying to draw one &mdash; look locally instead</td></tr>
+            <tr><td>KNN's core idea</td><td>House-price-by-asking-neighbors, formalized: distance &rarr; sort &rarr; top K &rarr; mean/vote</td></tr>
+            <tr><td>Euclidean vs Manhattan</td><td>Straight-line vs grid-path distance; Manhattan &ge; Euclidean always</td></tr>
+            <tr><td>Training in KNN</td><td>.fit() just stores the data &mdash; all real work happens at predict() time</td></tr>
+            <tr><td>Choosing K</td><td>sklearn default = 5; always a tuned hyperparameter via the validation set, never guessed</td></tr>
+            <tr><td>Underfitting</td><td>K = all data &rarr; every query gets the same global mean / global majority class, always</td></tr>
+            <tr><td>Overfitting (K=1)</td><td>Prediction fully controlled by one single (possibly noisy) point &mdash; no averaging to cancel out noise</td></tr>
+            <tr><td>Weighted KNN</td><td>weight = 1/distance; more robust to noise than plain KNN, but not immune if noise is close enough</td></tr>
+            <tr><td>Outliers</td><td>Detect via visualization, nearest-neighbor-distance, and label-disagreement checks; mitigate with larger K / weighting</td></tr>
+            <tr><td>Class imbalance</td><td>Raw vote-counting lets majority class dominate even in genuinely minority territory; weighting helps only the distance-driven part of the problem</td></tr>
+            <tr><td>Oversampling / Undersampling</td><td>Fix the DATA's balance directly &mdash; the next lever when the algorithm alone can't compensate</td></tr>
+          </table>
+        </div>
+        <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green); font-size:14px;">
+          The whole class in one sentence: <b>KNN replaces "learn one global rule" with "trust your local neighborhood," and almost every failure mode we studied today &mdash; overfitting at K=1, underfitting at K=n, outlier sensitivity, class imbalance &mdash; comes from exactly how that local neighborhood gets defined and counted.</b>
+        </div>
+      </section>
+
+      <div class="footnote-strip">
+        <span class="hand">&mdash; end of Class 11 &mdash;</span>
+        K-Nearest Neighbors &mdash; From Lines to Neighbors &middot; 24 July 2026
+      </div>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>
+

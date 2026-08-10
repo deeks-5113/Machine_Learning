@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Logistic Regression — End-to-End Business Case Study — Class 10 Notes</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Patrick+Hand&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --board:#0c1014; --card:#151b21; --card-line:#222b32;
+    --chalk:#e9eef2; --chalk-dim:#9fb0bb;
+    --cyan:#5fd8e0; --cyan-dim:#2c5a5e;
+    --pink:#f17fb0; --pink-dim:#5a2f42;
+    --yellow:#f4cf5e; --green:#8fe3a6; --green-dim:#2f4f3a;
+    --purple:#b39ddb; --purple-dim:#4a3f6b;
+    --white-marker:#f5f5f0; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{ background:var(--board); color:var(--chalk); font-family:'Inter',sans-serif; line-height:1.55; -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width:1180px; margin:0 auto; padding:0 24px 120px; }
+  h1,h2,h3,.hand{ font-family:'Caveat',cursive; font-weight:700; }
+  .hero{ padding:56px 0 30px; text-align:center; }
+  .chip{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--cyan); border:1px solid var(--cyan-dim); background:rgba(95,216,224,0.06); padding:6px 14px; border-radius:999px; margin-bottom:16px; }
+  .hero h1{ font-size:clamp(28px,5.5vw,50px); color:var(--white-marker); margin:0 0 8px; }
+  .hero h1 span{color:var(--pink);}
+  .hero p{ font-family:'Patrick Hand',cursive; color:var(--chalk-dim); font-size:17px; max-width:780px; margin:0 auto; }
+  .layout{ display:grid; grid-template-columns:260px 1fr; gap:36px; align-items:start; }
+  nav.toc{ position:sticky; top:24px; background:var(--card); border:1px solid var(--card-line); border-radius:var(--radius); padding:18px 16px; font-family:'JetBrains Mono',monospace; font-size:11px; max-height:calc(100vh - 48px); overflow-y:auto; }
+  nav.toc .toc-title{ color:var(--chalk-dim); text-transform:uppercase; letter-spacing:1.2px; font-size:10px; margin-bottom:8px; margin-top:14px; }
+  nav.toc .toc-title:first-child{margin-top:0;}
+  nav.toc a{ display:block; color:var(--chalk-dim); text-decoration:none; padding:5px 8px; border-radius:8px; margin-bottom:1px; }
+  nav.toc a:hover{color:var(--chalk); background:rgba(255,255,255,0.04);}
+  main{min-width:0;}
+  section.block{ margin-bottom:50px; scroll-margin-top:24px; }
+  .section-eyebrow{ font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--pink); margin-bottom:6px; }
+  section.block h2{ font-size:30px; color:var(--white-marker); margin:0 0 12px; }
+  section.block h2 .underline{ text-decoration:underline; text-decoration-color:var(--cyan); text-decoration-thickness:3px; }
+  p.lead{ font-size:14.5px; color:#cdd8de; max-width:820px; }
+  .card{ background:var(--card); border:1px solid var(--card-line); border-radius:var(--radius); padding:20px 22px; margin:14px 0; }
+  .card h3{ font-family:'Inter',sans-serif; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.7px; color:var(--cyan); margin:0 0 10px; }
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  .grid-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;}
+  @media (max-width:900px){ .layout{grid-template-columns:1fr;} nav.toc{position:relative; top:0; margin-bottom:20px; max-height:none;} .grid-2,.grid-3{grid-template-columns:1fr;} }
+  table.data-table{ width:100%; border-collapse:collapse; font-family:'JetBrains Mono',monospace; font-size:12px; }
+  table.data-table th{ text-align:left; color:var(--chalk-dim); font-weight:500; padding:6px 9px; border-bottom:1px solid var(--card-line); text-transform:uppercase; font-size:9.5px; letter-spacing:0.4px; }
+  table.data-table td{ padding:6px 9px; border-bottom:1px solid rgba(255,255,255,0.04); }
+  table.data-table td.hl{color:var(--yellow); font-weight:700;}
+  table.data-table td.zero{color:var(--pink); font-weight:700; background:rgba(241,127,176,0.08);}
+  table.data-table td.good{color:var(--green); font-weight:700; background:rgba(143,227,166,0.08);}
+  blockquote.story{ font-family:'Patrick Hand',cursive; font-size:16.5px; color:#dbe6ec; border-left:3px solid var(--yellow); padding:6px 18px; margin:14px 0; background:rgba(244,207,94,0.04); border-radius:0 10px 10px 0; }
+  .pipeline{ display:flex; align-items:center; gap:0; overflow-x:auto; padding:10px 0 18px; }
+  .pipe-step{ flex:0 0 auto; min-width:115px; background:var(--card); border:1px solid var(--card-line); border-radius:12px; padding:12px 14px; text-align:center; }
+  .pipe-step .n{ font-family:'JetBrains Mono',monospace; color:var(--cyan); font-size:10.5px; margin-bottom:5px; }
+  .pipe-step .t{font-weight:700; font-size:12px; color:var(--white-marker);}
+  .pipe-step .d{font-size:9.5px; color:var(--chalk-dim); margin-top:3px;}
+  .pipe-arrow{ flex:0 0 auto; width:20px; text-align:center; color:var(--pink); font-size:16px; }
+  .formula{ font-family:'JetBrains Mono',monospace; background:#0a0d10; border:1px solid var(--card-line); border-radius:10px; padding:14px 20px; margin:12px 0; font-size:14px; color:var(--white-marker); overflow-x:auto; }
+  .report-block{ font-family:'JetBrains Mono',monospace; background:#0a0d10; border:1px solid var(--card-line); border-radius:10px; padding:16px 22px; margin:12px 0; font-size:13px; line-height:1.7; color:var(--white-marker); overflow-x:auto; white-space:pre; }
+  .report-block .hdr{color:var(--chalk-dim);}
+  .report-block .cls0{color:#7fb8ff;}
+  .report-block .cls1{color:var(--pink);}
+  .report-block .agg{color:var(--yellow);}
+  .formula.center{text-align:center;}
+  .formula .k{color:var(--yellow);} .formula .r{color:var(--cyan);} .formula .l{color:var(--pink);}
+  .formula-note{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--chalk-dim); margin-top:6px; }
+  .callout{ background:rgba(143,227,166,0.08); border:1px solid var(--green-dim); border-radius:10px; padding:12px 16px; color:var(--green); font-size:13px; font-family:'JetBrains Mono',monospace; margin:12px 0; line-height:1.6; }
+  .callout.warn{ background:rgba(244,207,94,0.08); border-color:#5a4f2f; color:var(--yellow); }
+  .callout.bad{ background:rgba(241,127,176,0.08); border-color:var(--pink-dim); color:var(--pink); }
+  .callout.info{ background:rgba(95,216,224,0.08); border-color:var(--cyan-dim); color:var(--cyan); }
+  .callout.purple{ background:rgba(179,157,219,0.08); border-color:var(--purple-dim); color:var(--purple); }
+  .step-card{ background:rgba(0,0,0,0.22); border-radius:10px; padding:14px 18px; margin:10px 0; border:1px solid var(--card-line); }
+  .step-tag{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--board); background:var(--cyan); padding:2px 8px; border-radius:6px; margin-right:8px; font-weight:700; }
+  .step-tag.p{background:var(--purple);}
+  .analogy-row{ display:flex; gap:14px; margin-top:12px; flex-wrap:wrap; }
+  .analogy{ flex:1; min-width:150px; background:var(--card); border:1px solid var(--card-line); border-radius:10px; padding:14px 16px; text-align:center; }
+  .analogy h4{font-size:14px; margin:6px 0 4px; color:var(--white-marker);}
+  .analogy p{font-size:11.5px; color:var(--chalk-dim); margin:0;}
+  .svg-card{ background:#fff; border:1px solid var(--card-line); border-radius:12px; padding:12px; }
+  .svg-caption{ text-align:center; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:#555; margin-top:8px; }
+  .footnote-strip{ margin-top:60px; border-top:1px dashed var(--card-line); padding-top:22px; text-align:center; color:var(--chalk-dim); font-family:'JetBrains Mono',monospace; font-size:12px; }
+  .footnote-strip .hand{color:var(--cyan); font-size:22px; display:block; margin-bottom:6px;}
+  .cm-table{ border-collapse:collapse; margin:14px auto; font-family:'JetBrains Mono',monospace; font-size:12.5px; }
+  .cm-table td, .cm-table th{ border:1px solid var(--card-line); padding:12px 18px; text-align:center; }
+  .cm-table .tp,.cm-table .tn{background:rgba(143,227,166,0.15); color:var(--green); font-weight:700;}
+  .cm-table .fp,.cm-table .fn{background:rgba(241,127,176,0.15); color:var(--pink); font-weight:700;}
+  .cm-table .lbl{background:#0a0d10; color:var(--chalk-dim); font-weight:700; font-size:10.5px;}
+  .matrix{ font-family:'JetBrains Mono',monospace; background:#0a0d10; border:1px solid var(--card-line); border-radius:10px; padding:16px 22px; display:inline-block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="chip">22-07-2026 · Module: Supervised Learning</div>
+    <h1>Logistic Regression — <span>End-to-End Business Case Study</span></h1>
+    <div class="chip" style="background:none; border-color:var(--pink-dim); color:var(--pink); margin-top:0;">📘 Class 10 · Telecom churn, classification report deep-dive, multiclass internals</div>
+  </div>
+
+  <div class="layout">
+    <nav class="toc" id="toc">
+      <div class="toc-title">The case study</div>
+      <a href="#casestudy">Telecom churn, properly explained</a>
+      <a href="#stratified">Stratified sampling — worked example</a>
+      <div class="toc-title">Classification report</div>
+      <a href="#classreport">Reading the classification report</a>
+      <a href="#supportterm">Precision, Recall, F1, Support — per class</a>
+      <a href="#macroweighted">Macro &amp; Weighted — the calculation</a>
+      <div class="toc-title">Multiclass confusion matrix</div>
+      <a href="#multicm">Confusion matrix → P/R/F1, end to end</a>
+      <div class="toc-title">Probabilities &amp; thresholds</div>
+      <a href="#predictproba">predict_proba() explained</a>
+      <a href="#binarize">The binarize() function</a>
+      <div class="toc-title">Multiclass internals — extreme depth</div>
+      <a href="#linefit">Recap: fitting the line</a>
+      <a href="#softmaxwhat">What softmax is, and why</a>
+      <a href="#weightmatrix">The weight matrix — softmax vs OvR</a>
+      <a href="#softmaxexample">Full worked example: z → p → loss</a>
+      <a href="#multiloss">Multiclass Log Loss, derived</a>
+      <a href="#gradient">The gradient &amp; weight update, computed</a>
+      <a href="#ovrcompare">OvR vs Softmax — the full nuance</a>
+      <div class="toc-title">Wrap-up</div>
+      <a href="#summary">Class summary</a>
+    </nav>
+
+    <main>
+
+      <section class="block" id="casestudy">
+        <div class="section-eyebrow">The business problem</div>
+        <h2>Telecom Customer Churn — <span class="underline">properly explained</span></h2>
+        <p class="lead">A telecom company wants to know, for each customer, whether they are likely to <b>churn</b> (leave for a competitor) or stay. Acquiring a new customer costs 5-25× more than retaining an existing one — so flagging at-risk customers <i>before</i> they leave is directly worth money.</p>
+        <div class="card">
+          <h3>The features, grouped by what they tell you</h3>
+          <table class="data-table">
+            <tr><th>Group</th><th>Features</th><th>What it tells you</th></tr>
+            <tr><td>Who they are</td><td>State, Account Length, Area Code</td><td>Tenure, rough location</td></tr>
+            <tr><td>Plan choices</td><td>Intl Plan, VMail Plan, VMail Message</td><td>Which optional services they've opted into</td></tr>
+            <tr><td>Actual usage</td><td>Day/Eve/Night/Intl Mins, Calls, Charge</td><td>How much they talk, when, what it costs them</td></tr>
+            <tr><td>How they've been treated</td><td>CustServ Calls</td><td>How often they've had a problem needing support</td></tr>
+          </table>
+          <div class="callout">Target: <code>Churn</code> — a single column, 0 or 1. Two possible outcomes — exactly the shape of problem logistic regression is built for.</div>
+        </div>
+        <div class="card">
+          <h3>Why logistic regression, specifically — the validation checklist</h3>
+          <table class="data-table">
+            <tr><th>Question</th><th>Answer here</th></tr>
+            <tr><td>Is the target categorical?</td><td class="good">Yes — Churn is 0/1</td></tr>
+            <tr><td>Do we need a probability, not just a label?</td><td class="good">Yes — the business wants to rank customers by churn risk, not just get a blunt yes/no</td></tr>
+            <tr><td>Do we need interpretable coefficients?</td><td class="good">Yes — the business wants to know <i>why</i> customers churn</td></tr>
+            <tr><td>Is data size reasonable?</td><td class="good">~5,700 rows — plenty for a stable fit</td></tr>
+          </table>
+        </div>
+      </section>
+
+      <section class="block" id="stratified">
+        <h2>Stratified Sampling — <span class="underline">a fully worked example</span></h2>
+        <div class="card">
+          <h3>What it is, and how it differs from a plain random split</h3>
+          <p class="lead" style="margin-top:0;">A normal <code>train_test_split</code> shuffles rows randomly — it does <b>not</b> guarantee each resulting split has the same class ratio as the original data. Stratified sampling fixes this: every split (train, validation, test) preserves the same class proportions as the full dataset.</p>
+        </div>
+        <div class="card">
+          <h3>Why we need it here — the actual verified numbers</h3>
+          <table class="data-table">
+            <tr><th>split</th><th>rows</th><th>Class 0 (No Churn)</th><th>Class 1 (Churn)</th></tr>
+            <tr><td>Full data</td><td>5,700</td><td class="good">0.500</td><td class="good">0.500</td></tr>
+            <tr><td>Train</td><td>3,420</td><td class="good">0.500</td><td class="good">0.500</td></tr>
+            <tr><td>Validation</td><td>1,140</td><td class="good">0.500</td><td class="good">0.500</td></tr>
+            <tr><td>Test</td><td>1,140</td><td class="good">0.500</td><td class="good">0.500</td></tr>
+          </table>
+          <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);">Every single split lands at exactly 0.500/0.500 — a perfect miniature of the full dataset, every time. That's stratification doing its job. Try removing <code>stratify=y</code> and re-running — on a smaller split especially, these numbers will drift apart purely from random luck.</div>
+        </div>
+        <div class="card">
+          <h3>The code, step by step</h3>
+          <div class="step-card"><span class="step-tag">1</span> Split off the test set first (20%), stratified on y: <code>train_test_split(X, y, test_size=0.20, stratify=y)</code></div>
+          <div class="step-card"><span class="step-tag">2</span> Split the remaining 80% into train (75% of it = 60% of total) and validation (25% of it = 20% of total), <b>stratified again</b> on the remaining labels: <code>train_test_split(X_tr_cv, y_tr_cv, test_size=0.25, stratify=y_tr_cv)</code></div>
+          <div class="step-card"><span class="step-tag">3</span> Verify: print <code>value_counts(normalize=True)</code> on all four (full, train, val, test) and confirm they match — never skip this check.</div>
+        </div>
+      </section>
+
+      <!-- ============ CLASSIFICATION REPORT ============ -->
+      <section class="block" id="classreport">
+        <div class="section-eyebrow">Reading the numbers properly</div>
+        <h2>The Classification Report — <span class="underline">real output, fully explained</span></h2>
+        <p class="lead">This is the actual `classification_report` output from our tuned model on the held-out test set (1,140 rows):</p>
+        <div class="card">
+          <div class="report-block">              precision    recall  f1-score   support
+
+    No Churn       0.74      0.80      0.77       570
+       Churn       0.79      0.72      0.75       570
+
+    accuracy                           0.76      1140
+   macro avg       0.76      0.76      0.76      1140
+weighted avg       0.76      0.76      0.76      1140</div>
+        </div>
+        <div class="card">
+          <h3>Where these numbers come from — the confusion matrix underneath</h3>
+          <table class="cm-table" style="width:100%;">
+            <tr><td></td><td class="lbl"></td><td class="lbl">Predicted: No Churn</td><td class="lbl">Predicted: Churn</td></tr>
+            <tr><td class="lbl">Actual:</td><td class="lbl">No Churn</td><td class="tn">TN = 457</td><td class="fp">FP = 113</td></tr>
+            <tr><td></td><td class="lbl">Churn</td><td class="fn">FN = 157</td><td class="tp">TP = 413</td></tr>
+          </table>
+          <div class="callout">Check: 457+113+157+413 = 1140 ✓ matches total test rows. 457+157=614... wait — actual class totals: No Churn actual = 457+113=570 ✓, Churn actual = 157+413=570 ✓ — matches the perfectly balanced 50/50 split from Part 3.</div>
+        </div>
+      </section>
+
+      <section class="block" id="supportterm">
+        <h2>Precision, Recall, F1, and <span class="underline">Support</span> — computed by hand</h2>
+        <div class="card">
+          <h3>Churn row (the class we usually care most about)</h3>
+          <div class="formula center">Precision_Churn = TP/(TP+FP) = 413/(413+113) = 413/526 = <span class="good">0.785</span></div>
+          <div class="formula center">Recall_Churn = TP/(TP+FN) = 413/(413+157) = 413/570 = <span class="good">0.725</span></div>
+          <div class="formula center">F1_Churn = 2×(0.785×0.725)/(0.785+0.725) = <span class="good">0.754</span></div>
+          <div class="formula center">Support_Churn = TP+FN = 413+157 = <span class="hl">570</span> &nbsp;(total ACTUAL churners in the test set)</div>
+        </div>
+        <div class="card">
+          <h3>No Churn row</h3>
+          <div class="formula center">Precision_NoChurn = TN/(TN+FN) = 457/(457+157) = 457/614 = <span class="good">0.744</span></div>
+          <div class="formula center">Recall_NoChurn = TN/(TN+FP) = 457/(457+113) = 457/570 = <span class="good">0.802</span></div>
+          <div class="formula center">F1_NoChurn = 2×(0.744×0.802)/(0.744+0.802) = <span class="good">0.772</span></div>
+          <div class="formula center">Support_NoChurn = TN+FP = 457+113 = <span class="hl">570</span></div>
+          <div class="callout info"><b>Support is simply a row-count</b> — how many actual examples of that class exist in the test set. It's not a computed rate like the other three; it's just there so you can judge how much evidence each row's precision/recall is even based on. A "recall=1.00" on a support of 3 means much less than the same number on a support of 570.</div>
+        </div>
+      </section>
+
+      <section class="block" id="macroweighted">
+        <h2>Macro &amp; Weighted — <span class="underline">the actual calculation</span></h2>
+        <div class="card">
+          <h3>Macro average — simple, unweighted average across classes</h3>
+          <div class="formula center">Macro-Precision = (0.744 + 0.785)/2 = <span class="good">0.765 ≈ 0.76</span></div>
+          <div class="formula center">Macro-Recall = (0.802 + 0.725)/2 = <span class="good">0.763 ≈ 0.76</span></div>
+          <div class="formula center">Macro-F1 = (0.772 + 0.754)/2 = <span class="good">0.763 ≈ 0.76</span></div>
+        </div>
+        <div class="card">
+          <h3>Weighted average — each class's score weighted by its support</h3>
+          <div class="formula center">Weighted-F1 = (570/1140)×0.772 + (570/1140)×0.754 = 0.5×0.772 + 0.5×0.754 = <span class="good">0.763 ≈ 0.76</span></div>
+          <div class="callout warn"><b>Macro and Weighted come out identical here</b> — not a coincidence, but a direct consequence of the classes being perfectly balanced (570 = 570). The weighting factor is 0.5 for both classes, so weighted average collapses to the same formula as macro average. <b>This will NOT happen on imbalanced data</b> — Class 09's Iris multiclass example, and the worked example later in this class, show macro and weighted genuinely diverging once class sizes differ.</div>
+        </div>
+      </section>
+
+      <!-- ============ MULTICLASS CONFUSION MATRIX ============ -->
+      <section class="block" id="multicm">
+        <div class="section-eyebrow">Scaling up to 3+ classes</div>
+        <h2>Multiclass Confusion Matrix → <span class="underline">P/R/F1, fully end to end</span></h2>
+        <p class="lead">Binary confusion matrices are 2×2. With K classes, it becomes K×K. Let's take a genuinely small, hand-computable example — 3 classes, 8 points (4 of class 0, 2 of class 1, 2 of class 2) — and compute absolutely everything from the raw matrix up.</p>
+        <div class="card">
+          <h3>The confusion matrix (rows = actual, columns = predicted)</h3>
+          <div class="matrix">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pred:&nbsp;0&nbsp;&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;2<br>
+actual 0: [ 4,&nbsp;&nbsp;0,&nbsp;&nbsp;0 ]<br>
+actual 1: [ 1,&nbsp;&nbsp;1,&nbsp;&nbsp;0 ]<br>
+actual 2: [ 0,&nbsp;&nbsp;0,&nbsp;&nbsp;2 ]
+          </div>
+          <div class="callout">Reading it: class 0's 4 examples were all predicted correctly. Class 1 has only 2 examples — one predicted correctly, one wrongly predicted as class 0. Class 2's 2 examples were both correct.</div>
+        </div>
+        <div class="card">
+          <h3>Per-class Precision, Recall, F1 — computed directly from the matrix</h3>
+          <p class="lead" style="margin-top:0;">For each class k, treat it as "class k vs. everything else" using just that row/column of the matrix:</p>
+          <table class="data-table">
+            <tr><th>class</th><th>TP</th><th>FP (others predicted as k)</th><th>FN (k predicted as others)</th><th>Precision</th><th>Recall</th><th>F1</th></tr>
+            <tr><td>0</td><td>4</td><td>1 <span style="color:var(--chalk-dim);">(the class-1 point)</span></td><td>0</td><td>4/5=0.800</td><td>4/4=1.000</td><td>0.889</td></tr>
+            <tr><td>1</td><td>1</td><td>0</td><td>1 <span style="color:var(--chalk-dim);">(predicted as 0 instead)</span></td><td>1/1=1.000</td><td>1/2=0.500</td><td>0.667</td></tr>
+            <tr><td>2</td><td>2</td><td>0</td><td>0</td><td>2/2=1.000</td><td>2/2=1.000</td><td>1.000</td></tr>
+          </table>
+          <div class="formula-note">Precision_0 = TP_0/(TP_0+FP_0) = 4/(4+1) = 0.8 — column 0 has 5 total predictions (4 correct class-0's + 1 misclassified class-1 point wrongly landing here), so precision asks "of those 5 'class 0' predictions, how many were really class 0?"</div>
+        </div>
+        <div class="card">
+          <h3>Now Macro and Weighted — from these same three rows</h3>
+          <div class="formula center">Macro-F1 = (0.889+0.667+1.000)/3 = <span class="good">0.852</span></div>
+          <div class="formula center">Weighted-F1 = (4/8)(0.889) + (2/8)(0.667) + (2/8)(1.000) = <span class="good">0.861</span></div>
+          <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);">Macro (0.852) and weighted (0.861) genuinely differ here <i>because</i> class 1 is both the worst-performing class AND the smallest class — exactly the situation worth watching for. (There's also a third averaging option, micro — covered separately in Class 09 if you want the full derivation; skipping it here to keep focus.)</div>
+        </div>
+      </section>
+
+      <!-- ============ PREDICT_PROBA & BINARIZE ============ -->
+      <section class="block" id="predictproba">
+        <div class="section-eyebrow">From probability to decision</div>
+        <h2><code>predict_proba()</code> — <span class="underline">what it actually returns</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;"><code>model.predict(X)</code> gives you the final 0/1 label, already thresholded at 0.5 internally. <code>model.predict_proba(X)</code> gives you the <i>raw probability</i> the decision was based on — for binary classification, one column per class, always summing to 1 per row.</p>
+          <div class="formula center">y_test_prob = final_model.predict_proba(X_test)[:, 1]  &nbsp;# probability of class 1 (Churn) specifically</div>
+          <div class="callout info">Why <code>[:, 1]</code>: column 0 is P(No Churn), column 1 is P(Churn) — they're redundant (P(Churn)=1−P(No Churn)), so for binary problems we usually just keep the "positive class" column and work with that single number directly.</div>
+        </div>
+      </section>
+
+      <section class="block" id="binarize">
+        <h2>The <code>binarize()</code> function, <span class="underline">explained properly</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;"><code>binarize()</code> does exactly one thing: take an array of continuous values and turn each one into 0 or 1, based on a threshold you specify — the exact mechanical step that <code>.predict()</code> performs automatically at 0.5 under the hood, now exposed so you can use <i>any</i> threshold you choose.</p>
+          <div class="formula">from sklearn.preprocessing import binarize
+
+y_pred_thresh_03 = binarize(y_test_prob.reshape(-1, 1), threshold=0.3).ravel()</div>
+          <div class="step-card"><span class="step-tag">1</span> <code>y_test_prob</code> is a 1D array of probabilities — <code>binarize()</code> expects a 2D array, hence <code>.reshape(-1, 1)</code> first.</div>
+          <div class="step-card"><span class="step-tag">2</span> Every value <b>≥ 0.3</b> becomes 1, everything below becomes 0.</div>
+          <div class="step-card"><span class="step-tag">3</span> <code>.ravel()</code> flattens the result back to a plain 1D array, matching the shape <code>classification_report</code> expects.</div>
+          <div class="callout bad"><b>What actually happened when we tried threshold=0.3 on the real churn data:</b> No Churn's precision/recall/F1 all collapsed to 0.00. This is a real, honest result — it means essentially every test row's predicted Churn-probability already sat above 0.3, so lowering the bar that far reclassified almost everyone as "Churn," leaving nothing predicted as "No Churn" at all. A concrete, slightly extreme illustration of exactly why 0.5 is a default, not a law — but also a caution that swinging the threshold too far in one direction can break a class entirely, not just shift the trade-off gently.</div>
+        </div>
+      </section>
+
+      <!-- ============ MULTICLASS INTERNALS — EXTREME DEPTH ============ -->
+      <section class="block" id="linefit">
+        <div class="section-eyebrow">Multiclass internals, in full mathematical depth</div>
+        <h2>Recap: <span class="underline">fitting the line</span>, before we extend it</h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">For binary classification we fit one line (one weight vector w, one bias b) and pushed its score z=w·x+b through a single sigmoid. For K classes, the natural next question: do we need K entirely separate ideas, or can we extend this one cleanly? The answer is both approaches genuinely exist — and understanding exactly how each one works is the rest of this section.</p>
+        </div>
+      </section>
+
+      <section class="block" id="softmaxwhat">
+        <h2>What softmax <span class="underline">is</span>, and why we reach for it</h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Instead of one weight vector, fit <b>one weight vector per class</b> — a full weight matrix W (features × classes) plus one bias per class. For any input x, compute <b>K raw scores at once</b>:</p>
+          <div class="formula center">z<sub>k</sub> = w<sub>k</sub> · x + b<sub>k</sub> &nbsp;&nbsp;for every class k = 0, 1, ..., K−1</div>
+          <p class="lead">Then convert all K scores <i>together</i> into a valid probability distribution using softmax:</p>
+          <div class="formula center">P(class=k | x) = e<sup>z<sub>k</sub></sup> / Σ<sub>j</sub> e<sup>z<sub>j</sub></sup></div>
+          <p class="lead" style="margin-top:0;">That Σ<sub>j</sub> is just a compact way of writing "add up every class's exponential." Written out fully for <b>K=3 classes</b> (j = 0, 1, 2), with no shorthand at all:</p>
+          <div class="formula center">P(class=k | x) = e<sup>z<sub>k</sub></sup> / ( e<sup>z<sub>0</sub></sup> + e<sup>z<sub>1</sub></sup> + e<sup>z<sub>2</sub></sup> )</div>
+          <div class="callout">Every output is positive (exponentials are always positive) and they sum to exactly 1 <b>by construction</b> — not by a separate normalizing step bolted on afterward. This is the whole reason we reach for softmax: it's the direct, principled generalization of "squash a score into a valid probability," extended from one score to K scores that are all competing against each other simultaneously.</div>
+          <div class="callout purple" style="background:rgba(179,157,219,0.08); border-color:var(--purple-dim); color:var(--purple);"><b>Sanity check — softmax collapses to sigmoid when K=2:</b> P(class=1) = e<sup>z<sub>1</sub></sup>/(e<sup>z<sub>0</sub></sup>+e<sup>z<sub>1</sub></sup>). Divide top and bottom by e<sup>z<sub>1</sub></sup>: = 1/(1+e<sup>z<sub>0</sub>−z<sub>1</sub></sup>) = σ(z<sub>1</sub>−z<sub>0</sub>) — our familiar sigmoid, applied to the difference of the two classes' scores. Softmax isn't a new idea bolted onto logistic regression — it <i>is</i> the sigmoid, generalized.</div>
+        </div>
+      </section>
+
+      <section class="block" id="weightmatrix">
+        <h2>The weight matrix — <span class="underline">softmax vs. OvR, side by side</span></h2>
+        <div class="grid-2">
+          <div class="card">
+            <h3>Softmax (Multinomial) — ONE joint matrix</h3>
+            <div class="formula center">W has shape (n_features, K classes)<br>ALL columns trained together, in one optimization</div>
+            <p class="lead" style="margin-top:0;">Every class's weight column is fit with full knowledge of every other class's column — increasing confidence in class 0 for a point directly competes against classes 1, 2 during training, because they all share one softmax denominator.</p>
+          </div>
+          <div class="card">
+            <h3>One-vs-Rest (OvR) — K SEPARATE matrices</h3>
+            <div class="formula center">K independent weight vectors, each shape (n_features,)<br>Each trained in its OWN, unrelated optimization</div>
+            <p class="lead" style="margin-top:0;">The "class 0 vs rest" classifier has zero information about the "class 1 vs rest" classifier's weights — they're fit completely independently, as if the other classes didn't exist.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="block" id="softmaxexample">
+        <h2>Full worked example — <span class="underline">z → p → loss, line by line</span></h2>
+        <div class="card">
+          <h3>Setup</h3>
+          <p class="lead" style="margin-top:0;">2 features, 3 classes. One input row x = [2, 1]. Weight matrix W (2 features × 3 classes) and bias b already fitted to some values:</p>
+          <table class="data-table">
+            <tr><th></th><th>class 0</th><th>class 1</th><th>class 2</th></tr>
+            <tr><td>weight for feature 1 (w<sub>1,k</sub>)</td><td>0.3</td><td>0.9</td><td>0.1</td></tr>
+            <tr><td>weight for feature 2 (w<sub>2,k</sub>)</td><td>0.2</td><td>0.4</td><td>0.0</td></tr>
+            <tr><td>bias (b<sub>k</sub>)</td><td>0.2</td><td>0.3</td><td>0.1</td></tr>
+          </table>
+        </div>
+        <div class="card">
+          <h3>Step 1 — forward pass: compute z<sub>k</sub> = w<sub>k</sub>·x + b<sub>k</sub>, one class at a time</h3>
+          <div class="step-card"><span class="step-tag">class 0</span> z<sub>0</sub> = (0.3×2) + (0.2×1) + 0.2 &nbsp;=&nbsp; 0.6 + 0.2 + 0.2 &nbsp;=&nbsp; <b>1.0</b></div>
+          <div class="step-card"><span class="step-tag">class 1</span> z<sub>1</sub> = (0.9×2) + (0.4×1) + 0.3 &nbsp;=&nbsp; 1.8 + 0.4 + 0.3 &nbsp;=&nbsp; <b>2.5</b></div>
+          <div class="step-card"><span class="step-tag">class 2</span> z<sub>2</sub> = (0.1×2) + (0.0×1) + 0.1 &nbsp;=&nbsp; 0.2 + 0.0 + 0.1 &nbsp;=&nbsp; <b>0.3</b></div>
+          <div class="formula center">z = [1.0, 2.5, 0.3]</div>
+        </div>
+        <div class="card">
+          <h3>Step 2 — softmax: turn the 3 raw scores into probabilities</h3>
+          <div class="step-card"><span class="step-tag">2a</span> Exponentiate each score: e<sup>1.0</sup>=2.718, &nbsp;e<sup>2.5</sup>=12.182, &nbsp;e<sup>0.3</sup>=1.350</div>
+          <div class="step-card"><span class="step-tag">2b</span> Sum them (the softmax denominator): 2.718 + 12.182 + 1.350 = <b>16.250</b></div>
+          <div class="step-card"><span class="step-tag">2c</span> Divide each exponential by that sum: p<sub>0</sub>=2.718/16.250=0.1673, &nbsp;p<sub>1</sub>=12.182/16.250=0.7497, &nbsp;p<sub>2</sub>=1.350/16.250=0.0831</div>
+          <div class="formula center">p = [0.1673, 0.7497, 0.0831] &nbsp;&nbsp;(sums to 1.0000 ✓)</div>
+        </div>
+        <div class="card">
+          <h3>Step 3 — loss, for a few different possible true classes</h3>
+          <p class="lead" style="margin-top:0;">Same p vector every time — only the true class changes. This is the cleanest way to see that loss is always just −log(probability the model gave the correct answer):</p>
+          <table class="data-table">
+            <tr><th>if true class were…</th><th>one-hot y</th><th>loss = −log(p<sub>true</sub>)</th><th>reading</th></tr>
+            <tr><td>class 0</td><td>[1, 0, 0]</td><td>−log(0.1673) = <b>1.788</b></td><td class="zero">the model gave the true class low probability — a fairly costly mistake</td></tr>
+            <tr><td>class 1 <span style="color:var(--chalk-dim);">(our actual example)</span></td><td>[0, 1, 0]</td><td>−log(0.7497) = <b>0.288</b></td><td class="good">the model's top pick WAS the true class — small loss</td></tr>
+            <tr><td>class 2</td><td>[0, 0, 1]</td><td>−log(0.0831) = <b>2.488</b></td><td class="zero">the model gave the true class its lowest probability — the worst case here</td></tr>
+          </table>
+          <p class="lead">And two more extreme cases, on a fresh made-up p vector, to see the full range:</p>
+          <table class="data-table">
+            <tr><th>scenario</th><th>p vector</th><th>true class</th><th>loss</th></tr>
+            <tr><td class="good">confident &amp; correct</td><td>[0.02, 0.95, 0.03]</td><td>1</td><td class="good">−log(0.95) = 0.051</td></tr>
+            <tr><td class="zero">confident &amp; WRONG</td><td>[0.90, 0.05, 0.05]</td><td>1</td><td class="zero">−log(0.05) = 2.996</td></tr>
+          </table>
+          <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);">Same pattern as binary log loss, just extended to K classes: being confidently right costs almost nothing, being confidently wrong costs a lot — unbounded, in fact, as p<sub>true</sub>→0.</div>
+        </div>
+      </section>
+
+      <section class="block" id="multiloss">
+        <h2>Multiclass Log Loss — <span class="underline">derived, not just stated</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">The general multiclass cross-entropy formula, for one sample:</p>
+          <div class="formula center">L = − Σ<sub>k</sub> y<sub>k</sub> · log(p<sub>k</sub>)</div>
+          <p class="lead">Written out fully for K=3 (no shorthand):</p>
+          <div class="formula center">L = −[ y<sub>0</sub>·log(p<sub>0</sub>) + y<sub>1</sub>·log(p<sub>1</sub>) + y<sub>2</sub>·log(p<sub>2</sub>) ]</div>
+          <p class="lead">Here y<sub>k</sub> is <b>one-hot</b> — exactly 1 for the true class, 0 for every other class. Watch what this does to the sum, using our true-class-1 example (y=[0,1,0]):</p>
+          <div class="step-card"><span class="step-tag">1</span> y<sub>0</sub>·log(p<sub>0</sub>) = 0×log(0.1673) = <b>0</b> — vanishes, regardless of what p<sub>0</sub> is</div>
+          <div class="step-card"><span class="step-tag">2</span> y<sub>1</sub>·log(p<sub>1</sub>) = 1×log(0.7497) = <b>log(0.7497)</b> — the only term that survives</div>
+          <div class="step-card"><span class="step-tag">3</span> y<sub>2</sub>·log(p<sub>2</sub>) = 0×log(0.0831) = <b>0</b> — vanishes too</div>
+          <div class="formula center">L = −[0 + log(0.7497) + 0] = −log(p<sub>true class</sub>)</div>
+          <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);">This is the exact same "masking trick" from binary log loss (where the (1−y) term killed off whichever piece didn't apply) — just extended from 2 terms to K terms. Multiclass log loss isn't a new formula to memorize; it's the same idea, generalized.</div>
+        </div>
+      </section>
+
+      <section class="block" id="gradient">
+        <h2>The gradient &amp; weight update — <span class="underline">the result, and how to use it</span></h2>
+        <div class="card">
+          <h3>The result — remarkably simple</h3>
+          <div class="formula center">∂L/∂z<sub>k</sub> = p<sub>k</sub> − y<sub>k</sub> &nbsp;&nbsp;&nbsp;— for EVERY class k, simultaneously</div>
+          <p class="lead" style="margin-top:0;">Same "predicted minus actual" residual shape as binary logistic regression — now one such residual per class, all at once. Verified numerically (finite-difference check) on our worked example: analytic gradient [0.1673, −0.2503, 0.0831] matched the numerical gradient exactly.</p>
+        </div>
+
+        <div class="optional-box">
+          <span class="opt-tag">⭐ Optional — the calculus derivation, skip freely</span>
+          <p class="lead" style="margin:0 0 10px;">If you want to see exactly where p<sub>k</sub>−y<sub>k</sub> comes from, rather than just trust it: it falls out of the chain rule applied across softmax and the log, in exactly the same style as the binary derivation from Class 06 — three linked pieces (∂L/∂p<sub>k</sub>, ∂p<sub>k</sub>/∂z<sub>k</sub>, and the cross-terms ∂p<sub>j</sub>/∂z<sub>k</sub> for j≠k), which all cancel down to the same clean subtraction once multiplied through. The full step-by-step algebra mirrors the binary "Piece 1 × Piece 2" collapse from Class 08 almost exactly — only with more terms to track. Happy to write out the full multiclass version line by line if you want it as a separate optional appendix.</p>
+        </div>
+
+        <div class="card">
+          <h3>The actual weight update, with real numbers</h3>
+          <div class="formula center">w<sub>k</sub> := w<sub>k</sub> − η · (p<sub>k</sub> − y<sub>k</sub>) · x &nbsp;&nbsp;(one update per class, using the SAME gradient formula)</div>
+          <p class="lead" style="margin-top:0;">Using our example (x=[2,1], p=[0.1673, 0.7497, 0.0831], true class=1, η=0.5):</p>
+          <table class="data-table">
+            <tr><th>class</th><th>gradient (p<sub>k</sub>−y<sub>k</sub>)</th><th>update = −η×grad×x</th><th>new weight column</th></tr>
+            <tr><td>0</td><td>0.1673</td><td>[−0.167, −0.084]</td><td>[0.133, 0.116]</td></tr>
+            <tr><td>1 (true class)</td><td class="good">−0.2503</td><td class="good">[+0.250, +0.125]</td><td class="good">[1.150, 0.525]</td></tr>
+            <tr><td>2</td><td>0.0831</td><td>[−0.083, −0.042]</td><td>[0.017, −0.042]</td></tr>
+          </table>
+          <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);">The TRUE class's weight column moves <i>toward</i> x (positive update); the other two classes' columns move <i>away</i> from it (negative update) — pulling the model to prefer class 1 for this input. Re-running the forward pass with these updated weights: loss drops from <b>0.2881 → 0.0994</b> — verified directly, the update genuinely improves the prediction.</div>
+        </div>
+      </section>
+
+      <section class="block" id="ovrcompare">
+        <h2>OvR vs. Softmax — <span class="underline">the same numbers, side by side</span></h2>
+        <div class="card">
+          <h3>Same input x=[2,1] — but OvR trains 3 completely unrelated classifiers</h3>
+          <p class="lead" style="margin-top:0;">These 3 weight vectors were never trained together — each one only ever saw its own "this class vs. everyone else" binary problem:</p>
+          <table class="data-table">
+            <tr><th>classifier</th><th>raw score z<sub>k</sub></th><th>its OWN sigmoid σ(z<sub>k</sub>)</th></tr>
+            <tr><td>"class 0 vs rest"</td><td>0.75</td><td>0.679</td></tr>
+            <tr><td>"class 1 vs rest"</td><td>2.30</td><td>0.909</td></tr>
+            <tr><td>"class 2 vs rest"</td><td>0.10</td><td>0.525</td></tr>
+          </table>
+          <div class="formula center">Sum of the three sigmoids = 0.679+0.909+0.525 = 2.113 &nbsp;← NOT 1!</div>
+          <div class="callout bad">Each classifier had no idea the other two exist — there was never any reason for their outputs to sum to anything meaningful.</div>
+        </div>
+        <div class="card">
+          <h3>Making them sum to 1 — two genuinely different roads to the same-shaped answer</h3>
+          <table class="data-table">
+            <tr><th></th><th>OvR (after-the-fact fix)</th><th>Softmax (built in from the start)</th></tr>
+            <tr><td>class 0</td><td>0.679 / 2.113 = <b>0.321</b></td><td><b>0.167</b></td></tr>
+            <tr><td>class 1</td><td>0.909 / 2.113 = <b>0.430</b></td><td><b>0.750</b></td></tr>
+            <tr><td>class 2</td><td>0.525 / 2.113 = <b>0.248</b></td><td><b>0.083</b></td></tr>
+            <tr><td>sum</td><td class="good">1.000</td><td class="good">1.000</td></tr>
+          </table>
+          <div class="callout bad">Same shape (3 numbers, summing to 1) — genuinely different numbers. OvR's version is simple division on scores that were never designed to compete against each other. Softmax's version is what the model was optimized to produce from its very first training step.</div>
+        </div>
+        <div class="card">
+          <h3>How the best class is chosen — in both cases</h3>
+          <p class="lead" style="margin-top:0;"><b>Both use argmax</b> — and both agree on the winner here (class 1) — but on different underlying quantities:</p>
+          <div class="step-card"><span class="step-tag p">OvR</span> Predicted class = argmax of the 3 <i>raw, unnormalized</i> sigmoid scores [0.679, 0.909, 0.525]. Dividing every number by the same positive constant (2.113) never changes which one is largest — so normalizing afterward doesn't change the prediction at all, only the reported confidence numbers.</div>
+          <div class="step-card"><span class="step-tag">Softmax</span> Predicted class = argmax of p = [0.167, 0.750, 0.083] — which is also just argmax of the raw z scores directly, since the exponential function never changes the ranking order either.</div>
+        </div>
+        <div class="card">
+          <h3>The complete comparison</h3>
+          <table class="data-table">
+            <tr><th></th><th>One-vs-Rest (OvR)</th><th>Multinomial (Softmax)</th></tr>
+            <tr><td>Number of models trained</td><td>K independent binary models</td><td>1 joint model</td></tr>
+            <tr><td>Weight structure</td><td>K separate weight vectors</td><td>1 weight matrix (features × K)</td></tr>
+            <tr><td>Loss function</td><td>K separate binary log losses</td><td>1 categorical cross-entropy, jointly</td></tr>
+            <tr><td>Do classes "know" about each other during training?</td><td class="zero">No</td><td class="good">Yes</td></tr>
+            <tr><td>Probabilities sum to 1?</td><td>Only after manual normalization</td><td class="good">Always, by construction</td></tr>
+            <tr><td>sklearn default (3+ classes, solver='lbfgs')</td><td>Only via explicit <code>OneVsRestClassifier</code> wrapper</td><td class="good">Automatic</td></tr>
+          </table>
+        </div>
+      </section>
+
+
+      <section class="block" id="summary">
+        <div class="section-eyebrow">Wrapping up</div>
+        <h2>Class 10 summary</h2>
+        <div class="card">
+          <table class="data-table">
+            <tr><th>concept</th><th>one-line takeaway</th></tr>
+            <tr><td>Telecom churn case study</td><td>Binary target + need for probability & interpretability = textbook logistic regression fit</td></tr>
+            <tr><td>Stratified sampling</td><td>Every split (train/val/test) preserves the true class ratio — verified at exactly 0.5/0.5 across all splits</td></tr>
+            <tr><td>Classification report</td><td>Precision/recall/F1 per class + support (row count), built directly from the confusion matrix</td></tr>
+            <tr><td>Macro vs weighted</td><td>Identical only when classes are balanced (our churn case); genuinely diverge under imbalance (our 8-point example)</td></tr>
+            <tr><td>Multiclass confusion matrix</td><td>Same P/R/F1 formulas, applied one row/column at a time; micro-F1 always equals accuracy</td></tr>
+            <tr><td>predict_proba / binarize</td><td>Raw probability vs. a chosen hard cutoff — binarize() is literally what .predict() does internally at 0.5</td></tr>
+            <tr><td>Softmax</td><td>The direct generalization of sigmoid to K classes — probabilities sum to 1 by construction, not by patching</td></tr>
+            <tr><td>Multiclass Log Loss</td><td>L = −log(p_true_class) — the one-hot mask kills every other term automatically</td></tr>
+            <tr><td>Gradient & update</td><td>∂L/∂z_k = p_k − y_k, verified numerically — same elegant "residual" shape as binary, one per class</td></tr>
+            <tr><td>OvR vs Softmax</td><td>Both use argmax and never disagree on the predicted class; they disagree on how principled the reported probability actually is</td></tr>
+          </table>
+        </div>
+        <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green); font-size:14px;">
+          The whole class in one sentence: <b>every metric in the classification report traces back to the same four confusion-matrix numbers, macro/weighted/micro are three different honest ways to collapse per-class scores into one, and softmax is what happens when you take everything we know about binary logistic regression's sigmoid and gradient and let K classes compete jointly instead of independently.</b>
+        </div>
+      </section>
+
+      <div class="footnote-strip">
+        <span class="hand">— end of Class 10 —</span>
+        Logistic Regression — End-to-End Business Case Study · 22 July 2026
+      </div>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>

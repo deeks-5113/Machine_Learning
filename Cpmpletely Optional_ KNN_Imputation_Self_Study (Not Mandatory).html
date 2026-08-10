@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>KNN Imputation — Self-Study Notes</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Patrick+Hand&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --board:#0c1014; --card:#151b21; --card-line:#222b32;
+    --chalk:#e9eef2; --chalk-dim:#9fb0bb;
+    --cyan:#5fd8e0; --cyan-dim:#2c5a5e;
+    --pink:#f17fb0; --pink-dim:#5a2f42;
+    --yellow:#f4cf5e; --green:#8fe3a6; --green-dim:#2f4f3a;
+    --purple:#b39ddb; --purple-dim:#4a3f6b;
+    --white-marker:#f5f5f0; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{ background:var(--board); color:var(--chalk); font-family:'Inter',sans-serif; line-height:1.55; -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width:1180px; margin:0 auto; padding:0 24px 120px; }
+  h1,h2,h3,.hand{ font-family:'Caveat',cursive; font-weight:700; }
+  .hero{ padding:56px 0 30px; text-align:center; }
+  .chip{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--cyan); border:1px solid var(--cyan-dim); background:rgba(95,216,224,0.06); padding:6px 14px; border-radius:999px; margin-bottom:16px; }
+  .hero h1{ font-size:clamp(28px,5.5vw,50px); color:var(--white-marker); margin:0 0 8px; }
+  .hero h1 span{color:var(--pink);}
+  .hero p{ font-family:'Patrick Hand',cursive; color:var(--chalk-dim); font-size:17px; max-width:780px; margin:0 auto; }
+  .layout{ display:grid; grid-template-columns:260px 1fr; gap:36px; align-items:start; }
+  nav.toc{ position:sticky; top:24px; background:var(--card); border:1px solid var(--card-line); border-radius:var(--radius); padding:18px 16px; font-family:'JetBrains Mono',monospace; font-size:11px; max-height:calc(100vh - 48px); overflow-y:auto; }
+  nav.toc .toc-title{ color:var(--chalk-dim); text-transform:uppercase; letter-spacing:1.2px; font-size:10px; margin-bottom:8px; margin-top:14px; }
+  nav.toc .toc-title:first-child{margin-top:0;}
+  nav.toc a{ display:block; color:var(--chalk-dim); text-decoration:none; padding:5px 8px; border-radius:8px; margin-bottom:1px; }
+  nav.toc a:hover{color:var(--chalk); background:rgba(255,255,255,0.04);}
+  main{min-width:0;}
+  section.block{ margin-bottom:50px; scroll-margin-top:24px; }
+  .section-eyebrow{ font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--pink); margin-bottom:6px; }
+  section.block h2{ font-size:30px; color:var(--white-marker); margin:0 0 12px; }
+  section.block h2 .underline{ text-decoration:underline; text-decoration-color:var(--cyan); text-decoration-thickness:3px; }
+  p.lead{ font-size:14.5px; color:#cdd8de; max-width:820px; }
+  .card{ background:var(--card); border:1px solid var(--card-line); border-radius:var(--radius); padding:20px 22px; margin:14px 0; }
+  .card h3{ font-family:'Inter',sans-serif; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.7px; color:var(--cyan); margin:0 0 10px; }
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  .grid-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;}
+  @media (max-width:900px){ .layout{grid-template-columns:1fr;} nav.toc{position:relative; top:0; margin-bottom:20px; max-height:none;} .grid-2,.grid-3{grid-template-columns:1fr;} }
+  table.data-table{ width:100%; border-collapse:collapse; font-family:'JetBrains Mono',monospace; font-size:12px; }
+  table.data-table th{ text-align:left; color:var(--chalk-dim); font-weight:500; padding:6px 9px; border-bottom:1px solid var(--card-line); text-transform:uppercase; font-size:9.5px; letter-spacing:0.4px; }
+  table.data-table td{ padding:6px 9px; border-bottom:1px solid rgba(255,255,255,0.04); }
+  table.data-table td.hl{color:var(--yellow); font-weight:700;}
+  table.data-table td.zero{color:var(--pink); font-weight:700; background:rgba(241,127,176,0.08);}
+  table.data-table td.good{color:var(--green); font-weight:700; background:rgba(143,227,166,0.08);}
+  blockquote.story{ font-family:'Patrick Hand',cursive; font-size:16.5px; color:#dbe6ec; border-left:3px solid var(--yellow); padding:6px 18px; margin:14px 0; background:rgba(244,207,94,0.04); border-radius:0 10px 10px 0; }
+  .pipeline{ display:flex; align-items:center; gap:0; overflow-x:auto; padding:10px 0 18px; }
+  .pipe-step{ flex:0 0 auto; min-width:115px; background:var(--card); border:1px solid var(--card-line); border-radius:12px; padding:12px 14px; text-align:center; }
+  .pipe-step .n{ font-family:'JetBrains Mono',monospace; color:var(--cyan); font-size:10.5px; margin-bottom:5px; }
+  .pipe-step .t{font-weight:700; font-size:12px; color:var(--white-marker);}
+  .pipe-step .d{font-size:9.5px; color:var(--chalk-dim); margin-top:3px;}
+  .pipe-arrow{ flex:0 0 auto; width:20px; text-align:center; color:var(--pink); font-size:16px; }
+  .formula{ font-family:'JetBrains Mono',monospace; background:#0a0d10; border:1px solid var(--card-line); border-radius:10px; padding:14px 20px; margin:12px 0; font-size:14px; color:var(--white-marker); overflow-x:auto; }
+  .formula.center{text-align:center;}
+  .formula .k{color:var(--yellow);} .formula .r{color:var(--cyan);} .formula .l{color:var(--pink);}
+  .formula-note{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--chalk-dim); margin-top:6px; }
+  .callout{ background:rgba(143,227,166,0.08); border:1px solid var(--green-dim); border-radius:10px; padding:12px 16px; color:var(--green); font-size:13px; font-family:'JetBrains Mono',monospace; margin:12px 0; line-height:1.6; }
+  .callout.warn{ background:rgba(244,207,94,0.08); border-color:#5a4f2f; color:var(--yellow); }
+  .callout.bad{ background:rgba(241,127,176,0.08); border-color:var(--pink-dim); color:var(--pink); }
+  .callout.info{ background:rgba(95,216,224,0.08); border-color:var(--cyan-dim); color:var(--cyan); }
+  .callout.purple{ background:rgba(179,157,219,0.08); border-color:var(--purple-dim); color:var(--purple); }
+  .step-card{ background:rgba(0,0,0,0.22); border-radius:10px; padding:14px 18px; margin:10px 0; border:1px solid var(--card-line); }
+  .step-tag{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--board); background:var(--cyan); padding:2px 8px; border-radius:6px; margin-right:8px; font-weight:700; }
+  .step-tag.p{background:var(--purple);}
+  .step-tag.y{background:var(--yellow);}
+  .step-tag.g{background:var(--green);}
+  .analogy-row{ display:flex; gap:14px; margin-top:12px; flex-wrap:wrap; }
+  .analogy{ flex:1; min-width:150px; background:var(--card); border:1px solid var(--card-line); border-radius:10px; padding:14px 16px; text-align:center; }
+  .analogy h4{font-size:14px; margin:6px 0 4px; color:var(--white-marker);}
+  .analogy p{font-size:11.5px; color:var(--chalk-dim); margin:0;}
+  .svg-card{ background:#fff; border:1px solid var(--card-line); border-radius:12px; padding:12px; }
+  .svg-caption{ text-align:center; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:#555; margin-top:8px; }
+  .footnote-strip{ margin-top:60px; border-top:1px dashed var(--card-line); padding-top:22px; text-align:center; color:var(--chalk-dim); font-family:'JetBrains Mono',monospace; font-size:12px; }
+  .footnote-strip .hand{color:var(--cyan); font-size:22px; display:block; margin-bottom:6px;}
+  .cm-table{ border-collapse:collapse; margin:14px auto; font-family:'JetBrains Mono',monospace; font-size:12.5px; }
+  .cm-table td, .cm-table th{ border:1px solid var(--card-line); padding:12px 18px; text-align:center; }
+  .cm-table .tp,.cm-table .tn{background:rgba(143,227,166,0.15); color:var(--green); font-weight:700;}
+  .cm-table .fp,.cm-table .fn{background:rgba(241,127,176,0.15); color:var(--pink); font-weight:700;}
+  .cm-table .lbl{background:#0a0d10; color:var(--chalk-dim); font-weight:700; font-size:10.5px;}
+  .matrix{ font-family:'JetBrains Mono',monospace; background:#0a0d10; border:1px solid var(--card-line); border-radius:10px; padding:16px 22px; display:inline-block; }
+
+  .num-hl{ color:var(--yellow); font-weight:700; }
+  .num-cool{ color:var(--cyan); font-weight:700; }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="chip">Self-Study Notes &middot; Data Preprocessing</div>
+    <h1>KNN Imputation <span>&mdash; Filling in the Blanks</span></h1>
+    <div class="chip" style="background:none; border-color:var(--pink-dim); color:var(--pink); margin-top:0;">Every number below verified against real sklearn output, not estimated</div>
+  </div>
+
+  <div class="layout">
+    <nav class="toc" id="toc">
+      <div class="toc-title">The problem</div>
+      <a href="#problem">Why missing data needs a real strategy</a>
+      <div class="toc-title">The core idea</div>
+      <a href="#intuition">One example: how it works, intuitively</a>
+      <a href="#algorithm">The full algorithm, step by step</a>
+      <div class="toc-title">Nuance 1</div>
+      <a href="#masked-distance">What if OTHER features are also missing?</a>
+      <a href="#masked-example">A full worked example</a>
+      <div class="toc-title">Nuance 2</div>
+      <a href="#neighbor-missing">What if a near neighbor is ALSO missing this feature?</a>
+      <a href="#neighbor-example">A full worked example</a>
+      <div class="toc-title">Categorical features</div>
+      <a href="#categorical">How KNN Imputation handles categories</a>
+      <a href="#categorical-problem">The fractional-category problem</a>
+      <a href="#categorical-fix">Two ways to fix it</a>
+      <div class="toc-title">Putting it all together</div>
+      <a href="#combined">One dataset, every nuance at once</a>
+      <div class="toc-title">Wrap-up</div>
+      <a href="#reality">Is this used in practice?</a>
+      <a href="#summary">Summary</a>
+    </nav>
+
+    <main>
+
+      <section class="block" id="problem">
+        <div class="section-eyebrow">The problem</div>
+        <h2>Why Missing Data <span class="underline">Needs a Real Strategy</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Real datasets almost always have gaps &mdash; a customer skipped a form field, a sensor dropped a reading, a survey question went unanswered. Most ML models can't train on <code>NaN</code> directly. You have 3 broad choices:</p>
+          <table class="data-table">
+            <tr><th>Approach</th><th>What it does</th><th>Downside</th></tr>
+            <tr><td>Drop the row</td><td>Delete any row with a missing value</td><td>Throws away real, possibly valuable data</td></tr>
+            <tr><td>Mean/median/mode fill</td><td>Fill every gap with one global constant</td><td>Ignores that different rows are genuinely different &mdash; one-size-fits-all guess</td></tr>
+            <tr><td class="hl">KNN Imputation</td><td>Fill the gap using similar ROWS' values for that feature</td><td>More compute, but a genuinely row-specific, informed guess</td></tr>
+          </table>
+          <div class="callout purple">The core idea, in one line: <b>"if you don't know a value, ask your most similar neighbors what theirs is."</b> Exactly the same nearest-neighbor intuition as KNN classification/regression &mdash; just aimed at filling gaps instead of predicting a label.</div>
+        </div>
+      </section>
+
+      <section class="block" id="intuition">
+        <div class="section-eyebrow">The core idea</div>
+        <h2>One Example: <span class="underline">How It Works, Intuitively</span></h2>
+        <div class="card">
+          <table class="data-table">
+            <tr><th>Row</th><th>Age</th><th>Income</th></tr>
+            <tr><td>1</td><td class="mono">25</td><td class="mono">30</td></tr>
+            <tr><td>2</td><td class="mono">30</td><td class="mono">35</td></tr>
+            <tr><td>3</td><td class="mono">35</td><td class="mono">50</td></tr>
+            <tr><td>4</td><td class="mono">40</td><td class="mono">55</td></tr>
+            <tr><td>5</td><td class="mono">45</td><td class="mono">70</td></tr>
+            <tr><td class="hl">6 (query)</td><td class="zero">? missing</td><td class="mono">60</td></tr>
+          </table>
+          <div class="callout purple">Row 6's Age is missing. We DO know its Income (60). The idea: find rows most similar to Row 6 on the features we DO have (Income), and use THEIR Age to fill the gap.</div>
+        </div>
+        <div class="card screenshot">
+          <h3>Step by step</h3>
+          <div class="step-card"><span class="step-tag">1</span> Compute distance from Row 6 to every other row, using only the features Row 6 actually has &mdash; here, just Income.</div>
+          <div class="step-card"><span class="step-tag p">2</span> |60&minus;30|=30, |60&minus;35|=25, |60&minus;50|=10, |60&minus;55|=<span class="num-hl">5</span>, |60&minus;70|=<span class="num-hl">10</span></div>
+          <div class="step-card"><span class="step-tag y">3</span> With K=2: nearest are Row 4 (dist=5, Age=40) and Row 3 (dist=10, Age=35) &mdash; Row 3 and Row 5 tie at distance 10, and the implementation picks Row 3.</div>
+          <div class="step-card"><span class="step-tag g">4</span> Impute: average their Age values &rarr; (40+35)/2 = <span class="k">37.5</span></div>
+          <div class="svg-card"><svg viewBox="0 0 340 240" width="100%" height="auto">
+      <line x1="40" y1="210" x2="310" y2="210" stroke="#999" stroke-width="1"/>
+      <line x1="40" y1="20" x2="40" y2="210" stroke="#999" stroke-width="1"/>
+      <text x="150" y="228" font-size="10" fill="#555" font-family="monospace">Age</text>
+      <text x="10" y="120" font-size="10" fill="#555" font-family="monospace" transform="rotate(-90 10 120)">Income</text>
+      <circle cx="85.0" cy="178.3" r="6" fill="#1D5FD1"/><text x="93.0" y="172.3" font-size="9" font-family="monospace" fill="#1D5FD1">Age=25,Inc=30</text><circle cx="130.0" cy="162.5" r="6" fill="#1D5FD1"/><text x="138.0" y="156.5" font-size="9" font-family="monospace" fill="#1D5FD1">Age=30,Inc=35</text><circle cx="175.0" cy="115.0" r="6" fill="#1D5FD1"/><text x="183.0" y="109.0" font-size="9" font-family="monospace" fill="#1D5FD1">Age=35,Inc=50</text><circle cx="220.0" cy="99.2" r="6" fill="#1D5FD1"/><text x="228.0" y="93.2" font-size="9" font-family="monospace" fill="#1D5FD1">Age=40,Inc=55</text><circle cx="265.0" cy="51.7" r="6" fill="#1D5FD1"/><text x="273.0" y="45.7" font-size="9" font-family="monospace" fill="#1D5FD1">Age=45,Inc=70</text><line x1="40" y1="83.3" x2="310" y2="83.3" stroke="#f4a300" stroke-width="1.6" stroke-dasharray="5,3"/><text x="45" y="77.3" font-size="9.5" fill="#a97400" font-family="monospace">Query: Age=? Income=60</text><circle cx="220.0" cy="99.2" r="10" fill="none" stroke="#1F7A56" stroke-width="2" stroke-dasharray="3,2"/><circle cx="175.0" cy="115.0" r="10" fill="none" stroke="#1F7A56" stroke-width="2" stroke-dasharray="3,2"/>
+    </svg></div>
+          <div class="svg-caption">The two circled points are the K=2 nearest neighbors by Income. Their Age values get averaged to fill Row 6's gap.</div>
+          <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);"><b>Verified directly against sklearn's <code>KNNImputer(n_neighbors=2)</code>:</b> it returns exactly 37.5 for this row. That's the entire idea &mdash; everything from here on is nuance about what happens when the data gets messier.</div>
+        </div>
+      </section>
+
+      <section class="block" id="algorithm">
+        <h2>The Full Algorithm, <span class="underline">Step by Step</span></h2>
+        <div class="card">
+          <div class="step-card"><span class="step-tag">1</span> Pick a row with a missing value in some feature F.</div>
+          <div class="step-card"><span class="step-tag p">2</span> Compute distance from this row to every other row, using only the features that are present in BOTH rows being compared (details in Nuance 1 below).</div>
+          <div class="step-card"><span class="step-tag y">3</span> Sort by distance. Walk down the sorted list, SKIPPING any row that is also missing feature F (details in Nuance 2 below), until you've collected K valid neighbors.</div>
+          <div class="step-card"><span class="step-tag g">4</span> Impute: average of F among those K neighbors (numeric), or majority vote (categorical &mdash; with real caveats, covered later).</div>
+          <div class="step-card"><span class="step-tag">5</span> Repeat independently for every missing cell in the dataset.</div>
+          <div class="callout info">Notice: steps 2 and 3 are exactly where the real subtlety lives &mdash; and where most people's mental model of "just KNN, but for filling gaps" quietly breaks down. Let's go through both properly.</div>
+        </div>
+      </section>
+
+      <section class="block" id="masked-distance">
+        <div class="section-eyebrow">Nuance 1</div>
+        <h2>What If <span class="underline">OTHER Features Are Also Missing?</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Real datasets rarely have just ONE column with gaps. Different rows are often missing DIFFERENT features. If Row A is missing Income and Row B is missing Age, how do you even compute a "distance" between them?</p>
+          <div class="callout purple"><b>The fix: only use features present in BOTH rows being compared &mdash; then rescale the distance to compensate for using fewer coordinates.</b> This is sklearn's <code>nan_euclidean</code> distance, and it's the actual formula KNNImputer uses.</div>
+          <div class="formula center">distance(A,B) = &radic;( (n<sub>total_features</sub> / n<sub>present_features</sub>) &times; &Sigma; (a<sub>i</sub>&minus;b<sub>i</sub>)&sup2; over present features only )</div>
+          <div class="callout info">The <code>(n_total/n_present)</code> term is the crucial part: without it, comparing two rows using only 1 shared feature would look artificially "closer" than comparing two rows using all 3 shared features, just because there are fewer terms being summed. Rescaling corrects that bias.</div>
+        </div>
+      </section>
+
+      <section class="block" id="masked-example">
+        <h2>A Full <span class="underline">Worked Example</span></h2>
+        <div class="card screenshot">
+          <table class="data-table">
+            <tr><th>Row</th><th>F1</th><th>F2</th><th>F3</th></tr>
+            <tr><td>0</td><td class="mono">10</td><td class="mono">100</td><td class="mono">5</td></tr>
+            <tr><td class="hl">1</td><td class="mono">12</td><td class="mono">105</td><td class="zero">? missing</td></tr>
+            <tr><td>2</td><td class="mono">15</td><td class="mono">98</td><td class="mono">6</td></tr>
+            <tr><td>3</td><td class="mono">14</td><td class="mono">102</td><td class="mono">7</td></tr>
+            <tr><td>4</td><td class="mono">20</td><td class="mono">130</td><td class="mono">12</td></tr>
+          </table>
+          <h3>Distance from Row 1 to Row 0 (F3 missing in Row 1, so only F1,F2 are usable)</h3>
+          <div class="step-card"><span class="step-tag">1</span> Present features shared: F1, F2 only (2 out of 3 total features)</div>
+          <div class="step-card"><span class="step-tag p">2</span> Sum of squared diffs = (10&minus;12)&sup2; + (100&minus;105)&sup2; = 4 + 25 = <span class="mono num-hl">29</span></div>
+          <div class="step-card"><span class="step-tag y">3</span> Rescale weight = n_total/n_present = 3/2 = <span class="mono num-hl">1.5</span></div>
+          <div class="formula center">distance = &radic;(1.5 &times; 29) = &radic;43.5 = <span class="k">6.595</span></div>
+          <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);"><b>Verified directly against sklearn's <code>nan_euclidean_distances</code></b> &mdash; returns exactly 6.595.</div>
+        </div>
+        <div class="card">
+          <h3>Now impute Row 1's missing F3</h3>
+          <p class="lead" style="margin-top:0;">Compute this same rescaled distance from Row 1 to every other row, then take the K=2 nearest by that distance and average their F3.</p>
+          <table class="data-table">
+            <tr><th>Compared row</th><th>Shared features</th><th>Rescaled distance</th><th>F3 value</th></tr>
+            <tr><td class="hl">Row 3</td><td>F1,F2,F3</td><td class="mono good">4.416 (nearest)</td><td class="mono">7</td></tr>
+            <tr><td class="hl">Row 0</td><td>F1,F2 only</td><td class="mono good">6.595 (2nd nearest)</td><td class="mono">5</td></tr>
+            <tr><td>Row 2</td><td>F1,F2,F3</td><td class="mono">9.327</td><td class="mono">6</td></tr>
+            <tr><td>Row 4</td><td>F1,F2,F3</td><td class="mono">32.148</td><td class="mono">12</td></tr>
+          </table>
+          <div class="formula center">Impute F3 = (7+5)/2 = <span class="k">6.0</span></div>
+          <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);"><b>Verified directly against sklearn's <code>KNNImputer</code></b> &mdash; returns exactly 6.0 for Row 1's F3.</div>
+          <div class="callout purple"><b>Notice Row 0 (distance 6.595, computed using only 2 shared features) beats Row 2 (distance 9.327, computed using all 3 shared features)</b> &mdash; even after being fairly rescaled. This is the entire point of the reweighting: a partial-feature comparison is allowed to genuinely win if the values that ARE shared are truly close, and it isn't unfairly penalized (or unfairly favored) just for having fewer coordinates.</div>
+        </div>
+      </section>
+
+      <section class="block" id="neighbor-missing">
+        <div class="section-eyebrow">Nuance 2</div>
+        <h2>What If a Near Neighbor <span class="underline">Is ALSO Missing This Feature?</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Suppose Row A is missing Income, and its single closest neighbor by every OTHER feature is Row B &mdash; but Row B is <i>also</i> missing Income. Row B obviously can't donate a value it doesn't have.</p>
+          <div class="callout purple"><b>The fix: skip it.</b> A row that's also missing the target feature is completely excluded as a possible donor for that feature &mdash; no matter how close it is in distance. The algorithm just keeps walking further down the sorted-by-distance list until it finds K rows that actually HAVE a value to contribute.</div>
+        </div>
+      </section>
+
+      <section class="block" id="neighbor-example">
+        <h2>A Full <span class="underline">Worked Example</span></h2>
+        <div class="card screenshot">
+          <table class="data-table">
+            <tr><th>Row</th><th>F1</th><th>F2</th></tr>
+            <tr><td class="hl">0 (query)</td><td class="zero">? missing</td><td class="mono">10</td></tr>
+            <tr><td>1</td><td class="zero">? missing</td><td class="mono">11</td></tr>
+            <tr><td>2</td><td class="zero">? missing</td><td class="mono">12</td></tr>
+            <tr><td>3</td><td class="mono">50</td><td class="mono">13</td></tr>
+            <tr><td>4</td><td class="mono">60</td><td class="mono">50</td></tr>
+            <tr><td class="hl">5</td><td class="mono">8</td><td class="mono">10.5</td></tr>
+          </table>
+          <div class="callout warn">Rows 1 and 2 are Row 0's CLOSEST neighbors by F2 (distances 1.414 and 2.828) &mdash; but they're ALSO missing F1. They can't be used to impute Row 0's F1, no matter how close they are.</div>
+        </div>
+        <div class="card">
+          <h3>Row 0's full distance ranking, and who actually qualifies as a donor</h3>
+          <table class="data-table">
+            <tr><th>Rank</th><th>Row</th><th>Distance</th><th>Has F1?</th><th>Usable as donor?</th></tr>
+            <tr><td>1st</td><td>Row 5</td><td class="mono">0.707</td><td class="good">Yes (F1=8)</td><td class="good">&#10003; used</td></tr>
+            <tr><td>2nd</td><td>Row 1</td><td class="mono">1.414</td><td class="zero">No</td><td class="zero">&#10007; skipped</td></tr>
+            <tr><td>3rd</td><td>Row 2</td><td class="mono">2.828</td><td class="zero">No</td><td class="zero">&#10007; skipped</td></tr>
+            <tr><td>4th</td><td>Row 3</td><td class="mono">4.243</td><td class="good">Yes (F1=50)</td><td class="good">&#10003; used</td></tr>
+            <tr><td>5th</td><td>Row 4</td><td class="mono">56.569</td><td class="good">Yes (F1=60)</td><td>not needed, K=2 already filled</td></tr>
+          </table>
+          <div class="formula center">K=2 valid donors: Row 5 (F1=8) and Row 3 (F1=50) &rarr; Impute F1 = (8+50)/2 = <span class="k">29.0</span></div>
+          <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);"><b>Verified directly against sklearn</b> &mdash; Row 0, Row 1, and Row 2 (all missing F1, all with different F2 values) each independently reach past their closer-but-invalid neighbors and land on the exact same 2 valid donors, all imputing to 29.0.</div>
+          <div class="callout bad"><b>The key lesson:</b> "nearest by distance" and "nearest VALID donor" are two different rankings. A row can be the single closest match on every other feature and still contribute nothing, if it's missing exactly the one value you need.</div>
+        </div>
+      </section>
+
+      <section class="block" id="categorical">
+        <div class="section-eyebrow">Categorical features</div>
+        <h2>How KNN Imputation <span class="underline">Handles Categories</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">sklearn's <code>KNNImputer</code> is built for numbers. A column like <code>City</code> (Chennai/Mumbai/Delhi) has to be converted to numbers FIRST &mdash; typically with ordinal encoding (Chennai=0, Mumbai=1, Delhi=2, ...).</p>
+          <div class="callout warn">This is where a real, easy-to-miss problem shows up.</div>
+        </div>
+      </section>
+
+      <section class="block" id="categorical-problem">
+        <h2>The <span class="underline">Fractional-Category Problem</span></h2>
+        <div class="card screenshot">
+          <table class="data-table">
+            <tr><th>Row</th><th>Income</th><th>City</th></tr>
+            <tr><td>0</td><td class="mono">58</td><td class="mono">Chennai (0)</td></tr>
+            <tr><td>1</td><td class="mono">32</td><td class="mono">Chennai (0)</td></tr>
+            <tr><td>2</td><td class="mono">60</td><td class="mono">Mumbai (1)</td></tr>
+            <tr><td>3</td><td class="mono">90</td><td class="mono">Mumbai (1)</td></tr>
+            <tr><td>4</td><td class="mono">88</td><td class="mono">Mumbai (1)</td></tr>
+            <tr><td class="hl">5 (query)</td><td class="mono">59</td><td class="zero">? missing</td></tr>
+          </table>
+          <p class="lead">Row 5's Income (59) sits almost exactly between Row 0 (58, Chennai) and Row 2 (60, Mumbai) &mdash; both at distance 1, a genuine tie for nearest.</p>
+          <div class="formula center">Impute City_encoded = (0 + 1) / 2 = <span class="k">0.5</span></div>
+          <div class="callout bad"><b>0.5 is not a valid category.</b> It's neither Chennai nor Mumbai &mdash; it's the arithmetic average of two category CODES, which was never a meaningful operation to begin with. Verified directly: sklearn's <code>KNNImputer</code> genuinely returns 0.5 here, silently, with no warning.</div>
+        </div>
+      </section>
+
+      <section class="block" id="categorical-fix">
+        <h2>Two Ways <span class="underline">to Fix It</span></h2>
+        <div class="card screenshot">
+          <h3>Fix 1 &mdash; Round to the nearest valid category code</h3>
+          <p class="lead" style="margin-top:0;">Take the raw KNNImputer output (0.5) and round it to the nearest integer, then map back to the category name.</p>
+          <div class="callout warn"><b>Even this has a hidden nuance at an exact tie.</b> Python's built-in <code>round(0.5)</code> uses "round half to even" (banker's rounding) and returns <span class="mono">0</span> (Chennai); the more familiar "round half up" convention returns <span class="mono">1</span> (Mumbai). Verified directly &mdash; these two, both reasonable-sounding rounding rules, disagree on this exact row. Rounding doesn't cleanly solve a genuine tie; it just moves the ambiguity into "which rounding convention did you pick."</div>
+        </div>
+        <div class="card screenshot">
+          <h3>Fix 2 &mdash; Majority vote among the K nearest neighbors' actual categories (don't average codes at all)</h3>
+          <p class="lead" style="margin-top:0;">Instead of averaging 0 and 1 to get 0.5, just count: how many of the K nearest neighbors are Chennai, how many are Mumbai, and take the majority &mdash; exactly like KNN classification.</p>
+          <div class="callout bad">On THIS exact row, majority vote is <b>also</b> tied &mdash; 1 Chennai vote, 1 Mumbai vote (K=2, one neighbor of each). Switching strategies doesn't erase a genuine tie in the underlying data; it just avoids inventing a fake 0.5 category to paper over it.</div>
+        </div>
+        <div class="callout purple"><b>The real fix for the tie itself:</b> exactly the same lesson as KNN classification ties &mdash; prefer an odd K, or set an explicit tie-break rule (e.g. fall back to the single nearest neighbor's category). Category-averaging and its rounding fallback are really just symptoms; the underlying fix is the same one you already know from classification.</div>
+      </section>
+
+      <section class="block" id="combined">
+        <div class="section-eyebrow">Putting it all together</div>
+        <h2>One Dataset, <span class="underline">Every Nuance at Once</span></h2>
+        <div class="card screenshot">
+          <table class="data-table">
+            <tr><th>Row</th><th>Age</th><th>Income</th><th>City</th></tr>
+            <tr><td>0</td><td class="mono">25</td><td class="mono">30</td><td class="mono">Chennai</td></tr>
+            <tr><td>1</td><td class="mono">28</td><td class="mono">32</td><td class="mono">Chennai</td></tr>
+            <tr><td>2</td><td class="zero">? missing</td><td class="mono">31</td><td class="mono">Chennai</td></tr>
+            <tr><td class="hl">3 (query)</td><td class="mono">45</td><td class="zero">? missing</td><td class="mono">Mumbai</td></tr>
+            <tr><td>4</td><td class="mono">48</td><td class="mono">90</td><td class="mono">Mumbai</td></tr>
+            <tr><td>5</td><td class="mono">26</td><td class="mono">29</td><td class="zero">? missing</td></tr>
+            <tr><td>6</td><td class="mono">50</td><td class="mono">92</td><td class="mono">Mumbai</td></tr>
+            <tr><td>7</td><td class="mono">24</td><td class="zero">? missing</td><td class="mono">Chennai</td></tr>
+          </table>
+          <div class="callout purple">Three different missing patterns, all at once: Age missing in Row 2, Income missing in Rows 3 &amp; 7, City missing in Row 5. Let's impute Row 3's Income &mdash; both nuances show up in a single computation.</div>
+        </div>
+        <div class="card screenshot">
+          <h3>Row 3 is missing Income &mdash; so every distance FROM Row 3 can only use Age and City (never Income)</h3>
+          <table class="data-table">
+            <tr><th>Rank</th><th>Row</th><th>Shared features used</th><th>Distance</th><th>Has Income?</th><th>Used as donor?</th></tr>
+            <tr><td>1st</td><td>Row 2</td><td class="left">City only (Row 2's Age is ALSO missing)</td><td class="mono num-hl">1.732</td><td class="good">Yes (31)</td><td class="good">&#10003; used</td></tr>
+            <tr><td>2nd</td><td>Row 4</td><td class="left">Age, City</td><td class="mono num-hl">3.674</td><td class="good">Yes (90)</td><td class="good">&#10003; used</td></tr>
+            <tr><td>3rd</td><td>Row 6</td><td class="left">Age, City</td><td class="mono num-hl">6.124</td><td class="good">Yes (92)</td><td class="good">&#10003; used</td></tr>
+            <tr><td>4th</td><td>Row 1</td><td class="left">Age, City</td><td class="mono">20.856</td><td>Yes</td><td>not needed, K=3 filled</td></tr>
+            <tr><td>5th</td><td>Row 7</td><td class="left">Age, City</td><td class="mono">25.749</td><td class="zero">No &mdash; also missing Income!</td><td class="zero">would be skipped anyway</td></tr>
+          </table>
+          <div class="formula center">K=3 &rarr; Impute Income = (31 + 90 + 92) / 3 = <span class="k">71.0</span></div>
+          <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);"><b>Verified directly against sklearn</b> &mdash; returns exactly 71.0.</div>
+          <div class="callout bad"><b>The genuinely surprising bit:</b> Row 2 wins 1st place using only ONE shared feature (City) &mdash; because Row 2's OWN Age is also missing, so Age can't be compared either. A single-feature comparison, correctly rescaled, can legitimately beat two-feature comparisons if the one shared value matches closely enough. And Row 7, despite being a real candidate on Age/City, gets silently disqualified the moment we check &mdash; it's missing the exact value (Income) we need it to donate.</div>
+        </div>
+      </section>
+
+      <section class="block" id="reality">
+        <div class="section-eyebrow">Wrapping up</div>
+        <h2>Is This <span class="underline">Used in Practice?</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;"><b>Yes, but selectively</b> &mdash; genuinely common for small-to-medium tabular data with scattered missingness that plausibly correlates with other features (exactly the "new customer, no bill yet" kind of pattern real data has).</p>
+          <table class="data-table">
+            <tr><th>Alternative</th><th>Why teams reach for it instead</th></tr>
+            <tr><td>Mean/median/mode imputation</td><td>Much cheaper; good enough when missing rate is low and the feature isn't critical</td></tr>
+            <tr><td>Tree models (XGBoost, LightGBM)</td><td>Handle missing values natively &mdash; skip imputation entirely</td></tr>
+            <tr><td>MICE / IterativeImputer</td><td>Scales better than KNN imputation at very large n, since KNN imputation re-runs a distance search per missing value</td></tr>
+          </table>
+          <div class="callout info">The honest verdict: KNN Imputation is a genuinely reasonable, explainable choice for small/medium data with a plausible "similar rows should have similar values" story &mdash; which is exactly why it's still taught and still shows up in real pipelines, just not as the universal default.</div>
+        </div>
+      </section>
+
+      <section class="block" id="summary">
+        <h2>Summary</h2>
+        <div class="card">
+          <table class="data-table">
+            <tr><th>Concept</th><th>One-line takeaway</th></tr>
+            <tr><td>Core idea</td><td>Fill a missing value with the average (or majority) of similar rows' values for that same feature</td></tr>
+            <tr><td>Basic algorithm</td><td>Distance &rarr; sort &rarr; take K nearest &rarr; average (numeric) or vote (categorical)</td></tr>
+            <tr><td>Nuance 1: other features also missing</td><td>Use only features shared by both rows; rescale distance by (total/present) to keep comparisons fair</td></tr>
+            <tr><td>Nuance 2: neighbor missing the target feature</td><td>Skip it entirely as a donor, no matter how close &mdash; keep walking down the ranking until K valid donors are found</td></tr>
+            <tr><td>Categorical features</td><td>Must be encoded to numbers first; naive averaging can produce invalid fractional category codes</td></tr>
+            <tr><td>Fixing categorical imputation</td><td>Round (careful: rounding conventions can disagree at exact ties) or use majority vote (can also tie) &mdash; the real fix is the same odd-K/tie-break rule from KNN classification</td></tr>
+            <tr><td>Used in practice?</td><td>Yes, for small/medium data with plausible row-similarity &mdash; not the universal default at scale</td></tr>
+          </table>
+        </div>
+        <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green); font-size:14px;">
+          The whole topic in one sentence: <b>KNN Imputation is "find similar rows, borrow their value" &mdash; and every nuance here (masked distances, skipped donors, fractional categories) exists because real data is rarely missing just one clean column at a time.</b>
+        </div>
+      </section>
+
+      <div class="footnote-strip">
+        <span class="hand">&mdash; end of notes &mdash;</span>
+        KNN Imputation &mdash; Self-Study Notes
+      </div>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>
