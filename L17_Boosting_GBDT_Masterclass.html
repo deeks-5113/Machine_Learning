@@ -1,0 +1,997 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GBDT Masterclass — Regression & Classification</title><script>window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]'],['$$','$$']],tags:'ams',packages:{'[+]':['ams']}},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']},svg:{fontCache:'global'}};</script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script><style>
+:root{
+  --board:#0c1014; --card:#151b21; --card-line:#263039;
+  --chalk:#e9eef2; --chalk-dim:#9fb0bb; --cyan:#5fd8e0; --cyan-dim:#2c5a5e;
+  --pink:#f17fb0; --pink-dim:#5a2f42; --yellow:#f4cf5e; --green:#8fe3a6;
+  --green-dim:#2f4f3a; --purple:#b39ddb; --purple-dim:#4a3f6b;
+  --white:#f5f5f0; --red:#ff9a9a; --radius:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--board);color:var(--chalk);font-family:Inter,Segoe UI,Arial,sans-serif;line-height:1.6}
+.wrap{max-width:1220px;margin:auto;padding:0 24px 110px}
+h1,h2,h3,.hand{font-family:Caveat,"Comic Sans MS",cursive;font-weight:700}
+.hero{text-align:center;padding:54px 0 28px}
+.chip{display:inline-block;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11px;letter-spacing:1.3px;text-transform:uppercase;color:var(--cyan);border:1px solid var(--cyan-dim);padding:6px 13px;border-radius:999px;margin:4px}
+.hero h1{font-size:clamp(34px,5vw,54px);margin:8px 0;color:var(--white)}
+.hero h1 span{color:var(--pink)}
+.hero p{font-family:"Trebuchet MS",sans-serif;color:var(--chalk-dim);max-width:900px;margin:auto;font-size:16px}
+.layout{display:grid;grid-template-columns:275px 1fr;gap:34px;align-items:start}
+nav.toc{position:sticky;top:18px;background:var(--card);border:1px solid var(--card-line);border-radius:var(--radius);padding:16px;max-height:calc(100vh - 36px);overflow:auto;font:11px ui-monospace,SFMono-Regular,Consolas,monospace}
+.toc-title{color:var(--chalk-dim);text-transform:uppercase;letter-spacing:1px;font-size:10px;margin:14px 0 6px}
+.toc-title:first-child{margin-top:0}
+nav a{display:block;color:var(--chalk-dim);text-decoration:none;padding:4px 7px;border-radius:7px}
+nav a:hover{background:#ffffff08;color:var(--chalk)}
+section.block{margin-bottom:46px;scroll-margin-top:18px}
+.eyebrow{font:11px ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--pink);letter-spacing:1.5px;text-transform:uppercase}
+h2{font-size:31px;margin:2px 0 12px;color:var(--white)}
+h2 u{text-decoration-color:var(--cyan);text-decoration-thickness:3px}
+h3{font-size:23px;margin:5px 0 9px;color:var(--white)}
+p.lead{color:#d0dbe1;font-size:14.5px}
+.card{background:var(--card);border:1px solid var(--card-line);border-radius:var(--radius);padding:19px 21px;margin:13px 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
+.callout{border:1px solid var(--green-dim);background:#8fe3a60d;color:var(--green);border-radius:10px;padding:12px 15px;margin:12px 0;font-size:13px}
+.callout.info{border-color:var(--cyan-dim);background:#5fd8e00b;color:var(--cyan)}
+.callout.warn{border-color:#5a4f2f;background:#f4cf5e0b;color:var(--yellow)}
+.callout.bad{border-color:var(--pink-dim);background:#f17fb00b;color:var(--pink)}
+.callout.purple{border-color:var(--purple-dim);background:#b39ddb0b;color:var(--purple)}
+.formula{background:#090d10;border:1px solid var(--card-line);border-radius:10px;padding:15px 17px;margin:12px 0;overflow:auto;text-align:center;color:var(--white)}
+.formula.left{text-align:left}
+.mathnote{font-size:12px;color:var(--chalk-dim);margin-top:-4px}
+.tbl{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font:12px ui-monospace,SFMono-Regular,Consolas,monospace}
+th{color:var(--chalk-dim);font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;text-align:left;border-bottom:1px solid var(--card-line);padding:7px 8px}
+td{padding:7px 8px;border-bottom:1px solid #ffffff08;vertical-align:top}
+td.hl{color:var(--yellow);font-weight:700}
+td.good{color:var(--green);font-weight:700}
+td.bad{color:var(--pink);font-weight:700}
+td.cyan{color:var(--cyan);font-weight:700}
+.step{display:flex;gap:12px;align-items:flex-start;margin:9px 0}
+.step .num{flex:0 0 30px;height:30px;border:1px solid var(--cyan-dim);color:var(--cyan);border-radius:50%;display:grid;place-items:center;font:12px ui-monospace}
+.step .body{flex:1}
+.badge{display:inline-block;font:10px ui-monospace;padding:2px 7px;border-radius:5px;margin-left:5px}
+.b-gbdt{color:var(--cyan);border:1px solid var(--cyan-dim)}
+.b-xgb{color:var(--yellow);border:1px solid #5a4f2f}
+.b-lgb{color:var(--purple);border:1px solid var(--purple-dim)}
+.b-sklearn{color:var(--green);border:1px solid var(--green-dim)}
+.code{background:#080b0e;border:1px solid var(--card-line);border-radius:10px;padding:14px 16px;overflow:auto;font:12px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace;color:#dce6eb;white-space:pre}
+.quote{font-family:"Trebuchet MS",sans-serif;font-size:16px;border-left:3px solid var(--yellow);padding:7px 17px;background:#f4cf5e08;border-radius:0 10px 10px 0}
+.flow{display:flex;align-items:stretch;overflow:auto;padding:8px 0}
+.flow .box{min-width:145px;background:var(--card);border:1px solid var(--card-line);border-radius:10px;padding:12px;text-align:center}
+.flow .box strong{display:block;color:var(--white);font-size:12px}
+.flow .box span{display:block;color:var(--chalk-dim);font-size:10px;margin-top:3px}
+.flow .arrow{min-width:30px;display:grid;place-items:center;color:var(--pink);font-size:20px}
+details{background:#ffffff04;border:1px solid var(--card-line);border-radius:9px;padding:10px 13px;margin:9px 0}
+summary{cursor:pointer;color:var(--yellow);font-weight:700}
+.source{font-size:11px;color:var(--chalk-dim)}
+.source a{color:var(--cyan)}
+.small{font-size:12px;color:var(--chalk-dim)}
+.kpi{font-size:25px;color:var(--yellow);font-weight:800}
+@media(max-width:920px){.layout{grid-template-columns:1fr}.toc{position:relative!important;max-height:none!important}.grid2,.grid3{grid-template-columns:1fr}}
+\n.deep-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}\n.math-chain{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:8px;align-items:center;margin:12px 0}\n.math-node{background:#090d10;border:1px solid var(--card-line);border-radius:10px;padding:12px;text-align:center}.math-node strong{display:block;color:var(--white)}.math-node span{display:block;color:var(--chalk-dim);font-size:11px;margin-top:4px}.math-arrow{color:var(--pink);font-size:20px;text-align:center}\n.tree{font:12px ui-monospace,SFMono-Regular,Consolas,monospace;background:#090d10;border:1px solid var(--card-line);border-radius:10px;padding:15px;overflow:auto;white-space:pre;line-height:1.5;color:#dce6eb}\n.mini{font-size:11px;color:var(--chalk-dim)}\n.tag{display:inline-block;padding:3px 7px;border-radius:5px;font:10px ui-monospace;margin:2px;border:1px solid var(--card-line);color:var(--chalk-dim)}\n.check{border-left:3px solid var(--cyan);padding:10px 14px;background:#5fd8e008;margin:12px 0}.check b{color:var(--cyan)}\n@media(max-width:920px){.deep-grid,.math-chain{grid-template-columns:1fr}.math-arrow{transform:rotate(90deg)}}\n
+.diagram{background:#090d10;border:1px solid var(--card-line);border-radius:12px;padding:15px;margin:14px 0;overflow:auto}
+.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;align-items:center;text-align:center;font:11px ui-monospace,SFMono-Regular,Consolas,monospace}
+.flow .node{border:1px solid var(--cyan-dim);border-radius:9px;padding:10px 6px;background:#0f171b}
+.flow .arrow{color:var(--pink);font-size:20px}.small{font-size:12px;color:var(--chalk-dim)}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:15px}.three-col{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
+.source{font-size:11px;color:var(--chalk-dim);border-left:2px solid var(--card-line);padding-left:10px;margin:10px 0}.source a{color:var(--cyan)}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.toc{position:relative!important}.grid2,.grid3,.two-col,.three-col,.flow{grid-template-columns:1fr}.flow .arrow{transform:rotate(90deg)}}
+
+/* COMPLETE-EQUATION PATCH
+   Keep the original masterclass design, but make every mathematical
+   expression readable, scroll-safe and visually complete. */
+.formula{
+  font-size:16px;
+  line-height:1.9;
+  min-height:52px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+.formula mjx-container{
+  max-width:100%;
+  overflow-x:auto;
+  overflow-y:hidden;
+  padding:2px 4px;
+}
+.formula.left{
+  justify-content:flex-start;
+  text-align:left;
+}
+.formula mjx-mtable{
+  margin-left:auto !important;
+  margin-right:auto !important;
+}
+.math-derivation{
+  background:#090d10;
+  border:1px solid var(--card-line);
+  border-left:3px solid var(--cyan);
+  border-radius:12px;
+  padding:15px 18px;
+  margin:14px 0;
+}
+.math-derivation .label{
+  color:var(--cyan);
+  font:10px ui-monospace,SFMono-Regular,Consolas,monospace;
+  text-transform:uppercase;
+  letter-spacing:1px;
+  margin-bottom:7px;
+}
+.equation-note{
+  color:var(--chalk-dim);
+  font-size:12px;
+  margin:4px 0 10px;
+}
+.complete-equation{
+  background:#0b1115;
+  border:1px solid #31414b;
+  border-radius:10px;
+  padding:14px 16px;
+  margin:10px 0;
+  overflow-x:auto;
+}
+.complete-equation mjx-container{
+  margin:0 !important;
+}
+.math-warning{
+  border-left:3px solid var(--yellow);
+  background:#f4cf5e08;
+  color:#e9e2c6;
+  padding:11px 14px;
+  border-radius:0 9px 9px 0;
+  margin:12px 0;
+  font-size:13px;
+}
+
+/* v3 deep derivation additions */
+.deep-patch{border-top:2px solid var(--cyan);}
+.deep-patch .math-derivation{margin-top:16px;}
+.deep-patch .complete-equation{font-size:16px;line-height:1.95;}
+.deep-patch .complete-equation mjx-container{max-width:100%;overflow-x:auto;}
+.deep-patch .tbl table{width:100%;}
+.deep-patch .tbl td,.deep-patch .tbl th{vertical-align:top;}
+.source-note{border-left:3px solid var(--yellow);}
+
+.section-intro{font-size:14px;color:#d0dbe1}
+.answer{border-left:3px solid var(--green);padding:10px 14px;background:#8fe3a608;margin:12px 0}
+.question{color:var(--yellow);font-weight:700}
+.math-derivation{background:#090d10;border:1px solid var(--card-line);border-left:3px solid var(--cyan);border-radius:12px;padding:15px 18px;margin:14px 0}
+.math-derivation .label{color:var(--cyan);font:10px ui-monospace,SFMono-Regular,Consolas,monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:7px}
+.complete-equation{background:#0b1115;border:1px solid #31414b;border-radius:10px;padding:14px 16px;margin:10px 0;overflow-x:auto}
+@media(max-width:920px){.two-col,.three-col{grid-template-columns:1fr}}
+</style></head><body><div class="wrap"><header class="hero"><div><span class="chip">ML Supervised Learning &middot; Class 17 &middot; Aug 12, 2026</span></div><div><span class="chip">GBDT ONLY</span><span class="chip">REGRESSION → CLASSIFICATION</span><span class="chip">DEEP DERIVATIONS</span><span class="chip">CLASSROOM NOTES</span></div><h1>Mastering <span>GBDT</span></h1><p>Boosting revision → regression from first principles → mean initialisation → pseudo-residuals → tree split → leaf prediction → learning rate → 3 iterations → classification log loss → \(y-p\) → Taylor series → gradient + Hessian → \(-G/H\) → split gain → hyperparameters → underfitting / overfitting → final algorithm.</p></header><div class="layout"><nav class="toc">
+<div class="toc-title">GBDT ONLY</div>
+<a href="#questions">What should I ask?</a>
+<a href="#boosting">Boosting revision</a>
+<a href="#reg-problem">Regression problem</a>
+<a href="#reg-init">Initial prediction = mean</a>
+<a href="#reg-gradient">Why pseudo-residual?</a>
+<a href="#reg-tree">How the tree splits</a>
+<a href="#reg-leaf">How the leaf predicts</a>
+<a href="#learning-rate">Learning rate</a>
+<a href="#reg-3">Three regression iterations</a>
+<a href="#clf-start">Classification starts here</a>
+<a href="#clf-pseudo">Derive y − p</a>
+<a href="#clf-tree">How classification trees split</a>
+<a href="#taylor">What is Taylor series?</a>
+<a href="#gh-leaf">Derive −G/H</a>
+<a href="#gh-logloss">Log-loss gradient + Hessian</a>
+<a href="#clf-3">Three classification iterations</a>
+<a href="#prediction">Prediction time</a>
+<a href="#hyperparameters">Hyperparameters</a>
+<a href="#fit">Underfit vs overfit</a>
+<a href="#tuning">Tuning logic</a>
+<a href="#algorithm">End-to-end algorithm</a>
+<a href="#summary">Final summary</a>
+</nav><main>
+<section class="block" id="questions">
+<div class="eyebrow">00 · start here</div>
+<h2>What should I ask to learn <u>GBDT properly?</u></h2>
+<div class="card">
+<h3>Regression — the questions</h3>
+<div class="step"><div class="num">Q1</div><div class="body"><span class="question">What is boosting?</span><br>Why do we build trees sequentially instead of asking one tree to solve everything?</div></div>
+<div class="step"><div class="num">Q2</div><div class="body"><span class="question">What should the model predict before any tree exists?</span><br>Why is the initial prediction the mean under squared loss?</div></div>
+<div class="step"><div class="num">Q3</div><div class="body"><span class="question">What should Tree 1 learn?</span><br>Why residuals, and more generally pseudo-residuals?</div></div>
+<div class="step"><div class="num">Q4</div><div class="body"><span class="question">How does the tree find a split?</span><br>Once the target is the pseudo-residual, what exactly is being optimised?</div></div>
+<div class="step"><div class="num">Q5</div><div class="body"><span class="question">What does a leaf predict?</span><br>Why is it the mean residual for squared loss?</div></div>
+<div class="step"><div class="num">Q6</div><div class="body"><span class="question">Why learning rate?</span><br>Why not add the whole correction proposed by the tree?</div></div>
+</div>
+<div class="card">
+<h3>Classification — the questions</h3>
+<div class="step"><div class="num">Q7</div><div class="body"><span class="question">What is the initial prediction?</span><br>Why does binary GBDT start from the positive-class rate?</div></div>
+<div class="step"><div class="num">Q8</div><div class="body"><span class="question">Why is the pseudo-residual \(y-p\)?</span><br>Where does it come from mathematically?</div></div>
+<div class="step"><div class="num">Q9</div><div class="body"><span class="question">How should the tree split?</span><br>Is it Gini/entropy, MSE on the labels, or something else?</div></div>
+<div class="step"><div class="num">Q10</div><div class="body"><span class="question">Where does \(-G/H\) come from?</span><br>What are gradient, Hessian and Taylor expansion?</div></div>
+<div class="step"><div class="num">Q11</div><div class="body"><span class="question">How is a split compared?</span><br>Why do \(G\) and \(H\) also appear in split gain?</div></div>
+</div>
+<div class="card">
+<h3>General — applies to both regression and classification</h3>
+<div class="step"><div class="num">Q12</div><div class="body"><span class="question">How do we control underfitting and overfitting?</span><br>Which hyperparameter controls which source of complexity?</div></div>
+</div>
+</section>
+
+<section class="block" id="boosting">
+<div class="eyebrow">01 · revision</div>
+<h2>Boosting: <u>what we already know</u></h2>
+<div class="card">
+<div class="flow">
+<div class="box"><strong>Current model</strong><span>what we have now</span></div><div class="arrow">→</div>
+<div class="box"><strong>Find what is wrong</strong><span>remaining signal</span></div><div class="arrow">→</div>
+<div class="box"><strong>New weak learner</strong><span>learn correction</span></div><div class="arrow">→</div>
+<div class="box"><strong>Add correction</strong><span>small step</span></div><div class="arrow">→</div>
+<div class="box"><strong>Repeat</strong><span>sequentially</span></div>
+</div>
+<p class="lead"><b>Bagging:</b> many trees are trained largely independently and combined. <b>Boosting:</b> trees are dependent; each new learner is trained to improve the current ensemble.</p>
+<div class="quote">Do not think “100 trees each solve the original problem.” Think: <b>one model built as a sequence of corrections.</b></div>
+</div>
+<div class="card">
+<h3>GBDT = Gradient Boosting + Decision Trees</h3>
+<table><tr><th>Part</th><th>Question it answers</th></tr>
+<tr><td>Gradient Boosting</td><td><b>What should the next learner learn?</b> → use the loss gradient.</td></tr>
+<tr><td>Decision Tree</td><td><b>How do we represent that correction?</b> → partition feature space into regions/leaves.</td></tr></table>
+<div class="formula">\[
+F_m(x)=F_{m-1}(x)+\eta f_m(x)
+\]</div>
+<p class="small">\(F\) is the current model score, \(f_m\) is the new tree correction, and \(\eta\) is the learning rate.</p>
+</div>
+</section>
+
+<section class="block" id="reg-problem">
+<div class="eyebrow">02 · regression</div>
+<h2>Start with a regression problem: <u>what are we trying to learn?</u></h2>
+<div class="card">
+<p class="lead">Suppose we want to predict delivery time from distance, traffic and weather.</p>
+<table><tr><th>Distance</th><th>Traffic</th><th>Rain</th><th>Actual \(y\)</th></tr>
+<tr><td>2 km</td><td>Low</td><td>No</td><td>15</td></tr><tr><td>4 km</td><td>Low</td><td>No</td><td>18</td></tr>
+<tr><td>6 km</td><td>Medium</td><td>No</td><td>25</td></tr><tr><td>8 km</td><td>High</td><td>Yes</td><td>30</td></tr>
+<tr><td>10 km</td><td>High</td><td>Yes</td><td>45</td></tr><tr><td>12 km</td><td>Very high</td><td>Yes</td><td>50</td></tr></table>
+<div class="callout">A shallow tree may capture some structure. Boosting asks: <b>after the current model makes mistakes, what should the next tree correct?</b></div>
+</div>
+</section>
+
+<section class="block" id="reg-init">
+<div class="eyebrow">03 · regression</div>
+<h2>Step 0 — initial prediction: <u>why is it the mean?</u></h2>
+<div class="card">
+<p>Before any tree exists, force the model to make one constant prediction \(c\) for every row.</p>
+<div class="formula">\[
+L_i=\frac12(y_i-c)^2
+\]</div>
+<p>The best constant is the one that minimises total training loss:</p>
+<div class="formula">\[
+c^*=\arg\min_c\sum_{i=1}^{n}\frac12(y_i-c)^2
+\]</div>
+</div>
+<div class="math-derivation">
+<div class="label">Derivation — every step</div>
+<p><b>1. Differentiate with respect to the thing we are choosing: \(c\).</b></p>
+<div class="complete-equation">\[
+\frac{d}{dc}\left[\sum_i\frac12(y_i-c)^2\right]
+\]</div>
+<div class="complete-equation">\[
+=\sum_i\frac12\cdot2(y_i-c)(-1)
+\]</div>
+<div class="complete-equation">\[
+=\sum_i(c-y_i)
+\]</div>
+<p><b>2. At the minimum, derivative = 0.</b></p>
+<div class="complete-equation">\[
+\sum_i(c-y_i)=0
+\]</div>
+<div class="complete-equation">\[
+nc-\sum_i y_i=0
+\]</div>
+<div class="complete-equation">\[
+\boxed{c=\frac1n\sum_i y_i=\bar y}
+\]</div>
+<div class="answer"><b>Conclusion:</b> the initial prediction is the mean because the mean is the constant that minimises total squared error.</div>
+</div>
+<div class="card">
+<p>For our six rows:</p>
+<div class="formula">\[
+F_0=\frac{15+18+25+30+45+50}{6}=30.5
+\]</div>
+<p>Every row starts at \(30.5\).</p>
+<div class="callout warn"><b>Do not memorise “GBDT starts with mean.”</b> Memorise the deeper rule: <b>the initial model is the constant that minimises the chosen loss.</b> The mean follows specifically from squared loss.</div>
+</div>
+</section>
+
+<section class="block" id="reg-gradient">
+<div class="eyebrow">04 · regression</div>
+<h2>Why is Tree 1 trained on <u>residuals / pseudo-residuals?</u></h2>
+<div class="card">
+<p>Current prediction is \(F_0=30.5\). The ordinary residual is:</p>
+<div class="formula">\[
+r_i=y_i-F_0
+\]</div>
+<table><tr><th>y</th><th>F₀</th><th>r = y − F₀</th><th>Interpretation</th></tr>
+<tr><td>15</td><td>30.5</td><td class="bad">−15.5</td><td>prediction too high → move down</td></tr>
+<tr><td>18</td><td>30.5</td><td class="bad">−12.5</td><td>move down</td></tr>
+<tr><td>25</td><td>30.5</td><td class="bad">−5.5</td><td>move down</td></tr>
+<tr><td>30</td><td>30.5</td><td class="bad">−0.5</td><td>move down slightly</td></tr>
+<tr><td>45</td><td>30.5</td><td class="good">+14.5</td><td>prediction too low → move up</td></tr>
+<tr><td>50</td><td>30.5</td><td class="good">+19.5</td><td>prediction too low → move up</td></tr></table>
+</div>
+<div class="math-derivation">
+<div class="label">Derive residual from the loss</div>
+<p>Start with the loss, not the residual:</p>
+<div class="complete-equation">\[
+L(y,F)=\frac12(y-F)^2
+\]</div>
+<p>Differentiate with respect to the <b>current model output \(F\)</b>:</p>
+<div class="complete-equation">\[
+\frac{\partial L}{\partial F}
+=\frac12\cdot2(y-F)(-1)
+=F-y
+\]</div>
+<p>The gradient points in the direction of increasing loss. To reduce loss, move in the opposite direction:</p>
+<div class="complete-equation">\[
+r=-\frac{\partial L}{\partial F}
+=-(F-y)
+=\boxed{y-F}
+\]</div>
+<div class="answer"><b>For squared loss, negative gradient = ordinary residual.</b> That is why the next regression tree can be trained on residuals.</div>
+</div>
+<div class="card">
+<h3>General rule: pseudo-residual</h3>
+<div class="formula">\[
+\boxed{r_{im}=-\left.\frac{\partial L(y_i,F(x_i))}{\partial F(x_i)}\right|_{F=F_{m-1}(x_i)}}
+\]</div>
+<p>For other losses, the pseudo-residual need not equal \(y-F\). It is the <b>loss-specific direction in which the current model should move</b>.</p>
+</div>
+</section>
+
+<section class="block" id="reg-tree">
+<div class="eyebrow">05 · regression tree</div>
+<h2>How does the tree <u>find a split?</u></h2>
+<div class="card">
+<p class="lead">The boosting algorithm has already decided the target for the tree: the pseudo-residual. The regression-tree machinery now finds regions where these correction targets are different.</p>
+<div class="flow">
+<div class="box"><strong>Current model</strong><span>\(F_{m-1}\)</span></div><div class="arrow">→</div>
+<div class="box"><strong>Pseudo-target</strong><span>\(r=-\nabla L\)</span></div><div class="arrow">→</div>
+<div class="box"><strong>Try thresholds</strong><span>feature space</span></div><div class="arrow">→</div>
+<div class="box"><strong>Score split</strong><span>child SSE</span></div><div class="arrow">→</div>
+<div class="box"><strong>Best split</strong><span>largest improvement</span></div>
+</div>
+</div>
+<div class="math-derivation">
+<div class="label">Why the split criterion becomes SSE</div>
+<p>For a candidate region \(S\), one leaf can only give one constant correction. The best constant is the mean pseudo-residual:</p>
+<div class="complete-equation">\[
+\bar r_S=\frac1{|S|}\sum_{i\in S}r_i
+\]</div>
+<div class="complete-equation">\[
+SSE(S)=\sum_{i\in S}(r_i-\bar r_S)^2
+\]</div>
+<p>For a candidate split:</p>
+<div class="complete-equation">\[
+SSE_{\text{split}}=SSE(S_L)+SSE(S_R)
+\]</div>
+<div class="complete-equation">\[
+\boxed{\text{Improvement}=SSE(S)-[SSE(S_L)+SSE(S_R)]}
+\]</div>
+<div class="answer"><b>Meaning:</b> the split is useful when two specialised correction values fit the pseudo-residuals better than one parent correction.</div>
+</div>
+<div class="card">
+<h3>Concrete split search</h3>
+<table><tr><th>X</th><th>Pseudo-residual</th></tr>
+<tr><td>1</td><td>4</td></tr><tr><td>2</td><td>2</td></tr><tr><td>3</td><td>8</td></tr><tr><td>4</td><td>10</td></tr></table>
+<p>Candidate thresholds: 1.5, 2.5, 3.5.</p>
+<table><tr><th>Threshold</th><th>Left r</th><th>Right r</th><th>Child SSE</th></tr>
+<tr><td>1.5</td><td>4</td><td>2,8,10</td><td>32.667</td></tr>
+<tr><td class="hl">2.5</td><td>4,2</td><td>8,10</td><td class="hl">8</td></tr>
+<tr><td>3.5</td><td>4,2,8</td><td>10</td><td>24.667</td></tr></table>
+<div class="callout good"><b>Choose \(X<2.5\)</b> because it gives the smallest child SSE / largest improvement.</div>
+</div>
+</section>
+
+<section class="block" id="reg-leaf">
+<div class="eyebrow">06 · regression leaf</div>
+<h2>How does the leaf predict? <u>Derive the mean residual</u></h2>
+<div class="card">
+<p>Suppose a leaf \(R_j\) contains several observations. The leaf cannot assign a different correction to every row. It must choose one constant \(\gamma_j\).</p>
+<div class="formula">\[
+J(\gamma_j)=\sum_{i\in R_j}\frac12[y_i-(F_i+\gamma_j)]^2
+\]</div>
+</div>
+<div class="math-derivation">
+<div class="label">Complete leaf derivation</div>
+<p><b>1. Differentiate with respect to \(\gamma_j\).</b></p>
+<div class="complete-equation">\[
+\frac{dJ}{d\gamma_j}
+=\sum_{i\in R_j}(F_i+\gamma_j-y_i)
+\]</div>
+<p><b>2. Set derivative to zero.</b></p>
+<div class="complete-equation">\[
+\sum_{i\in R_j}(F_i+\gamma_j-y_i)=0
+\]</div>
+<p><b>3. Rearrange.</b></p>
+<div class="complete-equation">\[
+\sum_{i\in R_j}\gamma_j
+=\sum_{i\in R_j}(y_i-F_i)
+\]</div>
+<div class="complete-equation">\[
+|R_j|\gamma_j=\sum_{i\in R_j}(y_i-F_i)
+\]</div>
+<div class="complete-equation">\[
+\boxed{\gamma_j=\frac1{|R_j|}\sum_{i\in R_j}(y_i-F_i)}
+=\boxed{\text{mean residual in the leaf}}
+\]</div>
+<div class="answer"><b>Intuition:</b> the leaf asks, “I can only make one correction for everyone here. Which single number minimises their total squared error?” The answer is the mean residual.</div>
+</div>
+<div class="card">
+<h3>Example</h3>
+<table><tr><th>Leaf</th><th>Residuals</th><th>Mean / correction</th></tr>
+<tr><td>Distance ≤ 9</td><td>−15.5, −12.5, −5.5, −0.5</td><td class="hl">−8.5</td></tr>
+<tr><td>Distance &gt; 9</td><td>14.5, 19.5</td><td class="hl">17</td></tr></table>
+</div>
+</section>
+
+<section class="block" id="learning-rate">
+<div class="eyebrow">07 · regression</div>
+<h2>Learning rate: <u>why not take the whole correction?</u></h2>
+<div class="card">
+<p>The tree proposes a correction. Boosting deliberately shrinks it:</p>
+<div class="formula">\[
+\boxed{F_m(x)=F_{m-1}(x)+\eta f_m(x)}
+\]</div>
+<p>For a particular leaf:</p>
+<div class="formula">\[
+\boxed{F_m(x)=F_{m-1}(x)+\eta\gamma_j}
+\]</div>
+<table><tr><th>\(\eta\)</th><th>Tree proposes +10</th><th>Actual contribution</th></tr>
+<tr><td>1.0</td><td>+10</td><td>+10</td></tr><tr><td>0.5</td><td>+10</td><td>+5</td></tr><tr><td>0.1</td><td>+10</td><td>+1</td></tr></table>
+</div>
+<div class="callout warn"><b>Purpose:</b> smaller \(\eta\) makes the model learn more gradually. It often requires more trees, but each tree has less power to make an aggressive mistake.</div>
+<div class="callout info"><b>Do not confuse them:</b> \(\eta\) is a global shrinkage factor. Leaf values can be different in every leaf and every tree.</div>
+</section>
+
+<section class="block" id="reg-3">
+<div class="eyebrow">08 · regression</div>
+<h2>Three iterations: <u>Tree 1 → Tree 2 → Tree 3</u></h2>
+<div class="card">
+<p>Use \(y=[15,18,25,30,45,50]\), squared loss, and \(\eta=0.5\).</p>
+<table><tr><th>Row</th><th>y</th><th>F₀</th><th>r₀</th><th>Tree 1 leaf</th><th>F₁</th></tr>
+<tr><td>1</td><td>15</td><td>30.5</td><td>−15.5</td><td>−8.5</td><td>26.25</td></tr>
+<tr><td>2</td><td>18</td><td>30.5</td><td>−12.5</td><td>−8.5</td><td>26.25</td></tr>
+<tr><td>3</td><td>25</td><td>30.5</td><td>−5.5</td><td>−8.5</td><td>26.25</td></tr>
+<tr><td>4</td><td>30</td><td>30.5</td><td>−0.5</td><td>−8.5</td><td>26.25</td></tr>
+<tr><td>5</td><td>45</td><td>30.5</td><td>14.5</td><td>17</td><td>39.00</td></tr>
+<tr><td>6</td><td>50</td><td>30.5</td><td>19.5</td><td>17</td><td>39.00</td></tr></table>
+<div class="formula">\[
+F_1=F_0+0.5\gamma
+\]</div>
+</div>
+<div class="card">
+<h3>Iteration 1 → 2: Tree 2 sees what Tree 1 did not fix</h3>
+<div class="formula">\[
+r^{(1)}=y-F_1
+\]</div>
+<table><tr><th>y</th><th>F₁</th><th>new residual</th></tr>
+<tr><td>15</td><td>26.25</td><td>−11.25</td></tr><tr><td>18</td><td>26.25</td><td>−8.25</td></tr>
+<tr><td>25</td><td>26.25</td><td>−1.25</td></tr><tr><td>30</td><td>26.25</td><td>+3.75</td></tr>
+<tr><td>45</td><td>39</td><td>+6</td></tr><tr><td>50</td><td>39</td><td>+11</td></tr></table>
+<div class="callout info"><b>Sequential dependency:</b> Tree 2 is not trained against original \(y\). It is trained against the errors remaining after Tree 1.</div>
+</div>
+<div class="card">
+<h3>Iteration 2 → 3</h3>
+<p>Now calculate:</p>
+<div class="formula">\[
+r^{(2)}=y-F_2
+\]</div>
+<p>Fit Tree 3 to those remaining corrections, shrink it, and add it:</p>
+<div class="formula">\[
+F_3=F_2+\eta f_3
+\]</div>
+</div>
+<div class="math-derivation">
+<div class="label">The complete regression loop</div>
+<div class="complete-equation">\[
+\boxed{
+F_0\rightarrow r_0\rightarrow Tree_1\rightarrow F_1
+\rightarrow r_1\rightarrow Tree_2\rightarrow F_2
+\rightarrow r_2\rightarrow Tree_3\rightarrow F_3
+}
+\]</div>
+</div>
+</section>
+
+<section class="block" id="clf-start">
+<div class="eyebrow">09 · classification</div>
+<h2>Now classification: <u>what changes?</u></h2>
+<div class="card">
+<p class="lead">Suppose \(y\in\{0,1\}\) and we want probability of class 1. The model builds an additive <b>raw score \(F\)</b>, then sigmoid converts it to probability.</p>
+<div class="formula">\[
+F(x)\in(-\infty,\infty)
+\qquad
+p(x)=\sigma(F)=\frac1{1+e^{-F}}
+\]</div>
+<div class="callout info"><b>Why raw score?</b> Corrections can be positive or negative and can be added freely. Probabilities are constrained to \([0,1]\).</div>
+</div>
+<div class="math-derivation">
+<div class="label">Initial prediction — derive the positive-class rate</div>
+<p>Assume the model initially predicts the same probability \(p\) for every row. Binary log loss is:</p>
+<div class="complete-equation">\[
+J(p)=-\sum_i[y_i\log p+(1-y_i)\log(1-p)]
+\]</div>
+<p>Differentiate with respect to \(p\):</p>
+<div class="complete-equation">\[
+\frac{dJ}{dp}
+=-\sum_i\left(\frac{y_i}{p}-\frac{1-y_i}{1-p}\right)
+\]</div>
+<p>Set it to zero:</p>
+<div class="complete-equation">\[
+\frac{n_+}{p}=\frac{n_-}{1-p}
+\]</div>
+<div class="complete-equation">\[
+n_+(1-p)=n_-p
+\]</div>
+<div class="complete-equation">\[
+n_+=p(n_++n_-)=pn
+\]</div>
+<div class="complete-equation">\[
+\boxed{p_0=\frac{n_+}{n}=\bar y}
+\]</div>
+<p>Convert this probability into raw score:</p>
+<div class="complete-equation">\[
+\boxed{F_0=\log\left(\frac{p_0}{1-p_0}\right)}
+\]</div>
+<div class="answer">Example: 3 positives out of 6 → \(p_0=0.5\), so \(F_0=\log(1)=0\).</div>
+</div>
+</section>
+
+<section class="block" id="clf-pseudo">
+<div class="eyebrow">10 · classification</div>
+<h2>Where does the pseudo-residual <u>\(y-p\)</u> come from?</h2>
+<div class="card">
+<p>For one observation:</p>
+<div class="formula">\[
+L=-[y\log p+(1-y)\log(1-p)]
+\]</div>
+<p>The model variable is \(F\), but loss is written using \(p\). Therefore use the chain rule:</p>
+<div class="formula">\[
+\frac{\partial L}{\partial F}
+=
+\frac{\partial L}{\partial p}
+\frac{\partial p}{\partial F}
+\]</div>
+</div>
+<div class="math-derivation">
+<div class="label">Step 1 — derivative of log loss with respect to p</div>
+<div class="complete-equation">\[
+\frac{\partial L}{\partial p}
+=
+-\frac{y}{p}
++
+\frac{1-y}{1-p}
+\]</div>
+</div>
+<div class="math-derivation">
+<div class="label">Step 2 — derivative of sigmoid with respect to F</div>
+<div class="complete-equation">\[
+p=\frac1{1+e^{-F}}
+\]</div>
+<div class="complete-equation">\[
+\boxed{\frac{\partial p}{\partial F}=p(1-p)}
+\]</div>
+</div>
+<div class="math-derivation">
+<div class="label">Step 3 — chain rule multiplication</div>
+<div class="complete-equation">\[
+\frac{\partial L}{\partial F}
+=
+\left(-\frac{y}{p}+\frac{1-y}{1-p}\right)p(1-p)
+\]</div>
+<div class="complete-equation">\[
+=-y(1-p)+p(1-y)
+\]</div>
+<div class="complete-equation">\[
+=-y+yp+p-py
+\]</div>
+<div class="complete-equation">\[
+\boxed{\frac{\partial L}{\partial F}=p-y}
+\]</div>
+<p>Gradient points uphill, so the correction direction is the negative gradient:</p>
+<div class="complete-equation">\[
+\boxed{r=-g=y-p}
+\]</div>
+<div class="answer"><b>That is the entire reason \(y-p\) appears.</b> It is the negative derivative of log loss with respect to the raw model score.</div>
+</div>
+<div class="card">
+<table><tr><th>y</th><th>p</th><th>y − p</th><th>What should F do?</th></tr>
+<tr><td>1</td><td>0.40</td><td class="good">+0.60</td><td>increase</td></tr>
+<tr><td>0</td><td>0.40</td><td class="bad">−0.40</td><td>decrease</td></tr>
+<tr><td>1</td><td>0.90</td><td class="good">+0.10</td><td>increase slightly</td></tr>
+<tr><td>0</td><td>0.10</td><td class="bad">−0.10</td><td>decrease slightly</td></tr></table>
+</div>
+</section>
+
+<section class="block" id="clf-tree">
+<div class="eyebrow">11 · classification tree</div>
+<h2>How should each classification tree <u>split?</u></h2>
+<div class="card">
+<h3>Do not mix these two ideas</h3>
+<table><tr><th>Model</th><th>Target given to tree</th><th>Split concept</th></tr>
+<tr><td>Ordinary classification tree</td><td>0/1 labels</td><td>Gini / entropy / related label criteria</td></tr>
+<tr><td>Classic GBDT</td><td>continuous negative-gradient target</td><td>regression-tree style fitting of the gradient target</td></tr></table>
+<div class="callout warn"><b>Important:</b> Gini is not the thing being derived here. We are following the boosting loss. The tree is learning a continuous correction signal, using regression-tree-style fitting on that signal — not label-based impurity.</div>
+</div>
+<div class="card">
+<h3>Why do sums appear?</h3>
+<p>Total loss over a leaf is the sum of row losses:</p>
+<div class="formula">\[
+L_{\text{leaf}}=\sum_{i\in R}L_i
+\]</div>
+<p>Therefore derivatives add:</p>
+<div class="formula">\[
+G=\sum_{i\in R}g_i,\qquad H=\sum_{i\in R}h_i
+\]</div>
+<div class="callout info"><b>G</b> = total directional pressure. <b>H</b> = total curvature.</div>
+</div>
+</section>
+
+<section class="block" id="taylor">
+<div class="eyebrow">12 · first principles</div>
+<h2>Before \(-G/H\): <u>what is Taylor series?</u></h2>
+<div class="card">
+<p class="lead">Taylor expansion approximates a function near a point using its derivatives.</p>
+<div class="grid2">
+<div class="card"><h3>First derivative</h3><p>tells the local slope / direction.</p></div>
+<div class="card"><h3>Second derivative</h3><p>tells how quickly the slope changes — the local curvature.</p></div>
+</div>
+</div>
+<div class="math-derivation">
+<div class="label">From function → local approximation</div>
+<p>Suppose current raw score is \(F\), and we add a correction \(w\).</p>
+<div class="complete-equation">\[
+L(F+w)\approx L(F)+L'(F)w+\frac12L''(F)w^2
+\]</div>
+<p>Use ML notation:</p>
+<div class="complete-equation">\[
+\boxed{L(F+w)\approx L(F)+gw+\frac12hw^2}
+\]</div>
+<table><tr><th>Symbol</th><th>Meaning</th></tr>
+<tr><td>\(F\)</td><td>current model score</td></tr>
+<tr><td>\(w\)</td><td>new leaf correction</td></tr>
+<tr><td>\(g=\partial L/\partial F\)</td><td>slope / direction</td></tr>
+<tr><td>\(h=\partial^2L/\partial F^2\)</td><td>curvature</td></tr></table>
+</div>
+<div class="callout">Geometric intuition: <b>gradient says which way downhill is; Hessian says how sharply the loss bends.</b> The second-order step uses both.</div>
+</section>
+
+<section class="block" id="gh-leaf">
+<div class="eyebrow">13 · classification / second-order leaf</div>
+<h2>Derive the leaf value: <u>where exactly does \(-G/H\) come from?</u></h2>
+<div class="card">
+<p>Take one leaf \(R\). Every row in that leaf gets the same correction \(w\).</p>
+<div class="formula">\[
+\sum_{i\in R}L_i(F_i+w)
+\approx
+\sum_{i\in R}\left[L_i+g_iw+\frac12h_iw^2\right]
+\]</div>
+<p>The \(\sum L_i\) term does not depend on \(w\), so it does not affect the minimising \(w\).</p>
+</div>
+<div class="math-derivation">
+<div class="label">Step 1 — collect first-order terms</div>
+<div class="complete-equation">\[
+\sum_{i\in R}g_iw=w\sum_{i\in R}g_i
+\]</div>
+<div class="complete-equation">\[
+\boxed{G=\sum_{i\in R}g_i}
+\]</div>
+<div class="complete-equation">\[
+\text{first-order term}=Gw
+\]</div>
+</div>
+<div class="math-derivation">
+<div class="label">Step 2 — collect second-order terms</div>
+<div class="complete-equation">\[
+\sum_{i\in R}\frac12h_iw^2
+=
+\frac12w^2\sum_{i\in R}h_i
+\]</div>
+<div class="complete-equation">\[
+\boxed{H=\sum_{i\in R}h_i}
+\]</div>
+<div class="complete-equation">\[
+\text{second-order term}=\frac12Hw^2
+\]</div>
+</div>
+<div class="math-derivation">
+<div class="label">Step 3 — the leaf optimisation problem</div>
+<div class="complete-equation">\[
+\boxed{J(w)=Gw+\frac12Hw^2}
+\]</div>
+<p>Now we have a simple quadratic. Find its minimum.</p>
+</div>
+<div class="math-derivation">
+<div class="label">Step 4 — differentiate with respect to w</div>
+<div class="complete-equation">\[
+\frac{dJ}{dw}=G+Hw
+\]</div>
+<p>At the minimum:</p>
+<div class="complete-equation">\[
+G+Hw=0
+\]</div>
+<div class="complete-equation">\[
+Hw=-G
+\]</div>
+<div class="complete-equation">\[
+\boxed{w^*=-\frac{G}{H}}
+\]</div>
+<div class="answer"><b>This is the origin of \(-G/H\).</b> It is the minimiser of the second-order Taylor approximation of the loss for a leaf.</div>
+</div>
+<div class="grid2">
+<div class="card"><h3>Numerator \(G\)</h3><p>Total gradient pressure. It tells how strongly the leaf wants the score to move.</p></div>
+<div class="card"><h3>Denominator \(H\)</h3><p>Total curvature. It tells how strongly the local loss resists a large step.</p></div>
+</div>
+</section>
+
+<section class="block" id="gh-logloss">
+<div class="eyebrow">14 · classification</div>
+<h2>For binary log loss: <u>derive gradient and Hessian</u></h2>
+<div class="card">
+<p>We already obtained:</p>
+<div class="formula">\[
+\boxed{g=\frac{\partial L}{\partial F}=p-y}
+\]</div>
+<p>Differentiate once more:</p>
+<div class="formula">\[
+h=\frac{\partial^2L}{\partial F^2}
+=
+\frac{\partial(p-y)}{\partial F}
+\]</div>
+<p>Since \(y\) is fixed:</p>
+<div class="formula">\[
+\boxed{h=\frac{\partial p}{\partial F}=p(1-p)}
+\]</div>
+</div>
+<div class="card">
+<h3>So inside a leaf:</h3>
+<div class="formula">\[
+\boxed{G=\sum_{i\in R}(p_i-y_i)}
+\]</div>
+<div class="formula">\[
+\boxed{H=\sum_{i\in R}p_i(1-p_i)}
+\]</div>
+<div class="formula">\[
+\boxed{
+w^*
+=
+-\frac{\sum_i(p_i-y_i)}
+{\sum_i p_i(1-p_i)}
+=
+\frac{\sum_i(y_i-p_i)}
+{\sum_i p_i(1-p_i)}
+}
+\]</div>
+<div class="callout info">The numerator is the total negative-gradient signal. The denominator adjusts the step according to curvature.</div>
+</div>
+</section>
+
+<section class="block" id="clf-3">
+<div class="eyebrow">15 · classification</div>
+<h2>Three classification iterations: <u>same logic, new loss geometry</u></h2>
+<div class="card">
+<p>Take \(y=[1,1,0,0,0,1]\). There are 3 positives out of 6:</p>
+<div class="formula">\[
+p_0=0.5,\qquad F_0=\log(0.5/0.5)=0
+\]</div>
+<table><tr><th>Row</th><th>y</th><th>p₀</th><th>g₀=p₀−y</th><th>h₀=p₀(1−p₀)</th></tr>
+<tr><td>A</td><td>1</td><td>0.5</td><td>−0.5</td><td>0.25</td></tr>
+<tr><td>B</td><td>1</td><td>0.5</td><td>−0.5</td><td>0.25</td></tr>
+<tr><td>C</td><td>0</td><td>0.5</td><td>+0.5</td><td>0.25</td></tr>
+<tr><td>D</td><td>0</td><td>0.5</td><td>+0.5</td><td>0.25</td></tr>
+<tr><td>E</td><td>0</td><td>0.5</td><td>+0.5</td><td>0.25</td></tr>
+<tr><td>F</td><td>1</td><td>0.5</td><td>−0.5</td><td>0.25</td></tr></table>
+</div>
+<div class="card">
+<h3>Tree 1 — suppose the split is Income ≤ 30</h3>
+<p>Left = A, B, C:</p>
+<div class="formula">\[
+G_L=-0.5-0.5+0.5=-0.5,\qquad H_L=0.75
+\]</div>
+<div class="formula">\[
+w_L^*=-\frac{-0.5}{0.75}=\boxed{0.6667}
+\]</div>
+<p>Right = D, E, F:</p>
+<div class="formula">\[
+G_R=0.5+0.5-0.5=0.5,\qquad H_R=0.75
+\]</div>
+<div class="formula">\[
+w_R^*=-\frac{0.5}{0.75}=\boxed{-0.6667}
+\]</div>
+<div class="callout info">Left gets a positive correction because it has more positive-class pressure. Right gets a negative correction because it has more negative-class pressure.</div>
+</div>
+<div class="card">
+<h3>Iteration 1 → 2</h3>
+<div class="formula">\[
+F_1=F_0+\eta f_1
+\]</div>
+<div class="formula">\[
+p_1=\sigma(F_1)
+\]</div>
+<div class="formula">\[
+g_1=p_1-y,\qquad h_1=p_1(1-p_1)
+\]</div>
+<p>Build Tree 2 from these new signals.</p>
+</div>
+<div class="card">
+<h3>Iteration 2 → 3</h3>
+<div class="formula">\[
+F_2=F_1+\eta f_2
+\]</div>
+<div class="formula">\[
+p_2=\sigma(F_2),\qquad g_2=p_2-y,\qquad h_2=p_2(1-p_2)
+\]</div>
+<div class="formula">\[
+F_3=F_2+\eta f_3
+\]</div>
+<div class="answer"><b>Key idea:</b> Tree 2 does not see the same gradients as Tree 1. The previous tree changed \(F\), which changed \(p\), which changed the loss derivatives.</div>
+</div>
+</section>
+
+<section class="block" id="prediction">
+<div class="eyebrow">16 · prediction time</div>
+<h2>After training: <u>how does one new row get predicted?</u></h2>
+<div class="card">
+<p>At test time, \(y\) is unknown. Therefore there is no residual, gradient, Hessian or loss calculation.</p>
+<div class="flow">
+<div class="box"><strong>New x</strong><span>features</span></div><div class="arrow">→</div>
+<div class="box"><strong>Tree 1</strong><span>route to leaf</span></div><div class="arrow">→</div>
+<div class="box"><strong>Tree 2 … M</strong><span>route to leaves</span></div><div class="arrow">→</div>
+<div class="box"><strong>Add corrections</strong><span>raw score</span></div><div class="arrow">→</div>
+<div class="box"><strong>Transform</strong><span>output</span></div>
+</div>
+</div>
+<div class="grid2">
+<div class="card"><h3>Regression</h3>
+<div class="formula">\[
+\hat y=F_0+\eta\sum_{m=1}^{M}f_m(x)
+\]</div>
+<p>The final raw score is already the predicted numeric value.</p></div>
+<div class="card"><h3>Binary classification</h3>
+<div class="formula">\[
+F(x)=F_0+\eta\sum_{m=1}^{M}f_m(x)
+\]</div>
+<div class="formula">\[
+p(x)=\sigma(F(x))
+\]</div>
+<p>Then apply a business-appropriate threshold if a hard class is required.</p></div>
+</div>
+</section>
+
+<section class="block" id="hyperparameters">
+<div class="eyebrow">17 · tuning</div>
+<h2>GBDT hyperparameters: <u>what does each one control?</u></h2>
+<div class="card">
+<table>
+<tr><th>Parameter</th><th>What it controls</th><th>If increased</th><th>Typical overfit response</th></tr>
+<tr><td><b>learning_rate</b></td><td>size of every tree's contribution</td><td>larger steps, faster learning</td><td>decrease; usually increase trees</td></tr>
+<tr><td><b>n_estimators</b></td><td>number of correction stages</td><td>more capacity</td><td>use validation / early stopping</td></tr>
+<tr><td><b>max_depth</b></td><td>depth of each tree</td><td>more complex interactions</td><td>decrease</td></tr>
+<tr><td><b>max_leaf_nodes</b></td><td>number of regions per tree</td><td>more specialised regions</td><td>decrease</td></tr>
+<tr><td><b>min_samples_leaf</b></td><td>minimum support per leaf</td><td>larger, smoother leaves</td><td>increase</td></tr>
+<tr><td><b>min_samples_split</b></td><td>minimum rows before a split</td><td>fewer splits</td><td>increase</td></tr>
+<tr><td><b>subsample</b></td><td>row fraction used by each tree</td><td>lower values add stochasticity</td><td>try &lt; 1 when variance is high</td></tr>
+<tr><td><b>max_features</b></td><td>features considered per split</td><td>if reduced, less feature freedom</td><td>reduce cautiously</td></tr>
+<tr><td><b>min_impurity_decrease</b></td><td>minimum split improvement</td><td>requires stronger splits</td><td>increase</td></tr>
+<tr><td><b>loss</b></td><td>definition of training error</td><td>changes the gradient signal</td><td>choose for business objective / robustness</td></tr>
+</table>
+</div>
+<div class="callout info"><b>Big picture:</b> depth/leaves control per-tree complexity; learning rate controls step size; number of trees controls correction stages; minimum-support parameters prevent fragile leaves; subsampling can reduce variance.</div>
+</section>
+
+<section class="block" id="fit">
+<div class="eyebrow">18 · underfit / overfit</div>
+<h2>Underfitting vs overfitting: <u>reason first, tune second</u></h2>
+<div class="grid2">
+<div class="card"><h3>Underfitting</h3><p><b>Training poor + validation poor.</b></p><p>The model lacks capacity or is constrained too aggressively.</p><ul><li>increase depth / leaves carefully</li><li>increase rounds</li><li>reduce overly large minimum-leaf constraints</li><li>reduce excessive regularisation</li></ul></div>
+<div class="card"><h3>Overfitting</h3><p><b>Training keeps improving while validation worsens or plateaus.</b></p><p>The ensemble is learning increasingly specific patterns that do not generalise.</p><ul><li>shallower trees / fewer leaves</li><li>larger minimum leaf constraints</li><li>lower learning rate</li><li>early stopping / fewer effective rounds</li><li>subsampling</li></ul></div>
+</div>
+<div class="card">
+<h3>Read the training/validation pattern</h3>
+<table><tr><th>Observation</th><th>Likely reason</th><th>Action</th></tr>
+<tr><td>Train bad, validation bad</td><td>too little capacity</td><td>increase capacity or rounds carefully</td></tr>
+<tr><td>Train excellent, validation poor</td><td>too much variance</td><td>reduce complexity, add constraints, early stop</td></tr>
+<tr><td>Both improve slowly</td><td>steps may be too small</td><td>more rounds / tune learning rate</td></tr>
+<tr><td>Train improves rapidly, validation peaks early</td><td>aggressive corrections / too many stages</td><td>lower learning rate + early stopping</td></tr>
+</table>
+</div>
+<div class="callout warn"><b>Do not simply minimise training loss.</b> The goal is good performance on unseen data.</div>
+</section>
+
+<section class="block" id="tuning">
+<div class="eyebrow">19 · tuning strategy</div>
+<h2>A practical tuning order: <u>capacity → step size → stages → randomness</u></h2>
+<div class="card">
+<div class="step"><div class="num">1</div><div class="body"><b>Set tree complexity.</b><br>Choose reasonable depth / leaves and minimum leaf size.</div></div>
+<div class="step"><div class="num">2</div><div class="body"><b>Choose learning rate.</b><br>Smaller \(\eta\) makes each correction more conservative.</div></div>
+<div class="step"><div class="num">3</div><div class="body"><b>Increase number of trees.</b><br>Smaller corrections generally need more stages.</div></div>
+<div class="step"><div class="num">4</div><div class="body"><b>Use validation / early stopping.</b><br>Let unseen-data performance decide when enough trees have been added.</div></div>
+<div class="step"><div class="num">5</div><div class="body"><b>Add stochasticity if needed.</b><br>Subsampling rows or limiting feature candidates can reduce variance.</div></div>
+</div>
+<div class="formula">\[
+\boxed{\text{learning rate}\downarrow+\text{number of trees}\uparrow\text{ is a common search pattern}}
+\]</div>
+<div class="callout">It is a search pattern, not a law. Always validate empirically.</div>
+</section>
+
+<section class="block" id="algorithm">
+<div class="eyebrow">20 · final algorithm</div>
+<h2>GBDT algorithm: <u>end-to-end without skipping steps</u></h2>
+<div class="card">
+<h3>Regression — squared-error GBDT</h3>
+<div class="step"><div class="num">1</div><div class="body"><b>Choose loss:</b> \(L(y,F)=\frac12(y-F)^2\).</div></div>
+<div class="step"><div class="num">2</div><div class="body"><b>Initialise:</b> \(F_0=\arg\min_c\sum_iL(y_i,c)=\bar y\).</div></div>
+<div class="step"><div class="num">3</div><div class="body"><b>Compute pseudo-residuals:</b> \(r_i=y_i-F_{m-1}(x_i)\).</div></div>
+<div class="step"><div class="num">4</div><div class="body"><b>Fit regression tree:</b> features \(X\) → pseudo-residuals \(r\); choose splits that reduce pseudo-target SSE.</div></div>
+<div class="step"><div class="num">5</div><div class="body"><b>Leaf correction:</b> mean residual in each leaf.</div></div>
+<div class="step"><div class="num">6</div><div class="body"><b>Shrink and update:</b> \(F_m=F_{m-1}+\eta f_m\).</div></div>
+<div class="step"><div class="num">7</div><div class="body"><b>Repeat:</b> recompute residuals from the new \(F_m\) and train the next tree.</div></div>
+</div>
+<div class="card">
+<h3>Binary classification — log-loss GBDT</h3>
+<div class="step"><div class="num">1</div><div class="body"><b>Choose loss:</b> \(L=-[y\log p+(1-y)\log(1-p)]\), \(p=\sigma(F)\).</div></div>
+<div class="step"><div class="num">2</div><div class="body"><b>Initialise:</b> \(p_0=\bar y\), \(F_0=\log[p_0/(1-p_0)]\).</div></div>
+<div class="step"><div class="num">3</div><div class="body"><b>Compute gradient:</b> \(g_i=p_i-y_i\); negative gradient \(r_i=y_i-p_i\).</div></div>
+<div class="step"><div class="num">4</div><div class="body"><b>Grow tree:</b> fit a regression tree to the negative-gradient target, same as regression GBDT — find regions where correction signals differ.</div></div>
+<div class="step"><div class="num">5</div><div class="body"><b>Second-order leaf update:</b> \(G_j=\sum g_i,\ H_j=\sum h_i,\ h_i=p_i(1-p_i)\), then \(w_j^*=-G_j/H_j\) in the unregularised Taylor/Newton form.</div></div>
+<div class="step"><div class="num">6</div><div class="body"><b>Update raw score:</b> \(F_m=F_{m-1}+\eta f_m\), then \(p_m=\sigma(F_m)\).</div></div>
+<div class="step"><div class="num">7</div><div class="body"><b>Repeat.</b></div></div>
+</div>
+</section>
+
+<section class="block" id="summary">
+<div class="eyebrow">21 · final memory map</div>
+<h2>GBDT: <u>everything in one page</u></h2>
+<div class="grid3">
+<div class="card"><div class="kpi">1</div><h3>Start simple</h3><p>Find the constant prediction that minimises the chosen loss.</p></div>
+<div class="card"><div class="kpi">2</div><h3>Find direction</h3><p>Use the negative gradient: “which way should the current model move?”</p></div>
+<div class="card"><div class="kpi">3</div><h3>Make regions</h3><p>A tree partitions feature space into regions needing similar corrections.</p></div>
+</div>
+<div class="grid3">
+<div class="card"><div class="kpi">4</div><h3>Choose correction</h3><p>Squared regression → mean residual. Second-order form → \(-G/H\).</p></div>
+<div class="card"><div class="kpi">5</div><h3>Shrink it</h3><p>Learning rate \(\eta\) controls how much of the tree enters the ensemble.</p></div>
+<div class="card"><div class="kpi">6</div><h3>Repeat</h3><p>Every new tree sees the errors / loss geometry left by the current ensemble.</p></div>
+</div>
+<div class="math-derivation">
+<div class="label">Equations worth remembering</div>
+<div class="complete-equation">\[
+\boxed{F_m=F_{m-1}+\eta f_m}
+\]</div>
+<div class="complete-equation">\[
+\boxed{r_i=-\frac{\partial L}{\partial F_i}}
+\]</div>
+<div class="complete-equation">\[
+\boxed{\text{Squared regression: }r_i=y_i-F_i}
+\]</div>
+<div class="complete-equation">\[
+\boxed{\text{Binary log loss: }r_i=y_i-p_i}
+\]</div>
+<div class="complete-equation">\[
+\boxed{p_i=\sigma(F_i)=\frac1{1+e^{-F_i}}}
+\]</div>
+<div class="complete-equation">\[
+\boxed{g_i=p_i-y_i,\qquad h_i=p_i(1-p_i)}
+\]</div>
+<div class="complete-equation">\[
+\boxed{G_j=\sum_{i\in R_j}g_i,\qquad H_j=\sum_{i\in R_j}h_i}
+\]</div>
+<div class="complete-equation">\[
+\boxed{w_j^*=-\frac{G_j}{H_j}}
+\]</div>
+</div>
+<div class="card">
+<h3>The one-sentence mental model</h3>
+<div class="quote">GBDT repeatedly builds a tree that learns <b>how the current model should change</b>, turns that into region-specific corrections, shrinks the correction, adds it to the ensemble, and repeats.</div>
+</div>
+<div class="callout warn">
+<b>Final distinction to never mix up:</b>
+\(y-F\) is the residual for squared-error regression because negative gradient equals residual.
+\(y-p\) is the negative gradient for binary log loss.
+\(-G/H\) is a second-order leaf update obtained by minimising a Taylor approximation.
+</div>
+</section>
+</main></div></div><script>document.querySelectorAll("nav a").forEach(a=>a.addEventListener("click",()=>{document.querySelectorAll("nav a").forEach(x=>x.style.background="");a.style.background="#ffffff08";}));window.addEventListener("load",()=>{if(window.MathJax&&window.MathJax.typesetPromise)window.MathJax.typesetPromise();});</script></body></html>

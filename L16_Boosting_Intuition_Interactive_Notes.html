@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Boosting — The Intuition, End to End</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Patrick+Hand&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --board:#0c1014; --card:#151b21; --card-line:#222b32;
+    --chalk:#e9eef2; --chalk-dim:#9fb0bb;
+    --cyan:#5fd8e0; --cyan-dim:#2c5a5e;
+    --pink:#f17fb0; --pink-dim:#5a2f42;
+    --yellow:#f4cf5e; --green:#8fe3a6; --green-dim:#2f4f3a;
+    --purple:#b39ddb; --purple-dim:#4a3f6b;
+    --white-marker:#f5f5f0; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{ background:var(--board); color:var(--chalk); font-family:'Inter',sans-serif; line-height:1.55; -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width:1180px; margin:0 auto; padding:0 24px 120px; }
+  h1,h2,h3,.hand{ font-family:'Caveat',cursive; font-weight:700; }
+  .hero{ padding:56px 0 30px; text-align:center; }
+  .chip{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--cyan); border:1px solid var(--cyan-dim); background:rgba(95,216,224,0.06); padding:6px 14px; border-radius:999px; margin-bottom:16px; }
+  .hero h1{ font-size:clamp(26px,5vw,46px); color:var(--white-marker); margin:0 0 8px; }
+  .hero h1 span{color:var(--pink);}
+  .hero p{ font-family:'Patrick Hand',cursive; color:var(--chalk-dim); font-size:17px; max-width:800px; margin:0 auto; }
+  .layout{ display:grid; grid-template-columns:270px 1fr; gap:36px; align-items:start; }
+  nav.toc{ position:sticky; top:24px; background:var(--card); border:1px solid var(--card-line); border-radius:var(--radius); padding:18px 16px; font-family:'JetBrains Mono',monospace; font-size:11px; max-height:calc(100vh - 48px); overflow-y:auto; }
+  nav.toc .toc-title{ color:var(--chalk-dim); text-transform:uppercase; letter-spacing:1.2px; font-size:10px; margin-bottom:8px; margin-top:14px; }
+  nav.toc .toc-title:first-child{margin-top:0;}
+  nav.toc a{ display:block; color:var(--chalk-dim); text-decoration:none; padding:5px 8px; border-radius:8px; margin-bottom:1px; }
+  nav.toc a:hover{color:var(--chalk); background:rgba(255,255,255,0.04);}
+  main{min-width:0;}
+  section.block{ margin-bottom:50px; scroll-margin-top:24px; }
+  .section-eyebrow{ font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--pink); margin-bottom:6px; }
+  section.block h2{ font-size:29px; color:var(--white-marker); margin:0 0 12px; }
+  section.block h2 .underline{ text-decoration:underline; text-decoration-color:var(--cyan); text-decoration-thickness:3px; }
+  p.lead{ font-size:14.5px; color:#cdd8de; max-width:850px; }
+  .card{ background:var(--card); border:1px solid var(--card-line); border-radius:var(--radius); padding:20px 22px; margin:14px 0; }
+  .card h3{ font-family:'Inter',sans-serif; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.7px; color:var(--cyan); margin:0 0 10px; }
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  .grid-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;}
+  @media (max-width:900px){ .layout{grid-template-columns:1fr;} nav.toc{position:relative; top:0; margin-bottom:20px; max-height:none;} .grid-2,.grid-3{grid-template-columns:1fr;} }
+  table.data-table{ width:100%; border-collapse:collapse; font-family:'JetBrains Mono',monospace; font-size:12px; }
+  table.data-table th{ text-align:left; color:var(--chalk-dim); font-weight:500; padding:6px 9px; border-bottom:1px solid var(--card-line); text-transform:uppercase; font-size:9.5px; letter-spacing:0.4px; }
+  table.data-table td{ padding:6px 9px; border-bottom:1px solid rgba(255,255,255,0.04); }
+  table.data-table td.hl{color:var(--yellow); font-weight:700;}
+  table.data-table td.zero{color:var(--pink); font-weight:700; background:rgba(241,127,176,0.08);}
+  table.data-table td.good{color:var(--green); font-weight:700; background:rgba(143,227,166,0.08);}
+  table.data-table td.left{text-align:left;}
+  .tbl-wrap{overflow-x:auto;}
+  blockquote.story{ font-family:'Patrick Hand',cursive; font-size:16.5px; color:#dbe6ec; border-left:3px solid var(--yellow); padding:6px 18px; margin:14px 0; background:rgba(244,207,94,0.04); border-radius:0 10px 10px 0; }
+  .pipeline{ display:flex; align-items:center; gap:0; overflow-x:auto; padding:10px 0 18px; }
+  .pipe-step{ flex:0 0 auto; min-width:115px; background:var(--card); border:1px solid var(--card-line); border-radius:12px; padding:12px 14px; text-align:center; }
+  .pipe-step .n{ font-family:'JetBrains Mono',monospace; color:var(--cyan); font-size:10.5px; margin-bottom:5px; }
+  .pipe-step .t{font-weight:700; font-size:12px; color:var(--white-marker);}
+  .pipe-step .d{font-size:9.5px; color:var(--chalk-dim); margin-top:3px;}
+  .pipe-arrow{ flex:0 0 auto; width:20px; text-align:center; color:var(--pink); font-size:16px; }
+  .formula{ font-family:'JetBrains Mono',monospace; background:#0a0d10; border:1px solid var(--card-line); border-radius:10px; padding:14px 20px; margin:12px 0; font-size:14px; color:var(--white-marker); overflow-x:auto; }
+  .formula.center{text-align:center;}
+  .formula .k{color:var(--yellow);} .formula .r{color:var(--cyan);} .formula .l{color:var(--pink);}
+  .callout{ background:rgba(143,227,166,0.08); border:1px solid var(--green-dim); border-radius:10px; padding:12px 16px; color:var(--green); font-size:13px; font-family:'JetBrains Mono',monospace; margin:12px 0; line-height:1.6; }
+  .callout.warn{ background:rgba(244,207,94,0.08); border-color:#5a4f2f; color:var(--yellow); }
+  .callout.bad{ background:rgba(241,127,176,0.08); border-color:var(--pink-dim); color:var(--pink); }
+  .callout.info{ background:rgba(95,216,224,0.08); border-color:var(--cyan-dim); color:var(--cyan); }
+  .callout.purple{ background:rgba(179,157,219,0.08); border-color:var(--purple-dim); color:var(--purple); }
+  .analogy-row{ display:flex; gap:14px; margin-top:12px; flex-wrap:wrap; }
+  .analogy{ flex:1; min-width:150px; background:var(--card); border:1px solid var(--card-line); border-radius:10px; padding:14px 16px; text-align:center; }
+  .analogy h4{font-size:14px; margin:6px 0 4px; color:var(--white-marker);}
+  .analogy p{font-size:11.5px; color:var(--chalk-dim); margin:0;}
+  .footnote-strip{ margin-top:60px; border-top:1px dashed var(--card-line); padding-top:22px; text-align:center; color:var(--chalk-dim); font-family:'JetBrains Mono',monospace; font-size:12px; }
+  .footnote-strip .hand{color:var(--cyan); font-size:22px; display:block; margin-bottom:6px;}
+  .num-hl{ color:var(--yellow); font-weight:700; }
+  .qa{background:var(--card); border:1px solid var(--card-line); border-radius:12px; padding:16px 18px; margin:12px 0;}
+  .qa .q{color:var(--yellow); font-weight:700; margin-bottom:6px;}
+  .qa .a{color:#cdd8de; font-size:13px;}
+  .badge-impl{display:inline-block; background:rgba(244,207,94,0.1); border:1px solid #5a4f2f; color:var(--yellow); font-family:'JetBrains Mono',monospace; font-size:10px; padding:2px 9px; border-radius:6px; margin-left:6px;}
+  .badge-next{display:inline-block; background:rgba(179,157,219,0.12); border:1px solid var(--purple-dim); color:var(--purple); font-family:'JetBrains Mono',monospace; font-size:10px; padding:2px 9px; border-radius:6px; margin-left:6px;}
+  .svg-card{ background:#fff; border:1px solid var(--card-line); border-radius:12px; padding:14px; }
+  .svg-caption{ text-align:center; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:#555; margin-top:8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="chip">10-08-2026 &middot; Module: Supervised Learning &middot; Class 16</div>
+    <h1>Boosting, <span>The Intuition End to End</span></h1>
+    <div class="chip" style="background:none; border-color:var(--pink-dim); color:var(--pink); margin-top:0;">Concept and worked tables only — algorithm-level math (GBDT, XGBoost, LightGBM internals) is next class</div>
+  </div>
+
+  <div class="layout">
+    <nav class="toc" id="toc">
+      <div class="toc-title">Recap → Bridge</div>
+      <a href="#rf-recap">Random Forest, at a high level</a>
+      <a href="#new-family">A different ensemble family</a>
+      <div class="toc-title">The Intuition</div>
+      <a href="#boosting-intuition">What boosting IS, visually</a>
+      <a href="#bagging-vs-boosting">Bagging vs Boosting, side by side</a>
+      <div class="toc-title">The Generic Walkthrough</div>
+      <a href="#generic-table">F0, Tree 1, and the update rule</a>
+      <a href="#eta-question">Is &eta; the same for every tree?</a>
+      <div class="toc-title">Regression, Worked</div>
+      <a href="#reg-example">A full small example</a>
+      <a href="#when-stop">When does it stop?</a>
+      <div class="toc-title">Classification, Worked</div>
+      <a href="#clf-intuition">Mean, or majority, or something else?</a>
+      <a href="#clf-example">A full small example</a>
+      <a href="#tree-pred-question">Is the tree's prediction still "a mean"?</a>
+      <div class="toc-title">Looking Ahead</div>
+      <a href="#algo-family">GBDT, XGBoost, LightGBM — how they differ</a>
+      <a href="#summary">Summary — every loop closed</a>
+    </nav>
+
+    <main>
+      <section class="block" id="rf-recap">
+        <div class="section-eyebrow">Recap → Bridge</div>
+        <h2>Random Forest, <span class="underline">At a High Level</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Before the new topic, one clean picture of what we already have — what IS each base learner in a Random Forest, exactly?</p>
+          <div class="pipeline">
+            <div class="pipe-step"><div class="n">01</div><div class="t">Base learner</div><div class="d">a single Decision Tree</div></div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-step"><div class="n">02</div><div class="t">Grown how?</div><div class="d">deep, unrestricted — low bias, high variance ON PURPOSE</div></div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-step"><div class="n">03</div><div class="t">Trained on?</div><div class="d">a bootstrap sample of rows + a random subset of columns per split</div></div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-step"><div class="n">04</div><div class="t">Combined by?</div><div class="d">simple average / majority vote — all trees built in PARALLEL, independently</div></div>
+          </div>
+          <div class="callout info">Every base learner in a Random Forest is INDEPENDENT of every other one — Tree 7 never knows Tree 3 exists. They're all shown roughly the same kind of problem (a random slice of the same data), and the forest's strength comes purely from averaging away their individual, uncorrelated mistakes.</div>
+        </div>
+      </section>
+
+      <section class="block" id="new-family">
+        <h2>A Different <span class="underline">Ensemble Family</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Random Forest is ONE way to combine many models. It sits inside a bigger idea called <b>Ensemble Learning</b> — and there's a second major branch we haven't touched yet:</p>
+          <div class="pipeline">
+            <div class="pipe-step" style="border-color:var(--cyan);"><div class="n">Ensemble Learning</div></div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-step" style="border-color:var(--green-dim);"><div class="n">✓ Already covered</div><div class="t">Bagging</div><div class="d">parallel, independent</div></div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-step" style="border-color:var(--pink-dim);"><div class="n">→ Today</div><div class="t">Boosting</div><div class="d">sequential, dependent</div></div>
+          </div>
+          <div class="callout warn"><b>DT &rarr; RF</b> was our journey so far: one weak, unstable tree, stabilized by bagging many of them together. <b>Today: DT &rarr; Boosting</b> — the exact same base learner (a Decision Tree), combined in a completely different way.</div>
+        </div>
+      </section>
+      <section class="block" id="boosting-intuition">
+        <div class="section-eyebrow">The Intuition</div>
+        <h2>What Boosting IS, <span class="underline">Visually</span></h2>
+        <div class="card">
+          <blockquote class="story">Imagine a student solving a hard problem set. First attempt: gets most of it wrong. A tutor looks specifically at WHAT was gotten wrong, and re-teaches just that part. Second attempt: better, but still a few mistakes remain. A second tutor looks at THOSE specific remaining mistakes. This repeats — each tutor's entire job is to fix whatever the group has collectively gotten wrong so far, nothing more, nothing less.</blockquote>
+          <div class="callout info"><b>That's boosting.</b> Not many independent opinions averaged (that's bagging) — one continuously-improving answer, refined by a sequence of specialists, each one hired specifically to fix what's still broken.</div>
+        </div>
+        <div class="svg-card">
+          <svg viewBox="0 0 800 260" width="100%" height="auto">
+            <rect x="20" y="90" width="120" height="60" rx="10" fill="#e8f0ff" stroke="#1D5FD1" stroke-width="1.5"/>
+            <text x="80" y="115" text-anchor="middle" font-size="13" font-family="monospace" fill="#1D5FD1" font-weight="bold">Tree 1</text>
+            <text x="80" y="133" text-anchor="middle" font-size="10" font-family="monospace" fill="#555">learns the data</text>
+
+            <line x1="140" y1="120" x2="195" y2="120" stroke="#888" stroke-width="1.5" marker-end="url(#arrow)"/>
+            <text x="168" y="110" text-anchor="middle" font-size="9.5" font-family="monospace" fill="#C0392B">errors made</text>
+
+            <rect x="200" y="90" width="120" height="60" rx="10" fill="#fff0e8" stroke="#C0392B" stroke-width="1.5"/>
+            <text x="260" y="115" text-anchor="middle" font-size="13" font-family="monospace" fill="#C0392B" font-weight="bold">Tree 2</text>
+            <text x="260" y="133" text-anchor="middle" font-size="10" font-family="monospace" fill="#555">fixes Tree 1's errors</text>
+
+            <line x1="320" y1="120" x2="375" y2="120" stroke="#888" stroke-width="1.5" marker-end="url(#arrow)"/>
+            <text x="348" y="110" text-anchor="middle" font-size="9.5" font-family="monospace" fill="#C0392B">remaining errors</text>
+
+            <rect x="380" y="90" width="120" height="60" rx="10" fill="#e8fff0" stroke="#1F7A56" stroke-width="1.5"/>
+            <text x="440" y="115" text-anchor="middle" font-size="13" font-family="monospace" fill="#1F7A56" font-weight="bold">Tree 3</text>
+            <text x="440" y="133" text-anchor="middle" font-size="10" font-family="monospace" fill="#555">fixes what's still wrong</text>
+
+            <line x1="500" y1="120" x2="545" y2="120" stroke="#888" stroke-width="1.5" marker-end="url(#arrow)"/>
+            <text x="522" y="110" text-anchor="middle" font-size="16" font-family="monospace" fill="#888">...</text>
+            <line x1="558" y1="120" x2="595" y2="120" stroke="#888" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+            <rect x="600" y="90" width="150" height="60" rx="10" fill="#fff8e0" stroke="#C99A00" stroke-width="1.5"/>
+            <text x="675" y="112" text-anchor="middle" font-size="12" font-family="monospace" fill="#a97400" font-weight="bold">Tree N</text>
+            <text x="675" y="128" text-anchor="middle" font-size="9.5" font-family="monospace" fill="#555">final specialist</text>
+
+            <defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#888"/></marker></defs>
+
+            <rect x="150" y="195" width="500" height="46" rx="8" fill="#f0f4ff" stroke="#1D5FD1" stroke-width="1.3"/>
+            <text x="400" y="223" text-anchor="middle" font-size="13" font-family="monospace" fill="#1D5FD1" font-weight="bold">F(x) = Tree 1 + Tree 2 + Tree 3 + ... + Tree N</text>
+          </svg>
+          <div class="svg-caption">Each tree is built ONLY once the previous ones exist — never in parallel. The final prediction is the SUM of every tree's contribution, not a vote or an average.</div>
+        </div>
+      </section>
+
+      <section class="block" id="bagging-vs-boosting">
+        <h2>Bagging vs Boosting, <span class="underline">Side By Side</span></h2>
+        <div class="card">
+          <table class="data-table">
+            <tr><th></th><th>Bagging / Random Forest</th><th>Boosting</th></tr>
+            <tr><td class="left mono">Trees built...</td><td class="left mono">In PARALLEL, all independent</td><td class="left mono good">SEQUENTIALLY, each depends on all before it</td></tr>
+            <tr><td class="left mono">Each tree sees...</td><td class="left mono">A random resample of the ORIGINAL data</td><td class="left mono good">The ERRORS left over by the ensemble so far</td></tr>
+            <tr><td class="left mono">Individual tree is...</td><td class="left mono">Deep, expressive, high variance</td><td class="left mono good">Shallow, simple — a "weak learner"</td></tr>
+            <tr><td class="left mono">Combined by...</td><td class="left mono">Averaging / majority vote</td><td class="left mono good">Summing (with a shrink factor — more on this shortly)</td></tr>
+            <tr><td class="left mono">Can models be trained in parallel (compute)?</td><td class="left mono good">Yes — a real practical speed advantage</td><td class="left mono zero">No — inherently sequential, tree m NEEDS tree m&minus;1 finished first</td></tr>
+          </table>
+        </div>
+      </section>
+      <section class="block" id="generic-table">
+        <div class="section-eyebrow">The Generic Walkthrough</div>
+        <h2>F0, Tree 1, and the <span class="underline">Update Rule</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Staying general — this pattern is true of boosting itself, before we commit to any specific algorithm:</p>
+          <table class="data-table">
+            <tr><th>Step</th><th>What happens</th></tr>
+            <tr><td class="left mono">Start</td><td class="left mono">Make one simple, naive first guess for EVERY row — call it F<sub>0</sub></td></tr>
+            <tr><td class="left mono">Round 1</td><td class="left mono">Measure how wrong F<sub>0</sub> is on every row (the "error"). Build Tree 1 to specifically predict THAT error.</td></tr>
+            <tr><td class="left mono">Update</td><td class="left mono">F<sub>1</sub> = F<sub>0</sub> + &eta; &times; (Tree 1's prediction)</td></tr>
+            <tr><td class="left mono">Round 2</td><td class="left mono">Measure how wrong F<sub>1</sub> now is. Build Tree 2 to predict THAT (smaller, hopefully) error.</td></tr>
+            <tr><td class="left mono">Update</td><td class="left mono">F<sub>2</sub> = F<sub>1</sub> + &eta; &times; (Tree 2's prediction)</td></tr>
+            <tr><td class="left mono">...repeat...</td><td class="left mono">Every round: measure current error &rarr; build a tree on it &rarr; add it in, scaled by &eta;</td></tr>
+          </table>
+          <div class="formula center">F<sub>m</sub>(x) = F<sub>m&minus;1</sub>(x) + &eta; &times; Tree<sub>m</sub>(x)</div>
+        </div>
+      </section>
+
+      <section class="block" id="eta-question">
+        <h2>Is &eta; the Same <span class="underline">For Every Tree?</span></h2>
+        <div class="card">
+          <div class="callout info" style="font-size:14.5px;"><b>Yes — at this level, the clean and correct answer is: &eta; (the learning rate, sometimes also called the shrinkage factor) is ONE fixed number, chosen before training starts, and used identically at every single round.</b> Tree 1's contribution is scaled by the same &eta; as Tree 50's contribution.</div>
+          <div class="formula center">F<sub>M</sub>(x) = F<sub>0</sub>(x) + &eta;&times;Tree<sub>1</sub>(x) + &eta;&times;Tree<sub>2</sub>(x) + ... + &eta;&times;Tree<sub>M</sub>(x)</div>
+          <p class="lead">Why bother shrinking every tree's contribution at all, instead of just adding each tree's full prediction (&eta;=1)? Two intuitive reasons:</p>
+          <div class="grid-2">
+            <div class="card"><h3>Prevents overreacting</h3><p style="font-size:12.5px; color:var(--chalk-dim);">A tree fit to a NOISY error signal might chase noise, not real pattern. Adding only a fraction of its opinion each round stops the model from overcommitting to any one tree's possibly-wrong read of the situation.</p></div>
+            <div class="card"><h3>Many small steps &gt; few big steps</h3><p style="font-size:12.5px; color:var(--chalk-dim);">Same idea as taking small steps downhill instead of big leaps — you're less likely to overshoot the best answer. More rounds are needed, but the end result usually generalizes better.</p></div>
+          </div>
+          <div class="callout warn" style="font-size:13px;"><b>One honest flag, for next class:</b> is η *truly* the entire story, or is there a second, more subtle multiplier hiding inside "Tree<sub>m</sub>(x)" itself that CAN vary — round to round, or even leaf to leaf? There is a real, deeper nuance here once we get into the exact algorithm (GBDT specifically). For today: &eta; itself never changes round to round — that part is settled. Exactly how each tree's own prediction gets computed is where next class's algorithm-level detail picks up.</div>
+        </div>
+      </section>
+      <section class="block" id="reg-example">
+        <div class="section-eyebrow">Regression, Worked</div>
+        <h2>A Full <span class="underline">Small Example</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Predicting Delivery Time (minutes) from Distance (km). 6 rows, small enough to track every number by hand.</p>
+          <div class="tbl-wrap"><table class="data-table">
+            <tr><th>Row</th><th>Distance</th><th>DeliveryTime (y)</th></tr>
+            <tr><td class="mono">1</td><td class="mono">2</td><td class="mono">15</td></tr>
+            <tr><td class="mono">2</td><td class="mono">4</td><td class="mono">18</td></tr>
+            <tr><td class="mono">3</td><td class="mono">6</td><td class="mono">25</td></tr>
+            <tr><td class="mono">4</td><td class="mono">8</td><td class="mono">30</td></tr>
+            <tr><td class="mono">5</td><td class="mono">10</td><td class="mono">45</td></tr>
+            <tr><td class="mono">6</td><td class="mono">12</td><td class="mono">50</td></tr>
+          </table></div>
+        </div>
+        <div class="card screenshot">
+          <h3>Step 0 — the naive starting guess</h3>
+          <div class="formula center">F<sub>0</sub> = mean(y) = (15+18+25+30+45+50)/6 = <span class="k">30.5</span> &nbsp;&nbsp;— same number for every row</div>
+          <div class="callout info">Why the MEAN specifically? For a regression problem, the single number that's "least wrong overall" (minimizes total squared error) if you have to guess ONE value for everyone is provably the average. Full reasoning why: next class.</div>
+        </div>
+        <div class="card screenshot">
+          <h3>Round 1</h3>
+          <div class="tbl-wrap"><table class="data-table">
+            <tr><th>Row</th><th>Distance</th><th>y</th><th>F0</th><th>Error = y&minus;F0</th></tr>
+            <tr><td class="mono">1</td><td class="mono">2</td><td class="mono">15</td><td class="mono">30.5</td><td class="mono zero">&minus;15.5</td></tr>
+            <tr><td class="mono">2</td><td class="mono">4</td><td class="mono">18</td><td class="mono">30.5</td><td class="mono zero">&minus;12.5</td></tr>
+            <tr><td class="mono">3</td><td class="mono">6</td><td class="mono">25</td><td class="mono">30.5</td><td class="mono zero">&minus;5.5</td></tr>
+            <tr><td class="mono">4</td><td class="mono">8</td><td class="mono">30</td><td class="mono">30.5</td><td class="mono zero">&minus;0.5</td></tr>
+            <tr><td class="mono">5</td><td class="mono">10</td><td class="mono">45</td><td class="mono">30.5</td><td class="mono good">+14.5</td></tr>
+            <tr><td class="mono">6</td><td class="mono">12</td><td class="mono">50</td><td class="mono">30.5</td><td class="mono good">+19.5</td></tr>
+          </table></div>
+          <div class="callout warn">Tree 1 is built with THIS error column as its target — not the original y. It learns: "short distances are over-predicted by F0, long distances are under-predicted."</div>
+          <div class="formula center">Tree 1 finds: Distance &le; 9 &rarr; predict &minus;8.5 &nbsp;&nbsp;&nbsp;&nbsp; Distance &gt; 9 &rarr; predict +17.0</div>
+          <div class="formula center">F<sub>1</sub> = F<sub>0</sub> + 0.5 &times; Tree1(x)</div>
+          <div class="tbl-wrap"><table class="data-table">
+            <tr><th>Row</th><th>F0</th><th>Tree1 pred</th><th>0.5&times;Tree1</th><th>F1</th></tr>
+            <tr><td class="mono">1&ndash;4 (Dist&le;9)</td><td class="mono">30.5</td><td class="mono">&minus;8.5</td><td class="mono">&minus;4.25</td><td class="mono hl">26.25</td></tr>
+            <tr><td class="mono">5&ndash;6 (Dist&gt;9)</td><td class="mono">30.5</td><td class="mono">+17.0</td><td class="mono">+8.5</td><td class="mono hl">39.00</td></tr>
+          </table></div>
+          <div class="formula center">MSE after round 1 = <span class="k">61.21</span> &nbsp;&nbsp;<span style="color:var(--chalk-dim); font-size:11px;">(started at MSE(F0) = variance of y = 172.9)</span></div>
+        </div>
+        <div class="card screenshot">
+          <h3>Round 2</h3>
+          <div class="tbl-wrap"><table class="data-table">
+            <tr><th>Row</th><th>y</th><th>F1</th><th>Error = y&minus;F1</th></tr>
+            <tr><td class="mono">1</td><td class="mono">15</td><td class="mono">26.25</td><td class="mono zero">&minus;11.25</td></tr>
+            <tr><td class="mono">2</td><td class="mono">18</td><td class="mono">26.25</td><td class="mono zero">&minus;8.25</td></tr>
+            <tr><td class="mono">3</td><td class="mono">25</td><td class="mono">26.25</td><td class="mono zero">&minus;1.25</td></tr>
+            <tr><td class="mono">4</td><td class="mono">30</td><td class="mono">26.25</td><td class="mono good">+3.75</td></tr>
+            <tr><td class="mono">5</td><td class="mono">45</td><td class="mono">39.00</td><td class="mono good">+6.00</td></tr>
+            <tr><td class="mono">6</td><td class="mono">50</td><td class="mono">39.00</td><td class="mono good">+11.00</td></tr>
+          </table></div>
+          <div class="formula center">Tree 2 finds: Distance &le; 7 &rarr; predict &minus;6.92 &nbsp;&nbsp;&nbsp;&nbsp; Distance &gt; 7 &rarr; predict +6.92</div>
+          <div class="formula center">F<sub>2</sub> = F<sub>1</sub> + 0.5 &times; Tree2(x)</div>
+          <div class="tbl-wrap"><table class="data-table">
+            <tr><th>Row</th><th>F1</th><th>F2</th></tr>
+            <tr><td class="mono">1,2,3 (Dist&le;7)</td><td class="mono">26.25</td><td class="mono hl">22.79</td></tr>
+            <tr><td class="mono">4 (Dist=8)</td><td class="mono">26.25</td><td class="mono hl">29.71</td></tr>
+            <tr><td class="mono">5,6 (Dist&gt;9)</td><td class="mono">39.00</td><td class="mono hl">42.46</td></tr>
+          </table></div>
+          <div class="formula center">MSE after round 2 = <span class="k">25.33</span> &nbsp;&nbsp;(down from 61.21)</div>
+        </div>
+        <div class="callout purple">Notice the pattern already: Tree 1 grabbed the BIGGEST, most obvious split (short vs long distance). Tree 2 refined WITHIN that using a slightly different cut point (7 instead of 9), because the remaining error's shape had shifted. Every round targets whatever's currently the biggest problem — never the same fixed thing twice.</div>
+      </section>
+
+      <section class="block" id="when-stop">
+        <h2>When Does It <span class="underline">Stop?</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Short answer for today: you decide, upfront, HOW MANY trees to build (a hyperparameter, commonly called <code>n_estimators</code>) — boosting doesn't have a natural "done" signal the way, say, a single tree stops when a node is pure.</p>
+          <table class="data-table">
+            <tr><th>Too few trees</th><th>Too many trees</th></tr>
+            <tr><td class="left mono zero">Model is still underfit — error hasn't been driven down enough</td><td class="left mono zero">Model can start fitting NOISE in the training data — overfitting</td></tr>
+          </table>
+          <div class="callout warn"><span class="badge-next">Next class</span> The precise, principled way to pick the right number of trees (watching a validation error curve, early stopping, the interaction with &eta;) — today, just know that "how many trees" is a real, tunable choice, not something the algorithm figures out for you automatically.</div>
+        </div>
+      </section>
+      <section class="block" id="clf-intuition">
+        <div class="section-eyebrow">Classification, Worked</div>
+        <h2>Mean, Majority, <span class="underline">or Something Else?</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">For regression, F<sub>0</sub> was simply mean(y). For classification, is the starting guess the MAJORITY class? Or still some kind of average? Let's find out by building the example rather than guessing.</p>
+          <div class="callout info"><b>Short answer, correctly stated:</b> it's still fundamentally based on the AVERAGE of y (i.e., what fraction of rows are class 1) — not a hard majority vote. But that average doesn't get used directly as a probability. It gets converted into something called <b>log-odds</b> first. Let's see exactly why, with real numbers.</div>
+        </div>
+      </section>
+
+      <section class="block" id="clf-example">
+        <h2>A Full <span class="underline">Small Example</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Predicting Pass (0/1) from StudyHours. 6 rows.</p>
+          <div class="tbl-wrap"><table class="data-table">
+            <tr><th>Row</th><th>StudyHours</th><th>Pass (y)</th></tr>
+            <tr><td class="mono">1</td><td class="mono">1</td><td class="mono zero">0</td></tr>
+            <tr><td class="mono">2</td><td class="mono">2</td><td class="mono zero">0</td></tr>
+            <tr><td class="mono">3</td><td class="mono">3</td><td class="mono zero">0</td></tr>
+            <tr><td class="mono">4</td><td class="mono">6</td><td class="mono good">1</td></tr>
+            <tr><td class="mono">5</td><td class="mono">7</td><td class="mono good">1</td></tr>
+            <tr><td class="mono">6</td><td class="mono">8</td><td class="mono good">1</td></tr>
+          </table></div>
+        </div>
+        <div class="card screenshot">
+          <h3>Step 0 — the starting guess</h3>
+          <div class="formula center">Average of y (positive rate) = 3/6 = <span class="k">0.50</span></div>
+          <p class="lead" style="margin-top:0;">If classification just used 0.50 directly as F<sub>0</sub> (like regression uses the mean directly), the math for later rounds gets awkward — probabilities are stuck in [0,1], but we'll soon be ADDING tree predictions that could be any sign or size, and adding numbers can easily push you outside [0,1]. The fix: work in <b>log-odds</b> instead of probability.</p>
+          <div class="formula center">F<sub>0</sub> = log( 0.50 / (1&minus;0.50) ) = log(1) = <span class="k">0.00</span></div>
+          <div class="callout warn">F<sub>0</sub>=0 here is a clean coincidence of exactly 50/50 data — log-odds of a 50/50 split is always exactly 0. Converting back: sigmoid(0) = 0.50, which correctly recovers our original average. Nothing is lost — it's the SAME starting information, just represented in a space where addition behaves nicely.</div>
+        </div>
+        <div class="card screenshot">
+          <h3>Round 1</h3>
+          <div class="tbl-wrap"><table class="data-table">
+            <tr><th>Row</th><th>StudyHours</th><th>y</th><th>p0 = sigmoid(F0)</th><th>Error = y&minus;p0</th></tr>
+            <tr><td class="mono">1</td><td class="mono">1</td><td class="mono">0</td><td class="mono">0.50</td><td class="mono zero">&minus;0.50</td></tr>
+            <tr><td class="mono">2</td><td class="mono">2</td><td class="mono">0</td><td class="mono">0.50</td><td class="mono zero">&minus;0.50</td></tr>
+            <tr><td class="mono">3</td><td class="mono">3</td><td class="mono">0</td><td class="mono">0.50</td><td class="mono zero">&minus;0.50</td></tr>
+            <tr><td class="mono">4</td><td class="mono">6</td><td class="mono">1</td><td class="mono">0.50</td><td class="mono good">+0.50</td></tr>
+            <tr><td class="mono">5</td><td class="mono">7</td><td class="mono">1</td><td class="mono">0.50</td><td class="mono good">+0.50</td></tr>
+            <tr><td class="mono">6</td><td class="mono">8</td><td class="mono">1</td><td class="mono">0.50</td><td class="mono good">+0.50</td></tr>
+          </table></div>
+          <div class="callout info">Same idea as regression's residual: "actual minus current guess." Here "current guess" is a PROBABILITY (0.50), and "actual" is the 0/1 label — the error tells the tree which rows are currently under- or over-estimated.</div>
+          <div class="formula center">Tree 1 finds: StudyHours &le; 4.5 &rarr; group A &nbsp;&nbsp;&nbsp;&nbsp; StudyHours &gt; 4.5 &rarr; group B</div>
+          <div class="formula center">F<sub>1</sub> = F<sub>0</sub> + 0.8 &times; (Tree 1's update)</div>
+          <div class="tbl-wrap"><table class="data-table">
+            <tr><th>Group</th><th>F1 (log-odds)</th><th>p1 = sigmoid(F1)</th></tr>
+            <tr><td class="left mono">A: rows 1,2,3 (&le;4.5 hrs)</td><td class="mono">&minus;1.60</td><td class="mono hl">0.168</td></tr>
+            <tr><td class="left mono">B: rows 4,5,6 (&gt;4.5 hrs)</td><td class="mono">+1.60</td><td class="mono hl">0.832</td></tr>
+          </table></div>
+          <div class="callout good" style="background:rgba(143,227,166,0.08); border-color:var(--green-dim); color:var(--green);">After just ONE round, the model already assigns 83.2% probability to the "studied more" group and only 16.8% to the "studied less" group — a real, usable prediction, starting from total uncertainty (50/50).</div>
+        </div>
+      </section>
+
+      <section class="block" id="tree-pred-question">
+        <h2>Is the Tree's Prediction <span class="underline">Still "a Mean"?</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Your instinct — "regression takes a mean, does classification do the same?" — is PARTIALLY right, and worth being precise about exactly where it holds and where it doesn't.</p>
+          <div class="grid-2">
+            <div class="card"><h3 style="color:var(--green);">Where "mean" still applies</h3><p style="font-size:12.5px; color:var(--chalk-dim);">The tree DECIDES its splits the same way in both cases — by grouping rows so that the error values within each group are as similar as possible, using averaging internally to evaluate candidate splits. That part is genuinely shared machinery between regression and classification.</p></div>
+            <div class="card"><h3 style="color:var(--pink);">Where it stops being just "mean"</h3><p style="font-size:12.5px; color:var(--chalk-dim);">The exact NUMBER added to update F for classification involves an extra adjustment beyond the raw average error in each group — related to how confident or unsure the model currently is on those rows. It's close to "the average error," but not exactly equal to it.</p></div>
+          </div>
+          <div class="callout warn" style="font-size:13px;"><span class="badge-next">Next class</span> The precise formula for that adjustment (and exactly why it's needed) is real, genuine algorithm-level detail — this is the SAME nuance flagged in the &eta; section earlier. For today: the tree-BUILDING mechanic (finding good groupings) is shared with regression; the exact VALUE assigned to each group has an extra classification-specific refinement we'll derive properly next class.</div>
+          <div class="callout purple">Good instinct to question this rather than assume — "is it just the same mean logic" is precisely the right thing to be suspicious about, and the honest answer is "mostly, with one genuine refinement still to come."</div>
+        </div>
+      </section>
+      <section class="block" id="algo-family">
+        <div class="section-eyebrow">Looking Ahead</div>
+        <h2>GBDT, XGBoost, LightGBM — <span class="underline">How They Differ</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Your instinct that these are all "boosting, but each does something different in how predictions get computed" is <b>correct</b> — here's the accurate high-level map, precise math deferred to next class.</p>
+          <table class="data-table">
+            <tr><th>Algorithm</th><th>What makes it different (high level, correct)</th></tr>
+            <tr><td class="left mono">GBDT<br><span style="color:var(--chalk-dim); font-size:10px;">(the classic version, e.g. sklearn)</span></td><td class="left mono">The version we've been building intuition for today — sequential trees, each fit to the current error, standard tree-growing.</td></tr>
+            <tr><td class="left mono">XGBoost</td><td class="left mono">Adds explicit REGULARIZATION (a penalty for overly complex trees, built into the objective itself) and uses a more refined calculation (involving BOTH the gradient and a second-order term) to decide each leaf's exact value — generally more precise and more resistant to overfitting than classic GBDT.</td></tr>
+            <tr><td class="left mono">LightGBM</td><td class="left mono">Grows trees LEAF-WISE (always expand whichever leaf helps most next) instead of level-by-level, and uses faster, histogram-based techniques to find splits — usually the fastest of the three, especially on large datasets, though it needs careful depth control since leaf-wise growth can overfit more readily.</td></tr>
+          </table>
+          <div class="callout warn"><span class="badge-next">Next class</span> The exact formulas each one uses to decide a leaf's value (this is precisely the "extra refinement beyond simple averaging" flagged twice already today), how regularization enters the objective, and a genuine worked comparison across all three — full algorithm-level treatment.</div>
+        </div>
+      </section>
+
+      <section class="block" id="summary">
+        <div class="section-eyebrow">Wrap-up</div>
+        <h2>Summary — <span class="underline">Every Loop Closed</span></h2>
+        <div class="card">
+          <table class="data-table">
+            <tr><th>Question you raised</th><th>Answered today?</th></tr>
+            <tr><td class="left">What is boosting, intuitively?</td><td class="left mono good">Yes — sequential specialists, each fixing the group's remaining mistakes</td></tr>
+            <tr><td class="left">How is it different from bagging?</td><td class="left mono good">Yes — parallel/independent vs sequential/dependent, full comparison table given</td></tr>
+            <tr><td class="left">What is F0, and why?</td><td class="left mono good">Yes — mean(y) for regression; log-odds of the average for classification, and why probability space alone doesn't work well</td></tr>
+            <tr><td class="left">Is &eta; the same for every tree?</td><td class="left mono good">Yes, settled — one fixed number, same every round. (A deeper related nuance flagged honestly for next class, not left as confusion.)</td></tr>
+            <tr><td class="left">How do residuals evolve round to round?</td><td class="left mono good">Yes — full 2-round worked table for regression, showing exactly how error shrinks and shifts</td></tr>
+            <tr><td class="left">When does boosting stop?</td><td class="left mono good">Yes at a conceptual level — n_estimators is a tunable choice; precise tuning method next class</td></tr>
+            <tr><td class="left">Classification: mean or majority for F0?</td><td class="left mono good">Yes — still based on the average of y, converted into log-odds space; explained why</td></tr>
+            <tr><td class="left">Is the tree's classification prediction still "a mean"?</td><td class="left mono good">Yes, precisely scoped — grouping logic is shared with regression; the exact leaf VALUE has a genuine refinement, honestly deferred to next class rather than glossed over</td></tr>
+            <tr><td class="left">How do GBDT / XGBoost / LightGBM differ?</td><td class="left mono good">Yes, at a correct high level — regularization, gradient order, and tree-growing strategy are the key differences; full math next class</td></tr>
+          </table>
+        </div>
+        <div class="card screenshot">
+          <h3>Coming next class</h3>
+          <div class="pipeline">
+            <div class="pipe-step"><div class="n">01</div><div class="t">The exact math</div><div class="d">why pseudo-residual = negative gradient, derived</div></div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-step"><div class="n">02</div><div class="t">Leaf-value refinement</div><div class="d">the nuance flagged twice today, fully resolved</div></div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-step"><div class="n">03</div><div class="t">GBDT vs XGBoost vs LightGBM</div><div class="d">precise formula-level comparison</div></div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-step"><div class="n">04</div><div class="t">Hyperparameters &amp; code</div><div class="d">full sklearn walkthrough</div></div>
+          </div>
+        </div>
+      </section>
+
+      <div class="footnote-strip">
+        <span class="hand">&mdash; end of class &mdash;</span>
+        Boosting — The Intuition End to End &middot; Class 16 &middot; 10 August 2026
+      </div>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>

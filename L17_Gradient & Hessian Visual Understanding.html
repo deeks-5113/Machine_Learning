@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gradient vs Hessian — Visual Intuition</title>
+<script>
+window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]},svg:{fontCache:'global'}};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+:root{--bg:#070a0f;--card:#111720;--card2:#0c1219;--line:#293442;--text:#edf3f8;--muted:#9eacbb;--cyan:#65dcff;--gold:#ffd166;--pink:#ff91a5;--green:#70e4b5}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 80% 0,#152a3b 0,#070a0f 42%);color:var(--text);font-family:Inter,system-ui,-apple-system,sans-serif}.wrap{max-width:1180px;margin:auto;padding:42px 24px 70px}.eyebrow{font:700 13px monospace;letter-spacing:.18em;color:var(--cyan)}h1{font-size:clamp(42px,6vw,74px);line-height:.98;letter-spacing:-.055em;margin:13px 0 18px}h2{font-size:34px;letter-spacing:-.03em;margin:0 0 8px}h3{font-size:22px;margin:8px 0}p{font-size:17px;line-height:1.6;color:var(--muted)}.hero p{font-size:21px;max-width:850px}.section{margin-top:24px;background:linear-gradient(145deg,var(--card),#0c1218);border:1px solid var(--line);border-radius:24px;padding:28px}.label{font:700 12px monospace;letter-spacing:.16em;color:var(--muted);margin-bottom:9px}.visual{margin:20px 0 4px;background:#080d13;border:1px solid #26313e;border-radius:18px;overflow:hidden}.visual svg{display:block;width:100%;height:auto}.twocol{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}.mini{background:var(--card2);border:1px solid var(--line);border-radius:18px;padding:20px}.cyan{border-color:#315d6d}.gold{border-color:#66552c}.pink{border-color:#673c49}.green{border-color:#315e50}.bigquote{font-size:25px;font-weight:650;line-height:1.35;margin:14px 0}.pill{display:inline-block;border:1px solid #344454;border-radius:999px;padding:5px 10px;color:#cbd6e1;font-size:13px}.math{background:#080d13;border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center;font-size:21px;margin-top:16px}.call{margin-top:18px;padding:17px 20px;border-left:4px solid var(--cyan);background:#0b161f;border-radius:10px;color:#c5d1dc}.call b{color:white}.footer{text-align:center;color:#667585;margin-top:32px}@media(max-width:760px){.twocol{grid-template-columns:1fr}.wrap{padding:24px 13px}}
+</style>
+</head>
+<body>
+<main class="wrap">
+
+<section class="hero">
+<div class="eyebrow">BOOSTING · VISUAL INTUITION</div>
+<h1>Gradient is the <span style="color:var(--cyan)">slope</span>.<br>Hessian is the <span style="color:var(--gold)">bend</span>.</h1>
+<p>The goal here is <b>not calculation</b>. Just look at the loss landscape and build the intuition: <b>what does gradient tell us, what does Hessian tell us, and why does boosting care?</b></p>
+<div class="twocol">
+<div class="mini cyan"><span class="pill">1st derivative</span><div class="bigquote" style="color:var(--cyan)">“Which way is the loss going?”</div><p>Gradient is the local <b>slope</b> of the loss curve.</p></div>
+<div class="mini gold"><span class="pill">2nd derivative</span><div class="bigquote" style="color:var(--gold)">“How sharply is that slope changing?”</div><p>Hessian is the local <b>curvature</b> of the loss curve.</p></div>
+</div>
+</section>
+
+<section class="section">
+<div class="label">01 · STAND ON THE LOSS CURVE</div>
+<h2>First: imagine the loss as a landscape</h2>
+<p>Your model currently has some prediction. The loss curve tells you how the loss changes when that prediction changes.</p>
+<div class="visual">
+<svg viewBox="0 0 1100 430">
+<line x1="85" y1="350" x2="1030" y2="350" stroke="#3a4654" stroke-width="2"/>
+<line x1="85" y1="55" x2="85" y2="350" stroke="#3a4654" stroke-width="2"/>
+<path d="M110 90 C260 105 325 255 520 315 C700 370 795 250 1010 65" fill="none" stroke="#65dcff" stroke-width="7"/>
+<circle cx="520" cy="315" r="11" fill="#ffd166"/>
+<text x="520" y="388" text-anchor="middle" fill="#ffd166" font-size="20">You are here</text>
+<text x="47" y="80" fill="#9eacbb" font-size="17" transform="rotate(-90 47 80)">Loss</text>
+<text x="1000" y="380" fill="#9eacbb" font-size="17">prediction</text>
+<text x="110" y="55" fill="#edf3f8" font-size="20">Loss landscape</text>
+</svg>
+</div>
+<div class="call"><b>Now zoom into the point where you are.</b> Gradient and Hessian are simply two different ways of describing what the curve looks like there.</div>
+</section>
+
+<section class="section">
+<div class="label">02 · GRADIENT</div>
+<h2>Gradient = slope</h2>
+<p>Draw a tiny tangent line at your current point. That tangent's tilt is the gradient.</p>
+<div class="visual">
+<svg viewBox="0 0 1100 440">
+<line x1="75" y1="355" x2="1030" y2="355" stroke="#35414e" stroke-width="2"/>
+<path d="M100 85 C275 105 365 265 535 315 C700 365 825 230 1000 70" fill="none" stroke="#65dcff" stroke-width="7"/>
+<circle cx="535" cy="315" r="11" fill="#ff91a5"/>
+<line x1="325" y1="235" x2="745" y2="395" stroke="#ff91a5" stroke-width="6"/>
+<text x="755" y="390" fill="#ff91a5" font-size="21">tangent = local slope</text>
+<text x="535" y="410" text-anchor="middle" fill="#ffd166" font-size="19">current point</text>
+</svg>
+</div>
+<div class="twocol">
+<div class="mini pink"><h3>Positive slope</h3><p>As prediction increases → loss is increasing.</p><div class="bigquote" style="color:var(--pink)">“Move the other way.”</div></div>
+<div class="mini green"><h3>Negative slope</h3><p>As prediction increases → loss is decreasing.</p><div class="bigquote" style="color:var(--green)">“Keep moving upward.”</div></div>
+</div>
+<div class="math">\[g = \frac{\partial L}{\partial F}\]</div>
+</section>
+
+<section class="section">
+<div class="label">03 · GRADIENT VISUALIZED AS DIRECTION</div>
+<h2>Same idea — three different slopes</h2>
+<p>Forget the formula for a moment. Look only at the arrows.</p>
+<div class="visual">
+<svg viewBox="0 0 1100 500">
+<text x="180" y="45" text-anchor="middle" fill="#ff91a5" font-size="23">Positive slope</text>
+<text x="550" y="45" text-anchor="middle" fill="#9eacbb" font-size="23">Zero slope</text>
+<text x="920" y="45" text-anchor="middle" fill="#70e4b5" font-size="23">Negative slope</text>
+<path d="M80 350 C160 330 220 260 300 120" fill="none" stroke="#ff91a5" stroke-width="7"/>
+<circle cx="190" cy="285" r="10" fill="#ff91a5"/>
+<line x1="115" y1="325" x2="270" y2="245" stroke="#ff91a5" stroke-width="6"/>
+<polygon points="270,245 249,246 258,264" fill="#ff91a5"/>
+<path d="M390 130 C475 120 590 120 690 130" fill="none" stroke="#9eacbb" stroke-width="7"/>
+<circle cx="545" cy="122" r="10" fill="#9eacbb"/>
+<line x1="460" y1="122" x2="630" y2="122" stroke="#9eacbb" stroke-width="5"/>
+<path d="M780 120 C850 250 930 330 1015 350" fill="none" stroke="#70e4b5" stroke-width="7"/>
+<circle cx="905" cy="285" r="10" fill="#70e4b5"/>
+<line x1="825" y1="225" x2="990" y2="335" stroke="#70e4b5" stroke-width="6"/>
+<polygon points="990,335 970,321 968,342" fill="#70e4b5"/>
+<text x="180" y="435" text-anchor="middle" fill="#b7c3ce" font-size="18">Loss rises as F rises</text>
+<text x="550" y="435" text-anchor="middle" fill="#b7c3ce" font-size="18">Flat — no local push</text>
+<text x="920" y="435" text-anchor="middle" fill="#b7c3ce" font-size="18">Loss falls as F rises</text>
+</svg>
+</div>
+</section>
+
+<section class="section">
+<div class="label">04 · HESSIAN</div>
+<h2>Hessian = curvature</h2>
+<p>Now stop looking at the tilt. Look at <b>how the tilt changes as you move</b> along the curve.</p>
+<div class="visual">
+<svg viewBox="0 0 1100 470">
+<text x="275" y="42" text-anchor="middle" fill="#65dcff" font-size="23">Gentle curvature</text>
+<text x="825" y="42" text-anchor="middle" fill="#ffd166" font-size="23">Strong curvature</text>
+<path d="M80 340 C230 325 365 270 505 115" fill="none" stroke="#65dcff" stroke-width="7"/>
+<path d="M600 350 C705 330 735 160 810 115 C880 70 960 65 1030 55" fill="none" stroke="#ffd166" stroke-width="7"/>
+<circle cx="300" cy="285" r="10" fill="#ff91a5"/>
+<circle cx="800" cy="125" r="10" fill="#ff91a5"/>
+<line x1="180" y1="225" x2="420" y2="345" stroke="#ff91a5" stroke-width="5" stroke-dasharray="9 8"/>
+<line x1="680" y1="20" x2="920" y2="230" stroke="#ff91a5" stroke-width="5" stroke-dasharray="9 8"/>
+<text x="300" y="410" text-anchor="middle" fill="#b7c3ce" font-size="18">Slope changes slowly</text>
+<text x="800" y="410" text-anchor="middle" fill="#b7c3ce" font-size="18">Slope changes quickly</text>
+</svg>
+</div>
+<div class="twocol">
+<div class="mini cyan"><h3 style="color:var(--cyan)">Low curvature</h3><p>The curve is relatively gentle. Move a little and the slope doesn't change dramatically.</p></div>
+<div class="mini gold"><h3 style="color:var(--gold)">High curvature</h3><p>The curve bends sharply. Move a little and the slope changes quickly.</p></div>
+</div>
+<div class="math">\[h = \frac{\partial^2 L}{\partial F^2}\]</div>
+</section>
+
+<section class="section">
+<div class="label">05 · THE KEY VISUAL</div>
+<h2>Two places can have a similar slope — but very different curvature</h2>
+<p>This is the reason Hessian information adds something that gradient alone cannot tell you.</p>
+<div class="visual">
+<svg viewBox="0 0 1100 540">
+<text x="275" y="42" text-anchor="middle" fill="#65dcff" font-size="23">A · gentle bend</text>
+<text x="825" y="42" text-anchor="middle" fill="#ffd166" font-size="23">B · sharp bend</text>
+<path d="M70 370 C190 330 310 260 500 120" fill="none" stroke="#65dcff" stroke-width="7"/>
+<path d="M600 390 C680 360 710 240 790 165 C850 110 935 90 1030 85" fill="none" stroke="#ffd166" stroke-width="7"/>
+<circle cx="290" cy="280" r="11" fill="#ff91a5"/>
+<circle cx="745" cy="215" r="11" fill="#ff91a5"/>
+<line x1="170" y1="215" x2="410" y2="345" stroke="#ff91a5" stroke-width="5"/>
+<line x1="625" y1="150" x2="865" y2="280" stroke="#ff91a5" stroke-width="5"/>
+<text x="290" y="440" text-anchor="middle" fill="#b7c3ce" font-size="18">Similar tangent / slope</text>
+<text x="745" y="440" text-anchor="middle" fill="#b7c3ce" font-size="18">Similar tangent / slope</text>
+<text x="550" y="500" text-anchor="middle" fill="#ffd166" font-size="21">But the curve bends very differently!</text>
+</svg>
+</div>
+<div class="call"><b>Gradient alone:</b> “The loss is changing in this direction.”<br><b>Gradient + Hessian:</b> “The loss is changing in this direction, and I also know how quickly that direction is changing.”</div>
+</section>
+
+<section class="section">
+<div class="label">06 · WHY BOOSTING CARES</div>
+<h2>Now connect the picture to a tree leaf</h2>
+<p>A boosting tree is not trying to learn the entire loss landscape. Each leaf gives a <b>correction</b> to the current model.</p>
+<div class="visual">
+<svg viewBox="0 0 1100 500">
+<rect x="55" y="100" width="240" height="260" rx="20" fill="#111a24" stroke="#65dcff" stroke-width="2"/>
+<text x="175" y="145" text-anchor="middle" fill="#65dcff" font-size="22">Current prediction</text>
+<path d="M90 305 C145 290 180 220 260 165" fill="none" stroke="#65dcff" stroke-width="6"/>
+<circle cx="175" cy="265" r="9" fill="#ff91a5"/>
+<line x1="120" y1="235" x2="230" y2="295" stroke="#ff91a5" stroke-width="4"/>
+<text x="175" y="330" text-anchor="middle" fill="#b7c3ce" font-size="17">gradient = direction</text>
+
+<line x1="320" y1="230" x2="410" y2="230" stroke="#667585" stroke-width="4"/><polygon points="410,230 390,219 390,241" fill="#667585"/>
+
+<rect x="430" y="100" width="240" height="260" rx="20" fill="#111a24" stroke="#ffd166" stroke-width="2"/>
+<text x="550" y="145" text-anchor="middle" fill="#ffd166" font-size="22">Local shape</text>
+<path d="M460 310 C500 300 520 205 560 170 C600 135 630 140 650 135" fill="none" stroke="#ffd166" stroke-width="6"/>
+<circle cx="540" cy="220" r="9" fill="#ff91a5"/>
+<text x="550" y="330" text-anchor="middle" fill="#b7c3ce" font-size="17">Hessian = curvature</text>
+
+<line x1="695" y1="230" x2="785" y2="230" stroke="#667585" stroke-width="4"/><polygon points="785,230 765,219 765,241" fill="#667585"/>
+
+<rect x="805" y="100" width="240" height="260" rx="20" fill="#111a24" stroke="#70e4b5" stroke-width="2"/>
+<text x="925" y="145" text-anchor="middle" fill="#70e4b5" font-size="22">Leaf correction</text>
+<text x="925" y="205" text-anchor="middle" fill="#edf3f8" font-size="21">Direction</text>
+<text x="925" y="240" text-anchor="middle" fill="#edf3f8" font-size="21">+</text>
+<text x="925" y="275" text-anchor="middle" fill="#edf3f8" font-size="21">curvature</text>
+<text x="925" y="330" text-anchor="middle" fill="#b7c3ce" font-size="17">→ informed update</text>
+</svg>
+</div>
+<div class="bigquote" style="color:var(--green);text-align:center">“Gradient tells the tree where to correct.<br>Hessian tells it about the shape of the loss around that correction.”</div>
+<div class="math">\[
+w^* = -\frac{G}{H+\lambda}
+\]</div>
+<p style="text-align:center;margin-top:10px">The gradient gives the <b>direction</b>; the Hessian gives the <b>curvature information</b> used in the size of the leaf correction.</p>
+</section>
+
+<section class="section">
+<div class="math" style="margin-bottom:24px">\[
+L(F+w) \approx L(F) + gw + \frac{1}{2}hw^2
+\]</div>
+<div class="label">07 · GBDT → XGBOOST</div>
+<h2>Why this makes the XGBoost jump intuitive</h2>
+<div class="twocol">
+<div class="mini cyan"><h3>GBDT — first-order view</h3><p>Think primarily about the <b>direction of the error correction</b>.</p><div class="bigquote">Slope → “which way?”</div></div>
+<div class="mini gold"><h3>XGBoost — second-order view</h3><p>Use both <b>direction + local curvature</b> when deciding the correction.</p><div class="bigquote">Slope + bend → “which way, and how does the landscape bend?”</div></div>
+</div>
+<div class="visual">
+<svg viewBox="0 0 1100 260">
+<text x="170" y="45" text-anchor="middle" fill="#65dcff" font-size="22">GBDT</text>
+<text x="550" y="45" text-anchor="middle" fill="#ffd166" font-size="22">XGBoost</text>
+<text x="930" y="45" text-anchor="middle" fill="#70e4b5" font-size="22">Leaf update</text>
+<circle cx="170" cy="135" r="55" fill="#10202a" stroke="#65dcff" stroke-width="3"/><text x="170" y="145" text-anchor="middle" fill="#edf3f8" font-size="21">slope</text>
+<line x1="235" y1="135" x2="425" y2="135" stroke="#667585" stroke-width="4"/><polygon points="425,135 405,124 405,146" fill="#667585"/>
+<circle cx="550" cy="135" r="65" fill="#2a2413" stroke="#ffd166" stroke-width="3"/><text x="550" y="128" text-anchor="middle" fill="#edf3f8" font-size="19">slope</text><text x="550" y="153" text-anchor="middle" fill="#edf3f8" font-size="19">+</text><text x="550" y="178" text-anchor="middle" fill="#edf3f8" font-size="19">curvature</text>
+<line x1="625" y1="135" x2="805" y2="135" stroke="#667585" stroke-width="4"/><polygon points="805,135 785,124 785,146" fill="#667585"/>
+<rect x="835" y="80" width="190" height="110" rx="18" fill="#10241e" stroke="#70e4b5" stroke-width="3"/><text x="930" y="125" text-anchor="middle" fill="#edf3f8" font-size="20">better-informed</text><text x="930" y="155" text-anchor="middle" fill="#edf3f8" font-size="20">correction</text>
+</svg>
+</div>
+</section>
+
+<section class="section">
+<div class="label">08 · THE ONE VISUAL TO REMEMBER</div>
+<h2>Don't memorize \(g\) and \(h\). Remember the landscape.</h2>
+<div class="visual">
+<svg viewBox="0 0 1100 500">
+<path d="M75 380 C210 350 270 220 410 160 C570 90 690 325 810 280 C900 245 950 120 1030 70" fill="none" stroke="#65dcff" stroke-width="8"/>
+<circle cx="350" cy="190" r="12" fill="#ff91a5"/>
+<line x1="245" y1="140" x2="455" y2="240" stroke="#ff91a5" stroke-width="6"/>
+<text x="350" y="105" text-anchor="middle" fill="#ff91a5" font-size="23">GRADIENT</text>
+<text x="350" y="135" text-anchor="middle" fill="#b7c3ce" font-size="18">local slope → direction</text>
+<circle cx="690" cy="300" r="12" fill="#ffd166"/>
+<path d="M570 350 C610 330 630 300 660 275 C700 240 750 235 800 255" fill="none" stroke="#ffd166" stroke-width="5"/>
+<text x="690" y="415" text-anchor="middle" fill="#ffd166" font-size="23">HESSIAN</text>
+<text x="690" y="445" text-anchor="middle" fill="#b7c3ce" font-size="18">curvature → how slope changes</text>
+</svg>
+</div>
+<div class="bigquote" style="text-align:center">Gradient = <span style="color:var(--cyan)">“Which way?”</span><br>Hessian = <span style="color:var(--gold)">“How does the curve bend?”</span><br>Boosting = <span style="color:var(--green)">“Use this to decide the correction.”</span></div>
+</section>
+
+<div class="footer">Visual-first version · No row-by-row calculations · Built to teach intuition before formulas.</div>
+</main>
+</body></html>

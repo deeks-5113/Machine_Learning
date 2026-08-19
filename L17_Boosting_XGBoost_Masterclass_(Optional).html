@@ -1,0 +1,1076 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GBDT Masterclass — Regression & Classification</title><script>window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]'],['$$','$$']],tags:'ams',packages:{'[+]':['ams']}},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']},svg:{fontCache:'global'}};</script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script><style>
+:root{
+  --board:#0c1014; --card:#151b21; --card-line:#263039;
+  --chalk:#e9eef2; --chalk-dim:#9fb0bb; --cyan:#5fd8e0; --cyan-dim:#2c5a5e;
+  --pink:#f17fb0; --pink-dim:#5a2f42; --yellow:#f4cf5e; --green:#8fe3a6;
+  --green-dim:#2f4f3a; --purple:#b39ddb; --purple-dim:#4a3f6b;
+  --white:#f5f5f0; --red:#ff9a9a; --radius:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--board);color:var(--chalk);font-family:Inter,Segoe UI,Arial,sans-serif;line-height:1.6}
+.wrap{max-width:1220px;margin:auto;padding:0 24px 110px}
+h1,h2,h3,.hand{font-family:Caveat,"Comic Sans MS",cursive;font-weight:700}
+.hero{text-align:center;padding:54px 0 28px}
+.chip{display:inline-block;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11px;letter-spacing:1.3px;text-transform:uppercase;color:var(--cyan);border:1px solid var(--cyan-dim);padding:6px 13px;border-radius:999px;margin:4px}
+.hero h1{font-size:clamp(34px,5vw,54px);margin:8px 0;color:var(--white)}
+.hero h1 span{color:var(--pink)}
+.hero p{font-family:"Trebuchet MS",sans-serif;color:var(--chalk-dim);max-width:900px;margin:auto;font-size:16px}
+.layout{display:grid;grid-template-columns:275px 1fr;gap:34px;align-items:start}
+nav.toc{position:sticky;top:18px;background:var(--card);border:1px solid var(--card-line);border-radius:var(--radius);padding:16px;max-height:calc(100vh - 36px);overflow:auto;font:11px ui-monospace,SFMono-Regular,Consolas,monospace}
+.toc-title{color:var(--chalk-dim);text-transform:uppercase;letter-spacing:1px;font-size:10px;margin:14px 0 6px}
+.toc-title:first-child{margin-top:0}
+nav a{display:block;color:var(--chalk-dim);text-decoration:none;padding:4px 7px;border-radius:7px}
+nav a:hover{background:#ffffff08;color:var(--chalk)}
+section.block{margin-bottom:46px;scroll-margin-top:18px}
+.eyebrow{font:11px ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--pink);letter-spacing:1.5px;text-transform:uppercase}
+h2{font-size:31px;margin:2px 0 12px;color:var(--white)}
+h2 u{text-decoration-color:var(--cyan);text-decoration-thickness:3px}
+h3{font-size:23px;margin:5px 0 9px;color:var(--white)}
+p.lead{color:#d0dbe1;font-size:14.5px}
+.card{background:var(--card);border:1px solid var(--card-line);border-radius:var(--radius);padding:19px 21px;margin:13px 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
+.callout{border:1px solid var(--green-dim);background:#8fe3a60d;color:var(--green);border-radius:10px;padding:12px 15px;margin:12px 0;font-size:13px}
+.callout.info{border-color:var(--cyan-dim);background:#5fd8e00b;color:var(--cyan)}
+.callout.warn{border-color:#5a4f2f;background:#f4cf5e0b;color:var(--yellow)}
+.callout.bad{border-color:var(--pink-dim);background:#f17fb00b;color:var(--pink)}
+.callout.purple{border-color:var(--purple-dim);background:#b39ddb0b;color:var(--purple)}
+.formula{background:#090d10;border:1px solid var(--card-line);border-radius:10px;padding:15px 17px;margin:12px 0;overflow:auto;text-align:center;color:var(--white)}
+.formula.left{text-align:left}
+.mathnote{font-size:12px;color:var(--chalk-dim);margin-top:-4px}
+.tbl{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font:12px ui-monospace,SFMono-Regular,Consolas,monospace}
+th{color:var(--chalk-dim);font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;text-align:left;border-bottom:1px solid var(--card-line);padding:7px 8px}
+td{padding:7px 8px;border-bottom:1px solid #ffffff08;vertical-align:top}
+td.hl{color:var(--yellow);font-weight:700}
+td.good{color:var(--green);font-weight:700}
+td.bad{color:var(--pink);font-weight:700}
+td.cyan{color:var(--cyan);font-weight:700}
+.step{display:flex;gap:12px;align-items:flex-start;margin:9px 0}
+.step .num{flex:0 0 30px;height:30px;border:1px solid var(--cyan-dim);color:var(--cyan);border-radius:50%;display:grid;place-items:center;font:12px ui-monospace}
+.step .body{flex:1}
+.badge{display:inline-block;font:10px ui-monospace;padding:2px 7px;border-radius:5px;margin-left:5px}
+.b-gbdt{color:var(--cyan);border:1px solid var(--cyan-dim)}
+.b-xgb{color:var(--yellow);border:1px solid #5a4f2f}
+.b-lgb{color:var(--purple);border:1px solid var(--purple-dim)}
+.b-sklearn{color:var(--green);border:1px solid var(--green-dim)}
+.code{background:#080b0e;border:1px solid var(--card-line);border-radius:10px;padding:14px 16px;overflow:auto;font:12px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace;color:#dce6eb;white-space:pre}
+.quote{font-family:"Trebuchet MS",sans-serif;font-size:16px;border-left:3px solid var(--yellow);padding:7px 17px;background:#f4cf5e08;border-radius:0 10px 10px 0}
+.flow{display:flex;align-items:stretch;overflow:auto;padding:8px 0}
+.flow .box{min-width:145px;background:var(--card);border:1px solid var(--card-line);border-radius:10px;padding:12px;text-align:center}
+.flow .box strong{display:block;color:var(--white);font-size:12px}
+.flow .box span{display:block;color:var(--chalk-dim);font-size:10px;margin-top:3px}
+.flow .arrow{min-width:30px;display:grid;place-items:center;color:var(--pink);font-size:20px}
+details{background:#ffffff04;border:1px solid var(--card-line);border-radius:9px;padding:10px 13px;margin:9px 0}
+summary{cursor:pointer;color:var(--yellow);font-weight:700}
+.source{font-size:11px;color:var(--chalk-dim)}
+.source a{color:var(--cyan)}
+.small{font-size:12px;color:var(--chalk-dim)}
+.kpi{font-size:25px;color:var(--yellow);font-weight:800}
+@media(max-width:920px){.layout{grid-template-columns:1fr}.toc{position:relative!important;max-height:none!important}.grid2,.grid3{grid-template-columns:1fr}}
+\n.deep-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}\n.math-chain{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:8px;align-items:center;margin:12px 0}\n.math-node{background:#090d10;border:1px solid var(--card-line);border-radius:10px;padding:12px;text-align:center}.math-node strong{display:block;color:var(--white)}.math-node span{display:block;color:var(--chalk-dim);font-size:11px;margin-top:4px}.math-arrow{color:var(--pink);font-size:20px;text-align:center}\n.tree{font:12px ui-monospace,SFMono-Regular,Consolas,monospace;background:#090d10;border:1px solid var(--card-line);border-radius:10px;padding:15px;overflow:auto;white-space:pre;line-height:1.5;color:#dce6eb}\n.mini{font-size:11px;color:var(--chalk-dim)}\n.tag{display:inline-block;padding:3px 7px;border-radius:5px;font:10px ui-monospace;margin:2px;border:1px solid var(--card-line);color:var(--chalk-dim)}\n.check{border-left:3px solid var(--cyan);padding:10px 14px;background:#5fd8e008;margin:12px 0}.check b{color:var(--cyan)}\n@media(max-width:920px){.deep-grid,.math-chain{grid-template-columns:1fr}.math-arrow{transform:rotate(90deg)}}\n
+.diagram{background:#090d10;border:1px solid var(--card-line);border-radius:12px;padding:15px;margin:14px 0;overflow:auto}
+.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;align-items:center;text-align:center;font:11px ui-monospace,SFMono-Regular,Consolas,monospace}
+.flow .node{border:1px solid var(--cyan-dim);border-radius:9px;padding:10px 6px;background:#0f171b}
+.flow .arrow{color:var(--pink);font-size:20px}.small{font-size:12px;color:var(--chalk-dim)}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:15px}.three-col{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
+.source{font-size:11px;color:var(--chalk-dim);border-left:2px solid var(--card-line);padding-left:10px;margin:10px 0}.source a{color:var(--cyan)}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.toc{position:relative!important}.grid2,.grid3,.two-col,.three-col,.flow{grid-template-columns:1fr}.flow .arrow{transform:rotate(90deg)}}
+
+/* COMPLETE-EQUATION PATCH
+   Keep the original masterclass design, but make every mathematical
+   expression readable, scroll-safe and visually complete. */
+.formula{
+  font-size:16px;
+  line-height:1.9;
+  min-height:52px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+.formula mjx-container{
+  max-width:100%;
+  overflow-x:auto;
+  overflow-y:hidden;
+  padding:2px 4px;
+}
+.formula.left{
+  justify-content:flex-start;
+  text-align:left;
+}
+.formula mjx-mtable{
+  margin-left:auto !important;
+  margin-right:auto !important;
+}
+.math-derivation{
+  background:#090d10;
+  border:1px solid var(--card-line);
+  border-left:3px solid var(--cyan);
+  border-radius:12px;
+  padding:15px 18px;
+  margin:14px 0;
+}
+.math-derivation .label{
+  color:var(--cyan);
+  font:10px ui-monospace,SFMono-Regular,Consolas,monospace;
+  text-transform:uppercase;
+  letter-spacing:1px;
+  margin-bottom:7px;
+}
+.equation-note{
+  color:var(--chalk-dim);
+  font-size:12px;
+  margin:4px 0 10px;
+}
+.complete-equation{
+  background:#0b1115;
+  border:1px solid #31414b;
+  border-radius:10px;
+  padding:14px 16px;
+  margin:10px 0;
+  overflow-x:auto;
+}
+.complete-equation mjx-container{
+  margin:0 !important;
+}
+.math-warning{
+  border-left:3px solid var(--yellow);
+  background:#f4cf5e08;
+  color:#e9e2c6;
+  padding:11px 14px;
+  border-radius:0 9px 9px 0;
+  margin:12px 0;
+  font-size:13px;
+}
+
+/* v3 deep derivation additions */
+.deep-patch{border-top:2px solid var(--cyan);}
+.deep-patch .math-derivation{margin-top:16px;}
+.deep-patch .complete-equation{font-size:16px;line-height:1.95;}
+.deep-patch .complete-equation mjx-container{max-width:100%;overflow-x:auto;}
+.deep-patch .tbl table{width:100%;}
+.deep-patch .tbl td,.deep-patch .tbl th{vertical-align:top;}
+.source-note{border-left:3px solid var(--yellow);}
+
+.section-intro{font-size:14px;color:#d0dbe1}
+.answer{border-left:3px solid var(--green);padding:10px 14px;background:#8fe3a608;margin:12px 0}
+.question{color:var(--yellow);font-weight:700}
+.math-derivation{background:#090d10;border:1px solid var(--card-line);border-left:3px solid var(--cyan);border-radius:12px;padding:15px 18px;margin:14px 0}
+.math-derivation .label{color:var(--cyan);font:10px ui-monospace,SFMono-Regular,Consolas,monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:7px}
+.complete-equation{background:#0b1115;border:1px solid #31414b;border-radius:10px;padding:14px 16px;margin:10px 0;overflow-x:auto}
+@media(max-width:920px){.two-col,.three-col{grid-template-columns:1fr}}
+
+.xg-badge{display:inline-block;padding:3px 9px;border-radius:6px;font:10px ui-monospace,monospace;margin-left:6px;background:rgba(241,127,176,0.12);border:1px solid var(--pink-dim);color:var(--pink)}
+.gbdt-badge{display:inline-block;padding:3px 9px;border-radius:6px;font:10px ui-monospace,monospace;margin-left:6px;background:rgba(95,216,224,0.12);border:1px solid var(--cyan-dim);color:var(--cyan)}
+.ask{border-left:3px solid var(--purple);padding:10px 14px;background:rgba(179,157,219,0.06);border-radius:0 10px 10px 0;margin:12px 0;font-size:13px;color:#d8d0ea}
+.ask b{color:var(--purple)}
+.misconception{border-left:3px solid var(--pink);padding:10px 14px;background:rgba(241,127,176,0.06);border-radius:0 10px 10px 0;margin:12px 0;font-size:13px;color:#f0d6e0}
+.misconception b{color:var(--pink)}
+.key{border-left:3px solid var(--green);padding:10px 14px;background:rgba(143,227,166,0.06);border-radius:0 10px 10px 0;margin:12px 0;font-size:13px;color:#d3ecdc}
+.key b{color:var(--green)}
+</style><body><div class="wrap">
+<header class="hero">
+<div><span class="chip">ML Supervised Learning &middot; Class 17</span></div>
+<div><span class="chip">XGBOOST ONLY</span><span class="chip">BUILT ON TOP OF GBDT</span><span class="chip">FULL DERIVATIONS</span><span class="chip">CLASSROOM NOTES</span></div>
+<h1>Mastering <span>XGBoost</span></h1>
+<p>You already know GBDT. This is the bridge: exactly what XGBoost changes, why each change was introduced, and the full math &mdash; Taylor expansion &rarr; gradient + Hessian &rarr; regularised leaf weight &rarr; regularised split gain &rarr; L1/L2/&gamma; &rarr; regression + classification, worked numerically, 3 iterations each &rarr; hyperparameters &rarr; missing values &rarr; histograms &rarr; final algorithm.</p>
+</header>
+<div class="layout">
+<nav class="toc">
+<div class="toc-title">Bridge</div>
+<a href="#why">Why XGBoost, given GBDT?</a>
+<a href="#objective">What is XGBoost optimising?</a>
+<div class="toc-title">The Core Math</div>
+<a href="#taylor">Taylor expansion, from scratch</a>
+<a href="#gh-bridge">g, h vs GBDT's pseudo-residual</a>
+<div class="toc-title">Regression, Worked</div>
+<a href="#reg-init">Initial prediction, derived</a>
+<a href="#reg-leaf">Leaf weight, derived</a>
+<a href="#reg-gain">Split gain, derived from scratch</a>
+<a href="#reg-update">Leaf prediction &amp; update rule</a>
+<a href="#reg-iters">3 complete regression iterations</a>
+<a href="#lr-deep">Learning rate, deep dive</a>
+<a href="#reg-vs-gbdt">What exactly changed vs GBDT?</a>
+<div class="toc-title">Classification, Worked</div>
+<a href="#clf-start">Raw score, probability, first principles</a>
+<a href="#clf-init">Initial raw score, derived</a>
+<a href="#clf-gh">Derive g and h for log loss</a>
+<a href="#clf-iters">3 complete classification iterations</a>
+<div class="toc-title">Regularisation, Deep</div>
+<a href="#l1">L1 &mdash; sparsity, soft-thresholding</a>
+<a href="#l2">L2 &mdash; shrinkage</a>
+<a href="#gamma">&gamma; &mdash; tree complexity penalty</a>
+<a href="#all-reg">All regularisation, together</a>
+<div class="toc-title">Practical Machinery</div>
+<a href="#mcw">min_child_weight, precisely</a>
+<a href="#missing">Missing values &amp; default direction</a>
+<a href="#hist">Histogram-based splitting</a>
+<a href="#compare">XGBoost vs Random Forest vs GBDT</a>
+<div class="toc-title">Tuning</div>
+<a href="#hyperparams">Hyperparameter master table</a>
+<a href="#fit">Underfitting vs overfitting</a>
+<a href="#interactions">Hyperparameter interactions</a>
+<a href="#early-stop">Early stopping</a>
+<a href="#imbalance">Class imbalance</a>
+<a href="#importance">Feature importance</a>
+<div class="toc-title">Wrap-up</div>
+<a href="#algorithm">End-to-end algorithm</a>
+<a href="#mental-model">The one-picture mental model</a>
+<a href="#checklist">Mastery checklist</a>
+</nav>
+<main>
+<section class="block" id="why">
+<div class="eyebrow">01 &middot; the bridge</div>
+<h2>We already know GBDT. <u>So why do we need XGBoost?</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">Nothing here is a new algorithm family. It is the same idea &mdash; sequential trees, each one correcting the current model &mdash; made mathematically sharper and practically safer.</p>
+<div class="ask"><b>Ask yourself:</b> what could go wrong with plain GBDT that a smarter optimisation and some explicit penalties would fix?</div>
+</div>
+<div class="grid2">
+<div class="card"><h3 style="color:var(--cyan)">What GBDT already does well</h3>
+<ul style="font-size:13px;color:#cdd8de;line-height:1.8;">
+<li>Sequential correction of residuals &mdash; genuinely powerful</li>
+<li>Works for regression and classification via the loss function</li>
+<li>Shrinkage (learning rate) already controls step size</li>
+</ul></div>
+<div class="card"><h3 style="color:var(--pink)">Where it is exposed</h3>
+<ul style="font-size:13px;color:#cdd8de;line-height:1.8;">
+<li>Splits are found the same way as an ordinary regression tree &mdash; SSE reduction on the gradient target. Nothing about tree <b>complexity</b> is explicitly penalised.</li>
+<li>Only the <b>first derivative</b> is used. A leaf value is essentially a mean of gradients &mdash; it never asks "how confident is this correction, given the curvature of the loss here?"</li>
+<li>Nothing stops a leaf weight from swinging large just because a few rows push hard in one direction.</li>
+<li>No principled, mathematical rule for "is this split even worth it" &mdash; depth/leaf-count limits are blunt instruments.</li>
+</ul></div>
+</div>
+<div class="card">
+<h3>What XGBoost changes, one line each</h3>
+<div class="tbl"><table>
+<tr><th>Concept</th><th>GBDT</th><th>XGBoost</th></tr>
+<tr><td>Sequential boosting</td><td class="good">&check;</td><td class="good">&check;</td></tr>
+<tr><td>Gradient-based learning</td><td class="good">&check;</td><td class="good">&check;</td></tr>
+<tr><td>Regression / classification</td><td class="good">&check;</td><td class="good">&check;</td></tr>
+<tr><td>Uses curvature (2nd derivative)</td><td class="bad">implementation-dependent</td><td class="good">explicit gradient <b>+</b> Hessian</td></tr>
+<tr><td>Leaf weight</td><td class="left">gradient-based / loss-specific</td><td class="left cyan">\(-G/(H+\lambda)\), with L1 modification</td></tr>
+<tr><td>Split selection</td><td class="left">loss reduction (SSE-style)</td><td class="left cyan">explicit regularised Gain</td></tr>
+<tr><td>Tree complexity penalty</td><td class="bad">&mdash;</td><td class="good">\(\gamma T\)</td></tr>
+<tr><td>L1 / L2 on leaf weights</td><td class="bad">&mdash;</td><td class="good">&check; both</td></tr>
+<tr><td>Missing values</td><td class="bad">implementation-dependent</td><td class="good">learns a default direction</td></tr>
+<tr><td>Column / row subsampling</td><td class="left">available in some implementations</td><td class="good">strongly supported, multiple levels</td></tr>
+<tr><td>Split finding at scale</td><td class="left">implementation-dependent</td><td class="good">histogram-based approximation</td></tr>
+</table></div>
+</div>
+<div class="key"><b>The one-sentence version:</b> XGBoost takes every place where GBDT made an implicit or ad-hoc choice, and replaces it with an explicit term in the objective function &mdash; then optimises that objective properly, using both derivatives.</div>
+</section>
+<section class="block" id="objective">
+<div class="eyebrow">02 &middot; first principles</div>
+<h2>What exactly is XGBoost <u>optimising?</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">Start from the model itself &mdash; a sum of trees.</p>
+<div class="formula">\[
+\hat y_i=\sum_{k=1}^{K}f_k(x_i)
+\]</div>
+<table><tr><th>Symbol</th><th>Meaning</th></tr>
+<tr><td>\(\hat y_i\)</td><td>final prediction for row \(i\)</td></tr>
+<tr><td>\(f_k\)</td><td>the \(k\)-th tree &mdash; a function mapping features to a leaf value</td></tr>
+<tr><td>\(K\)</td><td>total number of trees</td></tr>
+</table>
+<div class="key"><b>Additive model:</b> each tree adds its own correction on top of everything built so far. Nothing here is new &mdash; this is exactly \(F_m=F_{m-1}+\eta f_m\) from GBDT, just written as one sum.</div>
+</div>
+<div class="math-derivation">
+<div class="label">The full objective</div>
+<p>Every model needs something to minimise. XGBoost's objective has <b>two</b> parts &mdash; not one:</p>
+<div class="complete-equation">\[
+Obj=\sum_{i=1}^{n}l(y_i,\hat y_i)+\sum_{k=1}^{K}\Omega(f_k)
+\]</div>
+<div class="tbl"><table>
+<tr><th>Term</th><th>Meaning</th></tr>
+<tr><td>\(\sum_i l(y_i,\hat y_i)\)</td><td>training loss &mdash; how wrong are the predictions (this is all GBDT optimises)</td></tr>
+<tr><td>\(\sum_k \Omega(f_k)\)</td><td>a <b>complexity penalty</b> on every tree &mdash; this is the genuinely new piece</td></tr>
+</table></div>
+<p>And \(\Omega\) itself is defined as:</p>
+<div class="complete-equation">\[
+\Omega(f)=\gamma T+\frac12\lambda\sum_{j=1}^{T}w_j^2+\alpha\sum_{j=1}^{T}|w_j|
+\]</div>
+<table><tr><th>Symbol</th><th>Meaning</th></tr>
+<tr><td>\(T\)</td><td>number of leaves in the tree</td></tr>
+<tr><td>\(w_j\)</td><td>the value (weight) of leaf \(j\)</td></tr>
+<tr><td>\(\gamma\)</td><td>flat penalty <b>per leaf</b> &mdash; punishes having too many leaves</td></tr>
+<tr><td>\(\lambda\)</td><td>L2 penalty on leaf weights &mdash; punishes large weights, squared</td></tr>
+<tr><td>\(\alpha\)</td><td>L1 penalty on leaf weights &mdash; punishes large weights, in absolute value</td></tr>
+</table>
+</div>
+<div class="misconception"><b>Do not just say "regularisation prevents overfitting."</b> Be precise about what is being punished: \(\gamma\) punishes <b>having more leaves at all</b>; \(\lambda\) punishes <b>a leaf's weight being large</b> (smoothly); \(\alpha\) punishes <b>a leaf's weight being large</b> too, but in a way that can push it all the way to exactly zero.</div>
+<div class="diagram">
+<div class="flow">
+<div class="node"><strong>Training loss</strong><br><span>how wrong are we</span></div>
+<div class="arrow">+</div>
+<div class="node"><strong>&gamma;T</strong><br><span>tree complexity</span></div>
+<div class="arrow">+</div>
+<div class="node"><strong>&frac12;&lambda;&Sigma;w&sup2;</strong><br><span>leaf weight penalty (L2)</span></div>
+<div class="arrow">+</div>
+<div class="node"><strong>&alpha;&Sigma;|w|</strong><br><span>leaf weight penalty (L1)</span></div>
+<div class="arrow">=</div>
+<div class="node" style="border-color:var(--pink)"><strong>Total objective</strong><br><span>what we actually minimise</span></div>
+</div>
+</div>
+</section>
+<section class="block" id="taylor">
+<div class="eyebrow">03 &middot; second-order optimisation</div>
+<h2>Why Taylor expansion? <u>And what is it, really?</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">At round \(t\), we want to add a new tree \(f_t\) to minimise:</p>
+<div class="formula">\[
+Obj^{(t)}=\sum_i l\big(y_i,\hat y_i^{(t-1)}+f_t(x_i)\big)+\Omega(f_t)
+\]</div>
+<div class="ask"><b>Ask yourself:</b> \(f_t\) is a whole tree, not a number. Why can't we just directly minimise this?</div>
+<p style="font-size:13px;color:#cdd8de;">Because \(l\) can be any loss (squared error, log loss, ...) with \(f_t(x_i)\) buried inside it in a way that has no clean, general closed-form minimum. We need a way to approximate the loss <b>near the current prediction</b> that is simple enough to actually optimise &mdash; a quadratic. That's exactly what Taylor expansion gives us.</p>
+</div>
+<div class="math-derivation">
+<div class="label">What is Taylor expansion, from a single number</div>
+<p>Take any smooth function \(f(x)\). Near a point \(x\), moving by a small step \(\Delta\):</p>
+<div class="complete-equation">\[
+\text{first-order: }\quad f(x+\Delta)\approx f(x)+f'(x)\Delta
+\]</div>
+<p>This is just "the tangent line" &mdash; use the slope at \(x\) to guess the value a little further along. Add one more term and you get the tangent <b>parabola</b> instead of a line:</p>
+<div class="complete-equation">\[
+\text{second-order: }\quad f(x+\Delta)\approx f(x)+f'(x)\Delta+\frac12f''(x)\Delta^2
+\]</div>
+<div class="grid2">
+<div class="card"><h3 style="color:var(--cyan)">First derivative \(f'(x)\)</h3><p style="font-size:12.5px;color:var(--chalk-dim)">Local slope. "Which way, and how steeply, does the function change?"</p></div>
+<div class="card"><h3 style="color:var(--yellow)">Second derivative \(f''(x)\)</h3><p style="font-size:12.5px;color:var(--chalk-dim)">Local curvature. "How quickly does that slope itself change?" A flat, wide bowl vs a narrow, sharp bowl have very different \(f''\).</p></div>
+</div>
+<div class="key"><b>Why curvature matters here:</b> the slope alone tells you a direction to move. The curvature tells you <b>how far you can trust that direction</b> before the approximation breaks down &mdash; a sharply curving loss needs a smaller, more careful step than a gently curving one.</div>
+</div>
+<div class="math-derivation">
+<div class="label">Now map this directly onto XGBoost</div>
+<p>Our "function of \(\Delta\)" is the loss, our "current point" is the current prediction \(\hat y_i^{(t-1)}\), and our "step" is the new tree's output \(f_t(x_i)\). Define:</p>
+<div class="complete-equation">\[
+g_i=\frac{\partial l(y_i,\hat y_i)}{\partial \hat y_i}\bigg|_{\hat y_i=\hat y_i^{(t-1)}},\qquad
+h_i=\frac{\partial^2 l(y_i,\hat y_i)}{\partial \hat y_i^2}\bigg|_{\hat y_i=\hat y_i^{(t-1)}}
+\]</div>
+<p>Then the second-order Taylor approximation of the loss for row \(i\) is:</p>
+<div class="complete-equation">\[
+\boxed{l\big(y_i,\hat y_i^{(t-1)}+f_t(x_i)\big)\approx l(y_i,\hat y_i^{(t-1)})+g_i f_t(x_i)+\frac12h_i f_t(x_i)^2}
+\]</div>
+<div class="misconception"><b>Be exact about what is being differentiated.</b> \(y_i\) (the actual label) is treated as a fixed constant. We differentiate the loss with respect to the <b>current prediction</b> \(\hat y_i\) &mdash; asking "if my prediction nudges slightly, how does the loss respond?" That is the only variable in play.</div>
+</div>
+</section>
+<section class="block" id="gh-bridge">
+<div class="eyebrow">04 &middot; the crucial bridge</div>
+<h2>Is \(g_i\) something <u>completely different</u> from the GBDT pseudo-residual?</h2>
+<div class="card">
+<div class="ask"><b>Ask yourself:</b> we already learned pseudo-residuals in GBDT. Is XGBoost throwing that away and starting over?</div>
+<p class="lead">No. Watch what happens for squared-error loss.</p>
+<div class="formula">\[
+l(y_i,\hat y_i)=\frac12(y_i-\hat y_i)^2
+\]</div>
+<p>Differentiate with respect to \(\hat y_i\):</p>
+<div class="formula">\[
+g_i=\frac{\partial l}{\partial \hat y_i}=\hat y_i-y_i
+\]</div>
+<div class="formula">\[
+h_i=\frac{\partial^2 l}{\partial \hat y_i^2}=1
+\]</div>
+<div class="key"><b>So \(g_i\) is exactly the negative of GBDT's residual.</b> GBDT's pseudo-residual is \(r_i=y_i-\hat y_i\). XGBoost's gradient is \(g_i=\hat y_i-y_i=-r_i\). Same information, opposite sign convention (because XGBoost's update adds \(w\) directly, rather than adding "the residual").</div>
+</div>
+<div class="callout"><b>XGBoost is not magic.</b> It generalises the exact same idea GBDT already taught you &mdash; "fit the tree to how wrong the current model is" &mdash; but does it with <b>both</b> derivatives instead of just the first, and folds in explicit regularisation. Every \(g_i,h_i\) formula from here on is just this same differentiation, applied to a different loss.</div>
+</section>
+<section class="block" id="reg-init">
+<div class="eyebrow">05 &middot; regression, worked end-to-end</div>
+<h2>Before any tree exists: <u>what does XGBoost predict?</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">Tiny dataset, small enough to hand-calculate everything:</p>
+<div class="tbl"><table><tr><th>x</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr>
+<tr><td>y</td><td>2</td><td>4</td><td>6</td><td>8</td><td>10</td><td>12</td></tr></table></div>
+<p style="font-size:12.5px;color:var(--chalk-dim)">Loss: squared error \(l=\frac12(y-\hat y)^2\). Settings for this walkthrough: \(\lambda=1\), \(\gamma=0\), \(\eta=0.3\).</p>
+<div class="ask"><b>Ask yourself:</b> not "the mean" by assumption &mdash; derive it. What constant \(c\) minimises the total loss before any tree exists?</div>
+<div class="formula">\[
+\hat y^{(0)}=\arg\min_c\sum_i\frac12(y_i-c)^2
+\]</div>
+<p>Differentiate with respect to \(c\) and set to zero:</p>
+<div class="formula">\[
+\frac{d}{dc}\sum_i\frac12(y_i-c)^2=\sum_i(c-y_i)=0\ \Rightarrow\ c=\frac{\sum_i y_i}{n}
+\]</div>
+<div class="complete-equation">\[
+\boxed{\hat y^{(0)}=\bar y=\frac{2+4+6+8+10+12}{6}=7}
+\]</div>
+<div class="key">The mean isn't chosen by convention. It falls straight out of minimising squared-error loss with no tree yet. \(F_0=7\) for every row.</div>
+</div>
+</section>
+<section class="block" id="reg-leaf">
+<div class="eyebrow">06 &middot; regression, worked end-to-end</div>
+<h2>Iteration 1: <u>gradients, candidate splits, and the leaf weight</u></h2>
+<div class="card">
+<p>At \(F_0=7\), squared loss gives \(g_i=\hat y_i-y_i\), \(h_i=1\) for every row.</p>
+<div class="tbl"><table><tr><th>x</th><th>y</th><th>F (current)</th><th>g<sub>i</sub></th><th>h<sub>i</sub></th></tr>
+<tr><td>1</td><td>2</td><td>7</td><td class="bad">5.0</td><td>1</td></tr>
+<tr><td>2</td><td>4</td><td>7</td><td class="bad">3.0</td><td>1</td></tr>
+<tr><td>3</td><td>6</td><td>7</td><td class="bad">1.0</td><td>1</td></tr>
+<tr><td>4</td><td>8</td><td>7</td><td class="good">-1.0</td><td>1</td></tr>
+<tr><td>5</td><td>10</td><td>7</td><td class="good">-3.0</td><td>1</td></tr>
+<tr><td>6</td><td>12</td><td>7</td><td class="good">-5.0</td><td>1</td></tr>
+</table></div>
+<div class="misconception"><b>Do not jump straight to "the answer" split.</b> The tree has to actually try every candidate threshold and score each one. That's next &mdash; but first, given a chosen region, what's its optimal value?</div>
+</div>
+<div class="math-derivation">
+<div class="label">Derive the regularised leaf weight, from scratch</div>
+<p>For any single leaf receiving rows with gradient sum \(G\) and Hessian sum \(H\), the (second-order-approximated, regularised) objective contributed by that leaf is:</p>
+<div class="complete-equation">\[
+Obj_{\text{leaf}}(w)=Gw+\frac12(H+\lambda)w^2
+\]</div>
+<p>Differentiate with respect to \(w\) and set to zero:</p>
+<div class="complete-equation">\[
+\frac{\partial\, Obj_{\text{leaf}}}{\partial w}=G+(H+\lambda)w=0
+\]</div>
+<div class="complete-equation">\[
+\boxed{w^*=-\frac{G}{H+\lambda}}
+\]</div>
+<div class="key"><b>Intuition:</b> \(G\) says which way to correct and how hard. \(H+\lambda\) is the "resistance" &mdash; more curvature (more confident rows) OR more L2 penalty both make the leaf more reluctant to move far. Set \(\lambda=0\) and this is exactly GBDT's second-order form \(-G/H\).</div>
+</div>
+</section>
+<section class="block" id="reg-gain">
+<div class="eyebrow">07 &middot; regression, worked end-to-end</div>
+<h2>Split gain: <u>derived from scratch, not just stated</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">The tree does not simply "split on the residual mean." It must score every candidate threshold. Substitute the optimal \(w^*\) back into the leaf objective:</p>
+<div class="formula">\[
+Obj_{\text{leaf}}(w^*)=G\left(-\frac{G}{H+\lambda}\right)+\frac12(H+\lambda)\left(\frac{G^2}{(H+\lambda)^2}\right)
+=-\frac{G^2}{H+\lambda}+\frac12\frac{G^2}{H+\lambda}
+\]</div>
+<div class="complete-equation">\[
+\boxed{Obj_{\text{leaf}}(w^*)=-\frac12\frac{G^2}{H+\lambda}}
+\]</div>
+<p>A split replaces one parent leaf with two child leaves. It is worth doing only if the <b>total objective drops</b>:</p>
+<div class="formula">\[
+\text{drop}=Obj_{\text{parent}}-\big(Obj_{\text{left}}+Obj_{\text{right}}\big)
+=\left(-\frac12\frac{G^2}{H+\lambda}\right)-\left(-\frac12\frac{G_L^2}{H_L+\lambda}-\frac12\frac{G_R^2}{H_R+\lambda}\right)
+\]</div>
+<p>Rearranged, and after subtracting the flat per-leaf cost \(\gamma\) of creating one extra leaf:</p>
+<div class="complete-equation">\[
+\boxed{Gain=\frac12\left(\frac{G_L^2}{H_L+\lambda}+\frac{G_R^2}{H_R+\lambda}-\frac{G^2}{H+\lambda}\right)-\gamma}
+\]</div>
+<div class="key">Positive gain = the two specialised leaves genuinely reduce the objective more than the flat cost of creating them. Negative gain = not worth splitting; that region becomes a leaf as-is.</div>
+</div>
+<div class="card">
+<h3>Every candidate threshold, scored (iteration 1, &lambda;=1, &gamma;=0)</h3>
+<div class="tbl"><table>
+<tr><th>Split</th><th>G<sub>L</sub></th><th>H<sub>L</sub></th><th>G<sub>R</sub></th><th>H<sub>R</sub></th><th>Gain</th></tr>
+<tr><td class="left">x &le; 1.5</td><td>5.0</td><td>1</td><td>-5.0</td><td>5</td><td>8.33</td></tr>
+<tr><td class="left">x &le; 2.5</td><td>8.0</td><td>2</td><td>-8.0</td><td>4</td><td>17.07</td></tr>
+<tr class="hl"><td class="left"><b>x &le; 3.5</b></td><td>9.0</td><td>3</td><td>-9.0</td><td>3</td><td class="hl"><b>20.25</b></td></tr>
+<tr><td class="left">x &le; 4.5</td><td>8.0</td><td>4</td><td>-8.0</td><td>2</td><td>17.07</td></tr>
+<tr><td class="left">x &le; 5.5</td><td>5.0</td><td>5</td><td>-5.0</td><td>1</td><td>8.33</td></tr>
+</table></div>
+<div class="misconception"><b>The split is chosen by comparing these gains</b> &mdash; not by any Gini/entropy/variance criterion, and not just "the middle looks right." Here the middle split genuinely wins with the highest Gain, 20.25.</div>
+<p>Winning split: \(x\le3.5\). Leaf weights for the two children:</p>
+<div class="formula">\[
+w_L^*=-\frac{9}{3+1}=-2.25,\qquad w_R^*=-\frac{-9}{3+1}=2.25
+\]</div>
+</div>
+</section>
+<section class="block" id="reg-update">
+<div class="eyebrow">08 &middot; regression, worked end-to-end</div>
+<h2>The leaf does <u>NOT</u> predict the mean target</h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">This distinction matters. The leaf predicts a <b>correction to the current model</b>, not "the average \(y\) in this region."</p>
+<div class="formula">\[
+\hat y_i^{\text{new}}=\hat y_i^{\text{old}}+\eta\, w_j
+\]</div>
+<p>With \(\eta=0.3\), \(w_L^*=-2.25\), \(w_R^*=2.25\):</p>
+<div class="tbl"><table><tr><th>Group</th><th>Update</th><th>New F</th></tr>
+<tr><td class="left">A: x &le; 3.5</td><td>7 + 0.3&times;(&minus;2.25)</td><td class="hl">6.325</td></tr>
+<tr><td class="left">B: x &gt; 3.5</td><td>7 + 0.3&times;(2.25)</td><td class="hl">7.675</td></tr>
+</table></div>
+<div class="key">Note this is nowhere near the true group means (4 and 10). That's the point of shrinkage &mdash; a small, conservative step, corrected further by later trees.</div>
+</div>
+</section>
+<section class="block" id="reg-iters">
+<div class="eyebrow">09 &middot; regression, worked end-to-end</div>
+<h2>All 3 iterations, <u>every number visible</u></h2>
+<div class="card">
+<div class="tbl"><table>
+<tr><th>Round</th><th>g<sub>i</sub> (row-wise)</th><th>Best split</th><th>G<sub>L</sub>,H<sub>L</sub> / G<sub>R</sub>,H<sub>R</sub></th><th>Gain</th><th>w<sub>L</sub><sup>*</sup>, w<sub>R</sub><sup>*</sup></th><th>New F (groups)</th><th>Loss</th></tr>
+<tr><td>0 (init)</td><td colspan="6" class="left">&mdash;</td><td>35.00</td></tr>
+<tr><td>1</td><td class="left">5, 3, 1, -1, -3, -5</td><td class="left">x&le;3.5</td><td class="left">9, 3 / -9, 3</td><td>20.25</td><td>-2.250, 2.250</td><td class="left">6.325 / 7.675</td><td>24.22</td></tr>
+<tr><td>2</td><td class="left">4.325, 2.325, 0.325, -0.325, -2.325, -4.325</td><td class="left">x&le;3.5</td><td class="left">6.975, 3 / -6.975, 3</td><td>12.16</td><td>-1.744, 1.744</td><td class="left">5.802 / 8.198</td><td>17.74</td></tr>
+<tr><td>3</td><td class="left">3.802, 1.802, -0.198, 0.198, -1.802, -3.802</td><td class="left" style="color:var(--pink)">x&le;2.5 <span class="mini">(tied with x&le;4.5)</span></td><td class="left">5.604, 2 / -5.604, 4</td><td>8.37</td><td>-1.868, 1.121</td><td class="left">5.242, 5.242 / 6.138 / 8.534&times;3</td><td>13.26</td></tr>
+</table></div>
+<div class="misconception"><b>Notice round 3:</b> the winning split moved to \(x\le2.5\) (tied with \(x\le4.5\)) instead of staying at \(x\le3.5\). Each tree is refit from scratch on the current \(g,h\) &mdash; there's no rule that later trees repeat earlier splits. Row \(x{=}3\) ends up with its own slightly different value (6.138) because it belonged to the "high" group in rounds 1&ndash;2 but the "low" group in round 3.</div>
+<div class="key"><b>Loss trajectory:</b> 35.00 &rarr; 24.22 &rarr; 17.74 &rarr; 13.26. Steadily decreasing, exactly as the additive model keeps correcting itself.</div>
+</div>
+<div class="diagram">
+<div class="flow">
+<div class="node"><strong>Tree 1</strong><br><span>splits at 3.5</span></div><div class="arrow">&rarr;</div>
+<div class="node"><strong>correction</strong><br><span>&plusmn;0.675</span></div><div class="arrow">&rarr;</div>
+<div class="node"><strong>Tree 2</strong><br><span>splits at 3.5</span></div><div class="arrow">&rarr;</div>
+<div class="node"><strong>correction</strong><br><span>&plusmn;0.523</span></div><div class="arrow">&rarr;</div>
+<div class="node" style="border-color:var(--pink)"><strong>Tree 3</strong><br><span>splits at 2.5</span></div>
+</div>
+</div>
+</section>
+<section class="block" id="lr-deep">
+<div class="eyebrow">10 &middot; regression, worked end-to-end</div>
+<h2>Learning rate, <u>mathematically</u></h2>
+<div class="card">
+<div class="formula">\[
+F_t(x)=F_{t-1}(x)+\eta\, f_t(x)
+\]</div>
+<div class="tbl"><table><tr><th>&eta;</th><th>Effect</th></tr>
+<tr><td>1.0</td><td class="left">Full correction applied immediately. Fast, but the model can overshoot &mdash; each tree is trusted completely, including its noise.</td></tr>
+<tr><td>0.5</td><td class="left">Half the correction. Faster than small &eta;, still fairly aggressive.</td></tr>
+<tr><td>0.1</td><td class="left">Small, careful steps. Needs many more trees to reach the same place, but each tree's error contributes less.</td></tr>
+<tr><td>0.01</td><td class="left">Very conservative. Excellent generalisation potential, but needs a large \(n\_estimators\) and more training time.</td></tr>
+</table></div>
+<div class="key"><b>The core trade-off:</b> large \(\eta\) &rarr; fast but unstable, prone to overfitting individual trees' noise. Small \(\eta\) &rarr; slow but controlled, usually paired with more trees and early stopping.</div>
+<div class="ask"><b>Ask yourself:</b> if &eta; is tiny, is more trees always better? No &mdash; past a point validation loss plateaus or worsens even with small steps, which is exactly why early stopping exists (covered later).</div>
+</div>
+</section>
+
+<section class="block" id="reg-vs-gbdt">
+<div class="eyebrow">11 &middot; regression, worked end-to-end</div>
+<h2>Regression: <u>what exactly changed from GBDT?</u></h2>
+<div class="card">
+<div class="grid2">
+<div class="card"><h3 style="color:var(--cyan)">GBDT<span class="gbdt-badge">GBDT</span></h3><p style="font-size:13px;color:#cdd8de">Pseudo-residual &rarr; regression tree fit by SSE &rarr; leaf = mean residual</p></div>
+<div class="card"><h3 style="color:var(--pink)">XGBoost<span class="xg-badge">XGB</span></h3><p style="font-size:13px;color:#cdd8de">Gradient + Hessian &rarr; regularised objective &rarr; tree split by \(G,H\)-Gain &rarr; regularised leaf weight</p></div>
+</div>
+<div class="formula">\[
+w_{\text{GBDT}}\sim-\frac{G}{H}\qquad\text{vs}\qquad w_{\text{XGB}}=-\frac{G}{H+\lambda}
+\]</div>
+<div class="key">For squared error, \(H=1\) per row always &mdash; so GBDT's leaf value collapses to the plain mean residual. XGBoost's \(+\lambda\) in the denominator is the only new thing here: it shrinks the leaf weight toward zero, proportionally more so with fewer/lower-confidence rows in the leaf.</div>
+</div>
+</section>
+<section class="block" id="clf-start">
+<div class="eyebrow">12 &middot; classification, from first principles</div>
+<h2>What changes when <u>y is binary?</u></h2>
+<div class="card">
+<div class="ask"><b>Ask yourself:</b> regression was fairly direct &mdash; the tree corrects a real number. What does the tree correct when the target is 0/1?</div>
+<p>Start from binary log loss:</p>
+<div class="formula">\[
+l(y,p)=-\big[y\log p+(1-y)\log(1-p)\big]
+\]</div>
+<p>XGBoost's tree does <b>not</b> directly predict a probability. It works with a raw score (margin) \(F(x)\), converted to a probability via the sigmoid:</p>
+<div class="formula">\[
+p=\sigma(F)=\frac{1}{1+e^{-F}}
+\]</div>
+<div class="key">Every tree adds a correction to \(F\), the unbounded raw score &mdash; never directly to \(p\), which is squeezed into \([0,1]\) and behaves badly under simple addition. This is identical to how GBDT classification worked; nothing new here yet.</div>
+</div>
+</section>
+
+<section class="block" id="clf-init">
+<div class="eyebrow">13 &middot; classification, worked end-to-end</div>
+<h2>Initial raw score, <u>derived</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">Tiny binary dataset:</p>
+<div class="tbl"><table><tr><th>x</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr>
+<tr><td>y</td><td>0</td><td>0</td><td>0</td><td>1</td><td>1</td><td>1</td></tr></table></div>
+<p style="font-size:12.5px;color:var(--chalk-dim)">Settings: \(\lambda=1\), \(\gamma=0\), \(\eta=0.3\).</p>
+<div class="formula">\[
+p_0=\frac{\#\text{positive}}{n}=\frac{3}{6}=0.5
+\]</div>
+<div class="formula">\[
+F_0=\log\left(\frac{p_0}{1-p_0}\right)=\log(1)=0
+\]</div>
+<table><tr><th>Term</th><th>Meaning</th></tr>
+<tr><td>probability \(p\)</td><td>chance of the positive class, in \([0,1]\)</td></tr>
+<tr><td>odds \(p/(1-p)\)</td><td>ratio of "for" vs "against"; at \(p=0.5\), odds \(=1\)</td></tr>
+<tr><td>log-odds \(\log(p/(1-p))\)</td><td>the raw margin \(F\) &mdash; unbounded, symmetric around 0, and the space the tree actually operates in</td></tr>
+</table>
+<div class="key">At exactly 50/50 base rate, log-odds \(=0\) &mdash; a genuinely neutral starting point. If the base rate were 0.9, \(F_0=\log(9)\approx2.197\), a strong positive prior baked into every prediction before any tree exists.</div>
+</div>
+</section>
+<section class="block" id="clf-gh">
+<div class="eyebrow">14 &middot; classification, worked end-to-end</div>
+<h2>Derive \(g\) and \(h\) <u>for log loss, step by step</u></h2>
+<div class="math-derivation">
+<div class="label">Gradient</div>
+<div class="complete-equation">\[
+l(y,F)=-y\log p-(1-y)\log(1-p),\qquad p=\sigma(F)
+\]</div>
+<p>Using \(\dfrac{d\sigma}{dF}=\sigma(F)(1-\sigma(F))=p(1-p)\) and the chain rule:</p>
+<div class="complete-equation">\[
+\frac{\partial l}{\partial F}=\frac{\partial l}{\partial p}\cdot\frac{\partial p}{\partial F}
+=\left(-\frac{y}{p}+\frac{1-y}{1-p}\right)\cdot p(1-p)=p-y
+\]</div>
+<div class="complete-equation">\[
+\boxed{g_i=p_i-y_i}
+\]</div>
+</div>
+<div class="math-derivation">
+<div class="label">Hessian</div>
+<p>Differentiate \(g=p-y\) with respect to \(F\) again, using the same \(\frac{dp}{dF}=p(1-p)\):</p>
+<div class="complete-equation">\[
+\frac{\partial^2 l}{\partial F^2}=\frac{\partial}{\partial F}(p-y)=\frac{dp}{dF}=p(1-p)
+\]</div>
+<div class="complete-equation">\[
+\boxed{h_i=p_i(1-p_i)}
+\]</div>
+</div>
+<div class="grid2">
+<div class="card"><h3 style="color:var(--cyan)">Gradient \(p-y\)</h3><p style="font-size:12.5px;color:var(--chalk-dim)">"How wrong is the current probability?" Positive when we're over-predicting the positive class, negative when under-predicting.</p></div>
+<div class="card"><h3 style="color:var(--yellow)">Hessian \(p(1-p)\)</h3><p style="font-size:12.5px;color:var(--chalk-dim)">"How much curvature does log loss have here?" Maximal at \(p=0.5\) (most uncertain, most room to move), shrinks toward 0 as \(p\to0\) or \(p\to1\) (already confident, loss is flat).</p></div>
+</div>
+</section>
+<section class="block" id="clf-iters">
+<div class="eyebrow">15 &middot; classification, worked end-to-end</div>
+<h2>All 3 classification iterations, <u>every number visible</u></h2>
+<div class="card">
+<h3>Round 1</h3>
+<p>At \(F_0=0\), \(p_0=0.5\) for every row &rarr; \(g_i=0.5-y_i\), \(h_i=0.25\) for all.</p>
+<div class="tbl"><table><tr><th>Split</th><th>G<sub>L</sub></th><th>H<sub>L</sub></th><th>G<sub>R</sub></th><th>H<sub>R</sub></th><th>Gain</th></tr>
+<tr><td class="left">x&le;1.5</td><td>0.5</td><td>0.25</td><td>-0.5</td><td>1.25</td><td>0.156</td></tr>
+<tr><td class="left">x&le;2.5</td><td>1.0</td><td>0.50</td><td>-1.0</td><td>1.00</td><td>0.583</td></tr>
+<tr class="hl"><td class="left"><b>x&le;3.5</b></td><td>1.5</td><td>0.75</td><td>-1.5</td><td>0.75</td><td class="hl"><b>1.286</b></td></tr>
+<tr><td class="left">x&le;4.5</td><td>1.0</td><td>1.00</td><td>-1.0</td><td>0.50</td><td>0.583</td></tr>
+<tr><td class="left">x&le;5.5</td><td>0.5</td><td>1.25</td><td>-0.5</td><td>0.25</td><td>0.156</td></tr>
+</table></div>
+<p>\(w_L^*=-1.5/(0.75+1)=-0.857\), \(w_R^*=1.5/(0.75+1)=0.857\). Update: \(F=0+0.3\times(\mp0.857)\).</p>
+<div class="tbl"><table><tr><th>Group</th><th>New F</th><th>New p</th></tr>
+<tr><td class="left">A: x&le;3.5 (y=0)</td><td>-0.257</td><td class="hl">0.436</td></tr>
+<tr><td class="left">B: x&gt;3.5 (y=1)</td><td>0.257</td><td class="hl">0.564</td></tr></table></div>
+<p style="font-size:12.5px;color:var(--chalk-dim)">Log loss: 0.693 &rarr; <b style="color:var(--green)">0.573</b></p>
+</div>
+<div class="card">
+<h3>Round 2</h3>
+<p>\(g_i=p_i-y_i=\mp0.436\), \(h_i=p(1-p)=0.246\) for all (symmetric).</p>
+<div class="tbl"><table><tr><th>Split</th><th>Gain</th></tr>
+<tr><td class="left">x&le;1.5</td><td>0.119</td></tr><tr><td class="left">x&le;2.5</td><td>0.447</td></tr>
+<tr class="hl"><td class="left"><b>x&le;3.5</b></td><td class="hl"><b>0.985</b></td></tr>
+<tr><td class="left">x&le;4.5</td><td>0.447</td></tr><tr><td class="left">x&le;5.5</td><td>0.119</td></tr></table></div>
+<p>\(w_L^*=-0.753\), \(w_R^*=0.753\). \(F=\pm0.257+0.3\times(\pm0.753)\)</p>
+<div class="tbl"><table><tr><th>Group</th><th>New F</th><th>New p</th></tr>
+<tr><td class="left">A (y=0)</td><td>-0.483</td><td class="hl">0.382</td></tr>
+<tr><td class="left">B (y=1)</td><td>0.483</td><td class="hl">0.618</td></tr></table></div>
+<p style="font-size:12.5px;color:var(--chalk-dim)">Log loss: 0.573 &rarr; <b style="color:var(--green)">0.481</b></p>
+</div>
+<div class="card">
+<h3>Round 3</h3>
+<p>\(g_i=\mp0.382\), \(h_i=0.236\).</p>
+<div class="tbl"><table><tr><th>Split</th><th>Gain</th></tr>
+<tr><td class="left">x&le;1.5</td><td>0.092</td></tr><tr><td class="left">x&le;2.5</td><td>0.348</td></tr>
+<tr class="hl"><td class="left"><b>x&le;3.5</b></td><td class="hl"><b>0.767</b></td></tr>
+<tr><td class="left">x&le;4.5</td><td>0.348</td></tr><tr><td class="left">x&le;5.5</td><td>0.092</td></tr></table></div>
+<p>\(w_L^*=-0.670\), \(w_R^*=0.670\). \(F=\pm0.483+0.3\times(\pm0.670)\)</p>
+<div class="tbl"><table><tr><th>Group</th><th>New F</th><th>New p</th></tr>
+<tr><td class="left">A (y=0)</td><td>-0.684</td><td class="hl">0.335</td></tr>
+<tr><td class="left">B (y=1)</td><td>0.684</td><td class="hl">0.665</td></tr></table></div>
+<p style="font-size:12.5px;color:var(--chalk-dim)">Log loss: 0.481 &rarr; <b style="color:var(--green)">0.409</b></p>
+</div>
+<div class="key"><b>Full trajectory (log loss):</b> 0.693 &rarr; 0.573 &rarr; 0.481 &rarr; 0.409. Each row's probability steadily moves toward its true label &mdash; group A (\(y{=}0\)) heading toward 0, group B (\(y{=}1\)) heading toward 1, in small controlled steps set by \(\eta\).</div>
+</section>
+<section class="block" id="l1">
+<div class="eyebrow">16 &middot; regularisation, deep</div>
+<h2>L1: <u>why would we punish |w|?</u></h2>
+<div class="card">
+<div class="ask"><b>Ask yourself:</b> why punish the <i>absolute value</i> of a leaf weight, rather than just leaving it alone?</div>
+<p class="lead">Because it lets a leaf's contribution be pushed all the way to exactly zero &mdash; effectively "switching that leaf off" &mdash; something a smooth penalty like L2 cannot do. A zero-weight leaf contributes nothing to the prediction, as if that region of the tree didn't exist.</p>
+<div class="misconception"><b>Why L1 needs special handling:</b> \(|w|\) is not differentiable at \(w=0\) (there's a corner, not a smooth curve), so we can't just set a derivative to zero the usual way. The fix is <b>soft-thresholding</b>.</div>
+</div>
+<div class="math-derivation">
+<div class="label">Soft-thresholding, derived</div>
+<p>Minimising \(Gw+\frac12(H+\lambda)w^2+\alpha|w|\) piecewise (for \(w>0\) and \(w<0\) separately, since \(|w|\) is smooth on each side) gives:</p>
+<div class="complete-equation">\[
+\text{Threshold}(G,\alpha)=
+\begin{cases}
+G-\alpha & G>\alpha\\
+0 & |G|\le\alpha\\
+G+\alpha & G<-\alpha
+\end{cases}
+\]</div>
+<div class="complete-equation">\[
+\boxed{w^*=-\frac{\text{Threshold}(G,\alpha)}{H+\lambda}}
+\]</div>
+<div class="key">If \(G\) isn't strong enough to overcome the penalty \(\alpha\), the optimal weight is exactly 0. Only a gradient signal that clears the \(\alpha\) bar survives, and even then it's reduced by \(\alpha\) before being scaled.</div>
+</div>
+<div class="card">
+<h3>Numeric example &mdash; G=3, H=4, &lambda;=1</h3>
+<div class="tbl"><table><tr><th>&alpha;</th><th>Threshold(G,&alpha;)</th><th>w<sup>*</sup></th><th>Effect</th></tr>
+<tr><td>0</td><td>3</td><td>-0.600</td><td class="left">no L1 &mdash; ordinary regularised weight</td></tr>
+<tr><td>1</td><td>2</td><td>-0.400</td><td class="left">reduced, but still active</td></tr>
+<tr class="hl"><td>5</td><td class="hl">0</td><td class="hl"><b>0.000</b></td><td class="left hl"><b>\(|G|=3\le5\) &rarr; leaf switched off entirely</b></td></tr>
+</table></div>
+</div>
+</section>
+<section class="block" id="l2">
+<div class="eyebrow">17 &middot; regularisation, deep</div>
+<h2>L2: <u>shrink, don't zero out</u></h2>
+<div class="card">
+<div class="ask"><b>Ask yourself:</b> why square the weight instead of using its absolute value?</div>
+<p class="lead">Squaring makes the penalty smooth everywhere (differentiable at \(w=0\), no corner) and makes large weights disproportionately expensive &mdash; doubling \(w\) quadruples its penalty. This is exactly the \(-G/(H+\lambda)\) we already derived.</p>
+<div class="tbl"><table><tr><th>&lambda;</th><th>w<sup>*</sup> = -G/(H+&lambda;), G=3,H=4</th><th>Effect</th></tr>
+<tr><td>0</td><td>-0.750</td><td class="left">no shrinkage &mdash; matches GBDT's second-order form</td></tr>
+<tr><td>1</td><td>-0.600</td><td class="left">mild shrinkage toward 0</td></tr>
+<tr><td>5</td><td>-0.333</td><td class="left">strong shrinkage, weight compressed but never exactly 0</td></tr>
+</table></div>
+<div class="key"><b>L2 never produces an exact zero</b> &mdash; it keeps shrinking the weight as \(\lambda\) grows, but the weight only approaches zero asymptotically. Contrast this directly with L1's hard zero above.</div>
+</div>
+</section>
+
+<section class="block" id="gamma">
+<div class="eyebrow">18 &middot; regularisation, deep</div>
+<h2>&gamma;: <u>the price of a new leaf</u></h2>
+<div class="card">
+<div class="ask"><b>Ask yourself:</b> what does XGBoost actually punish with &gamma;T?</div>
+<p class="lead"><b>The number of leaves</b> &mdash; a flat cost charged per leaf, completely independent of how good or bad that leaf's correction is. It shows up directly inside Gain:</p>
+<div class="formula">\[
+Gain=\text{(improvement from split)}-\gamma
+\]</div>
+<p>Revisit the regression iteration-1 candidate table with a strict \(\gamma=25\):</p>
+<div class="tbl"><table><tr><th>Split</th><th>Raw improvement</th><th>Gain (&minus;25)</th><th>Split?</th></tr>
+<tr><td class="left">x&le;3.5 (best)</td><td>20.25</td><td class="bad">-4.75</td><td class="bad">No &mdash; stays a single leaf</td></tr>
+</table></div>
+<div class="key">Even the <b>best</b> possible split (20.25) can't clear a &gamma; of 25. The whole region collapses into one leaf. This is exactly how &gamma; makes a tree "more conservative about creating new leaves" &mdash; not by limiting depth directly, but by demanding every split earn its keep.</div>
+</div>
+</section>
+<section class="block" id="all-reg">
+<div class="eyebrow">19 &middot; regularisation, deep</div>
+<h2>All three, <u>together</u></h2>
+<div class="card">
+<div class="complete-equation" style="padding-top:30px;">\[
+\boxed{\text{Objective}=\underbrace{\textstyle\sum_i l(y_i,\hat y_i)}_{\text{training loss}}+\underbrace{\gamma T}_{\text{tree complexity}}+\underbrace{\tfrac12\lambda\textstyle\sum_j w_j^2}_{\text{L2}}+\underbrace{\alpha\textstyle\sum_j|w_j|}_{\text{L1}}}
+\]</div>
+<div class="tbl"><table><tr><th>Parameter</th><th>Punishes</th><th>Main effect</th></tr>
+<tr><td>\(\gamma\)</td><td class="left">number of leaves</td><td class="left">simpler trees, fewer regions</td></tr>
+<tr><td>\(\lambda\)</td><td class="left">large leaf weights (squared)</td><td class="left">shrinks weights smoothly, never to exact 0</td></tr>
+<tr><td>\(\alpha\)</td><td class="left">large leaf weights (absolute)</td><td class="left">sparsity &mdash; can zero a leaf out entirely</td></tr>
+<tr><td>learning rate \(\eta\)</td><td class="left">size of each update</td><td class="left">smaller, more cautious steps</td></tr>
+</table></div>
+<div class="key">Four independent knobs, four different mechanisms &mdash; but all doing the same job: keep any single tree from being too confident about too little evidence.</div>
+</div>
+</section>
+<section class="block" id="mcw">
+<div class="eyebrow">20 &middot; practical machinery</div>
+<h2>min_child_weight: <u>not "minimum sample count"</u></h2>
+<div class="card">
+<div class="misconception"><b>Common misconception:</b> it is not simply "each child needs at least N rows." It is a constraint on \(\sum h_i\) &mdash; the total <b>Hessian</b> mass in a child.</div>
+<p>For squared-error regression, \(h_i=1\) always, so \(\sum h_i\) literally equals the row count &mdash; min_child_weight <i>does</i> behave like a row-count minimum there. But for classification, \(h_i=p_i(1-p_i)\) varies per row: confident rows (\(p\) near 0 or 1) contribute almost no Hessian mass, while uncertain rows (\(p\) near 0.5) contribute the most.</p>
+<div class="key">A child made of 50 confident, easy rows might have less total Hessian than a child made of 5 genuinely uncertain rows. min_child_weight is really asking: <b>"is there enough real, curvature-weighted evidence here to trust this split?"</b></div>
+<div class="tbl"><table><tr><th>min_child_weight</th><th>Effect</th></tr>
+<tr><td>tiny (near 0)</td><td class="left">almost any split allowed, even on a couple of uncertain rows &mdash; high overfitting risk</td></tr>
+<tr><td>moderate</td><td class="left">requires meaningful accumulated evidence per child &mdash; typical default territory</td></tr>
+<tr><td>very large</td><td class="left">only very well-supported splits survive &mdash; tree stays shallow, risk of underfitting</td></tr>
+</table></div>
+<p style="font-size:12.5px;color:var(--chalk-dim)">Recall the &lambda;=1,&gamma;=0 regression split at \(x\le3.5\): \(H_L=H_R=3\). With min_child_weight=5, that split would be <b>rejected</b> &mdash; neither child clears the bar.</p>
+</div>
+</section>
+
+<section class="block" id="missing">
+<div class="eyebrow">21 &middot; practical machinery</div>
+<h2>Missing values: <u>a learned default direction</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">Not just "handled automatically" &mdash; here's the actual mechanism.</p>
+<div class="diagram"><div class="flow">
+<div class="node"><strong>Row has a missing feature</strong></div><div class="arrow">&rarr;</div>
+<div class="node"><strong>At this split candidate</strong><br><span>skip it from the gain calc</span></div><div class="arrow">&rarr;</div>
+<div class="node"><strong>Try: all-missing&rarr;LEFT</strong><br><span>compute Gain</span></div><div class="arrow">&rarr;</div>
+<div class="node"><strong>Try: all-missing&rarr;RIGHT</strong><br><span>compute Gain</span></div><div class="arrow">&rarr;</div>
+<div class="node" style="border-color:var(--pink)"><strong>Keep whichever direction wins</strong><br><span>store as default</span></div>
+</div></div>
+<div class="key">During <b>training</b>, missing rows for a given feature are excluded from the split-threshold search, then tried entirely on the left and entirely on the right &mdash; whichever gives higher Gain is stored as that node's "default direction." During <b>prediction</b>, any row missing that feature is sent straight down the stored default direction, no re-computation needed.</div>
+<div class="misconception">This is very different from mean/median imputation. XGBoost never guesses a value &mdash; it learns, per split, which side missing rows behave more like.</div>
+</div>
+</section>
+
+<section class="block" id="hist">
+<div class="eyebrow">22 &middot; practical machinery</div>
+<h2>Histogram-based splitting: <u>why, and how &mdash; precisely</u></h2>
+<div class="card">
+<div class="ask"><b>Ask yourself:</b> a feature has 10,000 unique values. Checking every possible threshold for every split, on every tree, is exactly how expensive?</div>
+<p class="lead">Extremely. Exact greedy search sorts the feature and evaluates a candidate at every distinct value &mdash; correct, but \(O(n)\) candidates per feature, per split, per tree, repeated across every tree in the ensemble.</p>
+<div class="diagram"><div class="flow">
+<div class="node"><strong>Continuous feature</strong></div><div class="arrow">&rarr;</div>
+<div class="node"><strong>Bin into a histogram</strong><br><span>e.g. max_bin=256</span></div><div class="arrow">&rarr;</div>
+<div class="node"><strong>Aggregate G,H per bin</strong></div><div class="arrow">&rarr;</div>
+<div class="node"><strong>Evaluate split between bins</strong><br><span>not between raw values</span></div><div class="arrow">&rarr;</div>
+<div class="node" style="border-color:var(--pink)"><strong>Choose best gain</strong></div>
+</div></div>
+</div>
+
+<div class="math-derivation">
+<div class="label">Step 1 &mdash; how are the bin boundaries even chosen?</div>
+<div class="misconception"><b>Not equal-width, and not simple equal-row-count either.</b> XGBoost builds bins using a <b>weighted quantile sketch</b>: boundaries are placed so each bin holds roughly <b>equal total Hessian mass</b> (\(\sum h\)), not an equal number of rows.</div>
+<p style="font-size:13px;color:#cdd8de">Why weight by \(h\) and not just count rows? Because \(h\) is literally "how much this row's loss curves here" &mdash; how much it matters to get this region right. A cluster of confident, low-\(h\) classification rows (near \(p{=}0\) or \(p{=}1\)) can be lumped into one coarse bin cheaply; a cluster of uncertain, high-\(h\) rows (near \(p{=}0.5\), where the split actually matters) gets finer bin resolution automatically.</p>
+</div>
+
+<div class="math-derivation">
+<div class="label">Step 2 &mdash; a genuinely small worked example (12 rows &rarr; 4 bins)</div>
+<p>12 sorted rows of a feature "age", with each row's \(g_i\) (say \(h_i=1\) for simplicity, i.e. squared-error regression):</p>
+<div class="tbl"><table><tr><th>age</th><td>12</td><td>15</td><td>18</td><td>22</td><td>25</td><td>29</td><td>33</td><td>38</td><td>44</td><td>51</td><td>60</td><td>72</td></tr>
+<tr><th>g</th><td>-3</td><td>-2</td><td>-2</td><td>-1</td><td>-1</td><td>0</td><td>0</td><td>1</td><td>1</td><td>2</td><td>2</td><td>3</td></tr></table></div>
+<p><b>Exact greedy</b> would check 11 candidate thresholds here (between every consecutive pair). With \(\text{max\_bin}=4\), the rows are grouped into 4 bins first (roughly equal Hessian mass &mdash; here, equal count since every \(h_i=1\)):</p>
+<div class="tbl"><table><tr><th>Bin</th><th>Ages inside</th><th>G (sum g)</th><th>H (sum h)</th></tr>
+<tr><td>1</td><td class="left">12, 15, 18</td><td>-7</td><td>3</td></tr>
+<tr><td>2</td><td class="left">22, 25, 29</td><td>-2</td><td>3</td></tr>
+<tr><td>3</td><td class="left">33, 38, 44</td><td>2</td><td>3</td></tr>
+<tr><td>4</td><td class="left">51, 60, 72</td><td>7</td><td>3</td></tr>
+</table></div>
+<div class="key">Notice: 12 unique values collapsed into just <b>4</b> aggregated buckets. Any two rows landing in the same bin (e.g. age 12 and age 18) are now indistinguishable to the split-finder &mdash; a split can never separate them within this round. That's the entire approximation, in one sentence.</div>
+</div>
+
+<div class="math-derivation">
+<div class="label">Step 3 &mdash; "all combinations" is NOT what happens; it's a single left-to-right pass</div>
+<div class="misconception"><b>There is no combinatorial search over which bins go left vs right.</b> With 4 bins there are technically \(2^3=8\) ways to 2-partition them, but XGBoost never explores that space. Because the feature is <b>sorted</b>, a valid split must always be a contiguous prefix vs suffix of bins &mdash; so it only ever needs the <b>3 boundaries between consecutive bins</b> (\(\text{bins}-1\) candidates), found with one cumulative left-to-right sweep, exactly like exact greedy, just running on 4 aggregated buckets instead of 12 raw rows.</div>
+<div class="tbl"><table><tr><th>Candidate (boundary after)</th><th>G<sub>L</sub>,H<sub>L</sub></th><th>G<sub>R</sub>,H<sub>R</sub></th><th>Gain (&lambda;=1,&gamma;=0)</th></tr>
+<tr><td class="left">Bin 1 &#124; Bins 2-4 &nbsp;(age&le;~20)</td><td>-7, 3</td><td>7, 9</td><td>8.58</td></tr>
+<tr class="hl"><td class="left"><b>Bins 1-2 &#124; Bins 3-4 &nbsp;(age&le;~31)</b></td><td>-9, 6</td><td>9, 6</td><td class="hl"><b>11.57</b></td></tr>
+<tr><td class="left">Bins 1-3 &#124; Bin 4 &nbsp;(age&le;~47)</td><td>-7, 9</td><td>7, 3</td><td>8.58</td></tr>
+</table></div>
+<div class="key">Exactly <b>3</b> candidates evaluated (not 11, and nowhere near \(2^3\)) &mdash; one cumulative pass through the sorted bins, accumulating \(G,H\) left-to-right, scoring the boundary after each bin. This is precisely the same prefix-sum mechanic as exact greedy's candidate-threshold table earlier in these notes &mdash; just computed on 4 compressed buckets instead of 12 raw rows.</div>
+</div>
+
+<div class="key"><b>Big picture:</b> with 10,000 unique values and \(\text{max\_bin}=256\), the same logic gives at most <b>255</b> candidate boundaries to check &mdash; a linear scan over bins, never a search over raw values, and never combinatorial. The actual split threshold ultimately reported is a bin edge (e.g. "age &le; 31.4"), not one of the original 10,000 exact values.</div>
+
+<div class="tbl"><table><tr><th>Trade-off</th><th>Effect</th></tr>
+<tr><td class="left">Speed / memory</td><td class="left good">Large gain, especially on big data &mdash; candidates shrink from \(O(n)\) to \(O(\text{max\_bin})\)</td></tr>
+<tr><td class="left">Split precision</td><td class="left">Slightly coarser &mdash; two rows in the same bin can never be split apart in this round</td></tr>
+<tr><td class="left">max_bin &uarr;</td><td class="left">finer bins, closer to exact greedy, slower, more memory</td></tr>
+<tr><td class="left">max_bin &darr;</td><td class="left">coarser bins, faster, small accuracy cost</td></tr>
+</table></div>
+</section>
+<section class="block" id="compare">
+<div class="eyebrow">23 &middot; practical machinery</div>
+<h2>Random Forest, GBDT, XGBoost &mdash; <u>the full picture</u></h2>
+<div class="card">
+<div class="tbl"><table>
+<tr><th></th><th>Random Forest</th><th>GBDT</th><th>XGBoost</th></tr>
+<tr><td class="left">Sequential?</td><td class="bad">No</td><td class="good">Yes</td><td class="good">Yes</td></tr>
+<tr><td class="left">Main idea</td><td class="left">Bagging</td><td class="left">Boosting</td><td class="left">Regularised boosting</td></tr>
+<tr><td class="left">Base trees</td><td class="left">Usually deep</td><td class="left">Usually shallow</td><td class="left">Usually controlled, penalised</td></tr>
+<tr><td class="left">Gradient-based</td><td class="bad">No</td><td class="good">Yes</td><td class="good">Yes</td></tr>
+<tr><td class="left">Hessian</td><td class="bad">No</td><td class="left">Depends on implementation</td><td class="good">Yes, explicit</td></tr>
+<tr><td class="left">L1/L2 leaf regularisation</td><td class="bad">No</td><td class="left">Limited</td><td class="good">Yes</td></tr>
+<tr><td class="left">Tree complexity penalty</td><td class="bad">No</td><td class="left">Limited</td><td class="good">Yes (&gamma;)</td></tr>
+<tr><td class="left">Learning rate</td><td class="bad">No</td><td class="good">Yes</td><td class="good">Yes</td></tr>
+<tr><td class="left">Missing value learning</td><td class="left">Implementation-dependent</td><td class="left">Implementation-dependent</td><td class="good">Yes, learned direction</td></tr>
+<tr><td class="left">Histogram splitting</td><td class="left">Implementation-dependent</td><td class="left">Implementation-dependent</td><td class="good">Yes</td></tr>
+</table></div>
+<div class="key"><b>Conceptually:</b> Random Forest reduces variance by averaging many independent, high-variance trees. GBDT reduces bias by sequentially correcting mistakes with a first-order signal. XGBoost keeps GBDT's sequential correction but makes each correction second-order-aware and explicitly penalised &mdash; sharper direction-finding, and built-in resistance to overfitting.</div>
+</div>
+</section>
+<section class="block" id="hyperparams">
+<div class="eyebrow">24 &middot; tuning</div>
+<h2>Hyperparameter master table</h2>
+<div class="card">
+<h3>Core</h3>
+<div class="tbl"><table><tr><th>Parameter</th><th>Controls</th><th>&uarr; increase does</th><th>&darr; decrease does</th></tr>
+<tr><td>objective</td><td class="left">which loss / task (reg:squarederror, binary:logistic, ...)</td><td class="left" colspan="2">defines g, h themselves</td></tr>
+<tr><td>n_estimators</td><td class="left">number of trees / rounds</td><td class="left">more capacity, more overfit risk</td><td class="left">less capacity, risk underfit</td></tr>
+<tr><td>learning_rate (&eta;)</td><td class="left">size of each tree's contribution</td><td class="left">faster learning, less stable</td><td class="left">slower, usually needs more trees</td></tr>
+</table></div>
+</div>
+<div class="card">
+<h3>Tree structure</h3>
+<div class="tbl"><table><tr><th>Parameter</th><th>Controls</th><th>&uarr; increase does</th><th>&darr; decrease does</th></tr>
+<tr><td>max_depth</td><td class="left">depth per tree</td><td class="left">more interactions captured, overfit risk</td><td class="left">simpler trees, underfit risk</td></tr>
+<tr><td>min_child_weight</td><td class="left">min \(\sum h\) per child (see &sect;20)</td><td class="left">fewer, more conservative splits</td><td class="left">more, riskier splits allowed</td></tr>
+<tr><td>gamma</td><td class="left">min Gain required to split</td><td class="left">fewer leaves, simpler trees</td><td class="left">more leaves, more complex trees</td></tr>
+</table></div>
+</div>
+<div class="card">
+<h3>Sampling</h3>
+<div class="tbl"><table><tr><th>Parameter</th><th>Controls</th><th>Effect</th></tr>
+<tr><td>subsample</td><td class="left">row fraction per tree</td><td class="left">&lt;1 adds stochasticity, reduces variance/correlation between trees</td></tr>
+<tr><td>colsample_bytree</td><td class="left">feature fraction per tree</td><td class="left">reduces reliance on any one strong feature</td></tr>
+<tr><td>colsample_bylevel</td><td class="left">feature fraction per depth level</td><td class="left">finer-grained feature diversity</td></tr>
+<tr><td>colsample_bynode</td><td class="left">feature fraction per split</td><td class="left">most aggressive decorrelation, most stochastic</td></tr>
+</table></div>
+</div>
+<div class="card">
+<h3>Regularisation &amp; histogram</h3>
+<div class="tbl"><table><tr><th>Parameter</th><th>Controls</th><th>Effect</th></tr>
+<tr><td>reg_alpha (&alpha;)</td><td class="left">L1 on leaf weights</td><td class="left">sparsity, can zero leaves entirely</td></tr>
+<tr><td>reg_lambda (&lambda;)</td><td class="left">L2 on leaf weights</td><td class="left">smooth shrinkage toward zero</td></tr>
+<tr><td>tree_method</td><td class="left">exact / hist / approx split search</td><td class="left">hist trades a little precision for a lot of speed</td></tr>
+<tr><td>max_bin</td><td class="left">histogram resolution</td><td class="left">higher = closer to exact greedy, slower</td></tr>
+</table></div>
+</div>
+<div class="card">
+<h3>Classification &amp; other</h3>
+<div class="tbl"><table><tr><th>Parameter</th><th>Controls</th><th>Effect</th></tr>
+<tr><td>scale_pos_weight</td><td class="left">relative weight of positive class</td><td class="left">rebalances gradient contribution under class imbalance</td></tr>
+<tr><td>eval_metric</td><td class="left">metric tracked for validation / early stopping</td><td class="left">drives what "improvement" means during training</td></tr>
+</table></div>
+</div>
+</section>
+<section class="block" id="fit">
+<div class="eyebrow">25 &middot; tuning</div>
+<h2>Underfitting vs overfitting, <u>through the objective</u></h2>
+<div class="grid2">
+<div class="card"><h3 style="color:var(--cyan)">Underfitting</h3><p style="font-size:12.5px;color:var(--chalk-dim)">Training AND validation both poor &mdash; the model lacks capacity, or is over-constrained.</p>
+<ul style="font-size:12.5px;color:#cdd8de;line-height:1.8;">
+<li>learning_rate too small + too few trees</li>
+<li>max_depth too low</li>
+<li>min_child_weight too high</li>
+<li>gamma too high</li>
+<li>reg_alpha / reg_lambda too high</li>
+<li>subsample / colsample too low</li>
+</ul></div>
+<div class="card"><h3 style="color:var(--pink)">Overfitting</h3><p style="font-size:12.5px;color:var(--chalk-dim)">Training keeps improving, validation worsens or plateaus &mdash; the ensemble is memorising specifics.</p>
+<ul style="font-size:12.5px;color:#cdd8de;line-height:1.8;">
+<li>too many trees, no early stopping</li>
+<li>learning_rate too high</li>
+<li>max_depth too high</li>
+<li>min_child_weight too low</li>
+<li>gamma too low</li>
+<li>regularisation too weak overall</li>
+<li>subsample / colsample too high (no stochastic dampening)</li>
+</ul></div>
+</div>
+<div class="callout warn"><b>Do not just minimise training loss.</b> Every one of these knobs is really a knob on the objective's complexity term &mdash; the goal is the best trade-off between fitting the data and staying simple enough to generalise.</div>
+</section>
+
+<section class="block" id="interactions">
+<div class="eyebrow">26 &middot; tuning</div>
+<h2>Hyperparameters <u>don't act alone</u></h2>
+<div class="card">
+<div class="tbl"><table><tr><th>Pair</th><th>Interaction</th></tr>
+<tr><td class="left">learning_rate &harr; n_estimators</td><td class="left">Small &eta; usually needs proportionally more trees to reach the same fit &mdash; tune together, not independently.</td></tr>
+<tr><td class="left">max_depth &harr; min_child_weight</td><td class="left">Depth controls <i>how far</i> a tree can grow; min_child_weight controls <i>whether</i> each individual split has enough Hessian mass to be trusted. A deep tree with a high min_child_weight often can't actually reach its max depth.</td></tr>
+<tr><td class="left">gamma &harr; max_depth</td><td class="left">Both limit complexity, but differently &mdash; gamma demands a split "earn its keep" via Gain; max_depth is a hard structural ceiling regardless of Gain.</td></tr>
+<tr><td class="left">reg_lambda &harr; leaf weight</td><td class="left">Directly inside \(w^*=-G/(H+\lambda)\) &mdash; raising &lambda; shrinks every leaf weight, interacting with how aggressive splits even look during Gain comparison.</td></tr>
+<tr><td class="left">reg_alpha &harr; leaf sparsity</td><td class="left">Higher &alpha; means more leaves get zeroed via soft-thresholding &mdash; effectively pruning the tree's <i>influence</i> without changing its <i>structure</i>.</td></tr>
+<tr><td class="left">subsample &harr; colsample_*</td><td class="left">Both add stochasticity from different axes (rows vs columns). Pushing both very low at once can starve individual trees of enough signal &mdash; tune jointly, watch validation closely.</td></tr>
+</table></div>
+</div>
+</section>
+<section class="block" id="early-stop">
+<div class="eyebrow">27 &middot; tuning</div>
+<h2>Early stopping</h2>
+<div class="card">
+<div class="diagram"><div class="flow">
+<div class="node"><strong>Hold out validation set</strong></div><div class="arrow">&rarr;</div>
+<div class="node"><strong>Track eval_metric</strong><br><span>each round</span></div><div class="arrow">&rarr;</div>
+<div class="node"><strong>No improvement for N rounds</strong><br><span>early_stopping_rounds</span></div><div class="arrow">&rarr;</div>
+<div class="node" style="border-color:var(--pink)"><strong>Stop</strong><br><span>keep best_iteration</span></div>
+</div></div>
+<div class="key">Especially useful when \(n\_estimators\) is deliberately set very high &mdash; you let the model use as many trees as it actually benefits from, and no more, rather than guessing the right count up front. The final model uses the best-performing round, not necessarily the last one trained.</div>
+</div>
+</section>
+
+<section class="block" id="imbalance">
+<div class="eyebrow">28 &middot; tuning</div>
+<h2>Class imbalance: <u>scale_pos_weight, from first principles</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">With heavy imbalance (say 99% negative, 1% positive), the model can achieve very low average loss just by always predicting "negative" &mdash; the rare positive rows barely move the aggregate gradient.</p>
+<div class="formula">\[
+g_i^{\text{weighted}}=w_i\,(p_i-y_i),\qquad w_i=\text{scale\_pos\_weight if }y_i=1\text{ else }1
+\]</div>
+<div class="key">Multiplying positive-class gradients (and Hessians) by scale_pos_weight makes each positive row "count for more" in every \(G,H\) sum &mdash; directly changing which splits look good and how large leaf weights become, forcing the model to pay real attention to the minority class instead of ignoring it.</div>
+<p style="font-size:12.5px;color:var(--chalk-dim)">A common heuristic is \(\text{scale\_pos\_weight}=\dfrac{\#\text{negative}}{\#\text{positive}}\) &mdash; but treat it as a starting point, not a law; validate against your actual metric (often recall/precision/F1/AUC rather than accuracy) and against your chosen decision threshold.</p>
+</div>
+</section>
+
+<section class="block" id="importance">
+<div class="eyebrow">29 &middot; tuning</div>
+<h2>Feature importance: <u>weight vs gain vs cover</u></h2>
+<div class="card">
+<div class="tbl"><table><tr><th>Method</th><th>Measures</th><th>Reads as</th></tr>
+<tr><td>weight</td><td class="left">number of times a feature is used to split, across all trees</td><td class="left">"how often was this feature picked at all"</td></tr>
+<tr><td class="hl">gain</td><td class="left hl"><b>average Gain improvement</b> from splits using this feature</td><td class="left hl"><b>"how much did this feature actually improve the objective, on average"</b></td></tr>
+<tr><td>cover</td><td class="left">average \(\sum h\) (Hessian mass) of rows affected by splits on this feature</td><td class="left">"how much curvature-weighted data did this feature typically influence"</td></tr>
+</table></div>
+<div class="key">Gain is usually the most informative: a feature used only once but responsible for a huge loss reduction (high gain, low weight) is often more valuable than one split on constantly but each time only marginally useful (high weight, low gain).</div>
+<div class="misconception"><b>Feature importance is not causal importance.</b> It reflects how useful a feature was for reducing loss inside this particular model, given every other feature it competed with and correlated against &mdash; not a claim about real-world cause and effect.</div>
+</div>
+</section>
+<section class="block" id="algorithm">
+<div class="eyebrow">30 &middot; final algorithm</div>
+<h2>XGBoost, <u>end-to-end without skipping steps</u></h2>
+<div class="card">
+<h3>Regression</h3>
+<div class="step"><div class="num">1</div><div class="body"><b>Initialise:</b> \(\hat y^{(0)}=\bar y\), the constant that minimises squared loss.</div></div>
+<div class="step"><div class="num">2</div><div class="body"><b>Compute:</b> \(g_i=\hat y_i-y_i\), \(h_i=1\), for every row.</div></div>
+<div class="step"><div class="num">3</div><div class="body"><b>Build candidate splits:</b> every threshold on every feature.</div></div>
+<div class="step"><div class="num">4</div><div class="body"><b>Aggregate:</b> \(G_L,H_L,G_R,H_R\) for each candidate.</div></div>
+<div class="step"><div class="num">5</div><div class="body"><b>Regularised Gain:</b> \(\frac12\big(\frac{G_L^2}{H_L+\lambda}+\frac{G_R^2}{H_R+\lambda}-\frac{G^2}{H+\lambda}\big)-\gamma\), pick the best; reject if best Gain &le; 0.</div></div>
+<div class="step"><div class="num">6</div><div class="body"><b>Leaf weight:</b> \(w_j^*=-G_j/(H_j+\lambda)\) (soft-thresholded first if \(\alpha>0\)).</div></div>
+<div class="step"><div class="num">7</div><div class="body"><b>Update:</b> \(\hat y_i^{(t)}=\hat y_i^{(t-1)}+\eta\, w_j\).</div></div>
+<div class="step"><div class="num">8</div><div class="body"><b>Repeat</b> from step 2 with the new predictions; stop via n_estimators or early stopping.</div></div>
+</div>
+<div class="card">
+<h3>Binary classification</h3>
+<div class="step"><div class="num">1</div><div class="body"><b>Initialise:</b> \(p_0=\bar y\), \(F_0=\log[p_0/(1-p_0)]\).</div></div>
+<div class="step"><div class="num">2</div><div class="body"><b>Probability:</b> \(p_i=\sigma(F_i)\).</div></div>
+<div class="step"><div class="num">3</div><div class="body"><b>Compute:</b> \(g_i=p_i-y_i\), \(h_i=p_i(1-p_i)\).</div></div>
+<div class="step"><div class="num">4</div><div class="body"><b>Candidate splits, aggregate G,H, regularised Gain</b> &mdash; identical machinery to regression, on this round's g,h.</div></div>
+<div class="step"><div class="num">5</div><div class="body"><b>Leaf weight:</b> \(w_j^*=-G_j/(H_j+\lambda)\).</div></div>
+<div class="step"><div class="num">6</div><div class="body"><b>Update raw score:</b> \(F_i^{(t)}=F_i^{(t-1)}+\eta\, w_j\), then recompute \(p_i=\sigma(F_i)\).</div></div>
+<div class="step"><div class="num">7</div><div class="body"><b>Repeat</b> from step 3; stop via n_estimators or early stopping.</div></div>
+</div>
+</section>
+
+<section class="block" id="mental-model">
+<div class="eyebrow">31 &middot; the one picture</div>
+<h2>XGBoost in <u>one picture</u></h2>
+<div class="card">
+<div class="diagram"><div class="flow" style="grid-template-columns:repeat(3,1fr);">
+<div class="node"><strong>Current prediction</strong></div>
+<div class="node"><strong>Compute loss</strong></div>
+<div class="node"><strong>Gradient + Hessian</strong></div>
+<div class="node"><strong>Try candidate splits</strong></div>
+<div class="node"><strong>Aggregate G, H</strong></div>
+<div class="node"><strong>Regularised Gain</strong></div>
+<div class="node"><strong>Choose best split</strong></div>
+<div class="node"><strong>Regularised leaf weight</strong></div>
+<div class="node" style="border-color:var(--pink)"><strong>Apply &eta;, update, repeat</strong></div>
+</div></div>
+</div>
+<div class="math-derivation">
+<div class="label">Equations worth remembering</div>
+<div class="complete-equation">\[\boxed{g_i=\hat y_i-y_i,\quad h_i=1}\ \text{(regression)}\]</div>
+<div class="complete-equation">\[\boxed{p_i=\sigma(F_i),\quad g_i=p_i-y_i,\quad h_i=p_i(1-p_i)}\ \text{(classification)}\]</div>
+<div class="complete-equation">\[\boxed{w^*=-\frac{\text{Threshold}(G,\alpha)}{H+\lambda}}\ \text{(with L1)}\]</div>
+<div class="complete-equation">\[\boxed{Gain=\frac12\left(\frac{G_L^2}{H_L+\lambda}+\frac{G_R^2}{H_R+\lambda}-\frac{G^2}{H+\lambda}\right)-\gamma}\]</div>
+<div class="complete-equation">\[\boxed{Obj=\sum_i l(y_i,\hat y_i)+\gamma T+\frac12\lambda\sum_j w_j^2+\alpha\sum_j|w_j|}\]</div>
+</div>
+<div class="card">
+<h3>The one-sentence mental model</h3>
+<div class="quote">XGBoost repeatedly builds a tree using both the direction (\(g\)) and the confidence (\(h\)) of the current error, scores every candidate split with a regularised Gain that has to earn its keep, assigns each leaf a shrunk-and-possibly-zeroed correction, applies it cautiously via &eta;, and repeats.</div>
+</div>
+</section>
+<section class="block" id="checklist">
+<div class="eyebrow">32 &middot; mastery checklist</div>
+<h2>Questions I must be able to <u>answer</u></h2>
+<div class="grid2">
+<div class="card"><h3>Fundamentals</h3>
+<ul style="font-size:12.5px;color:#cdd8de;line-height:1.9;">
+<li>How is XGBoost different from GBDT, precisely?</li>
+<li>Why does XGBoost use second-order information?</li>
+<li>What is a gradient? What is a Hessian? Why do we need both?</li>
+</ul></div>
+<div class="card"><h3>Regression</h3>
+<ul style="font-size:12.5px;color:#cdd8de;line-height:1.9;">
+<li>What's the initial prediction, and why?</li>
+<li>How is \(g_i\) derived? How is \(h_i\) derived?</li>
+<li>How is the leaf weight derived, step by step?</li>
+<li>How is split Gain derived, step by step?</li>
+<li>Why isn't the leaf prediction the residual mean?</li>
+</ul></div>
+<div class="card"><h3>Classification</h3>
+<ul style="font-size:12.5px;color:#cdd8de;line-height:1.9;">
+<li>Why does XGBoost work with raw margins, not probabilities?</li>
+<li>What's the initial raw score, and why log-odds?</li>
+<li>How do you derive \(g_i=p_i-y_i\) and \(h_i=p_i(1-p_i)\)?</li>
+</ul></div>
+<div class="card"><h3>Regularisation</h3>
+<ul style="font-size:12.5px;color:#cdd8de;line-height:1.9;">
+<li>What does &lambda; do? What does &alpha; do? What does &gamma; do?</li>
+<li>Why does L1 produce exact zeros, but L2 doesn't?</li>
+</ul></div>
+<div class="card"><h3>Tree growth</h3>
+<ul style="font-size:12.5px;color:#cdd8de;line-height:1.9;">
+<li>What does max_depth do? What does min_child_weight really mean?</li>
+<li>How does XGBoost decide a split is worth creating?</li>
+</ul></div>
+<div class="card"><h3>Practical</h3>
+<ul style="font-size:12.5px;color:#cdd8de;line-height:1.9;">
+<li>How does missing-value handling actually work?</li>
+<li>What is histogram-based splitting, and what's the trade-off?</li>
+<li>How do you diagnose underfitting vs overfitting, and fix each?</li>
+<li>How do you handle class imbalance?</li>
+</ul></div>
+</div>
+<div class="callout"><b>The whole chain, in one line:</b> Loss &rarr; Taylor Expansion &rarr; \(g_i,h_i\) &rarr; \(G,H\) &rarr; Regularised Leaf Objective &rarr; \(w^*\) &rarr; Split Gain &rarr; Tree &rarr; &eta; &rarr; Updated Prediction &rarr; Next Tree. Know why every arrow exists, not just what's at each end.</div>
+</section>
+
+</main></div></div><script>document.querySelectorAll("nav a").forEach(a=>a.addEventListener("click",()=>{document.querySelectorAll("nav a").forEach(x=>x.style.background="");a.style.background="#ffffff08";}));window.addEventListener("load",()=>{if(window.MathJax&&window.MathJax.typesetPromise)window.MathJax.typesetPromise();});</script></body></html>

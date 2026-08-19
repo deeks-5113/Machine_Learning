@@ -1,0 +1,1248 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LightGBM Masterclass</title><script>window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]'],['$$','$$']],tags:'ams',packages:{'[+]':['ams']}},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']},svg:{fontCache:'global'}};</script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script><style>
+:root{
+  --board:#0c1014; --card:#151b21; --card-line:#263039;
+  --chalk:#e9eef2; --chalk-dim:#9fb0bb; --cyan:#5fd8e0; --cyan-dim:#2c5a5e;
+  --pink:#f17fb0; --pink-dim:#5a2f42; --yellow:#f4cf5e; --green:#8fe3a6;
+  --green-dim:#2f4f3a; --purple:#b39ddb; --purple-dim:#4a3f6b;
+  --white:#f5f5f0; --red:#ff9a9a; --radius:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--board);color:var(--chalk);font-family:Inter,Segoe UI,Arial,sans-serif;line-height:1.6}
+.wrap{max-width:1220px;margin:auto;padding:0 24px 110px}
+h1,h2,h3,.hand{font-family:Caveat,"Comic Sans MS",cursive;font-weight:700}
+.hero{text-align:center;padding:54px 0 28px}
+.chip{display:inline-block;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11px;letter-spacing:1.3px;text-transform:uppercase;color:var(--cyan);border:1px solid var(--cyan-dim);padding:6px 13px;border-radius:999px;margin:4px}
+.hero h1{font-size:clamp(34px,5vw,54px);margin:8px 0;color:var(--white)}
+.hero h1 span{color:var(--pink)}
+.hero p{font-family:"Trebuchet MS",sans-serif;color:var(--chalk-dim);max-width:900px;margin:auto;font-size:16px}
+.layout{display:grid;grid-template-columns:275px 1fr;gap:34px;align-items:start}
+nav.toc{position:sticky;top:18px;background:var(--card);border:1px solid var(--card-line);border-radius:var(--radius);padding:16px;max-height:calc(100vh - 36px);overflow:auto;font:11px ui-monospace,SFMono-Regular,Consolas,monospace}
+.toc-title{color:var(--chalk-dim);text-transform:uppercase;letter-spacing:1px;font-size:10px;margin:14px 0 6px}
+.toc-title:first-child{margin-top:0}
+nav a{display:block;color:var(--chalk-dim);text-decoration:none;padding:4px 7px;border-radius:7px}
+nav a:hover{background:#ffffff08;color:var(--chalk)}
+section.block{margin-bottom:46px;scroll-margin-top:18px}
+.eyebrow{font:11px ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--pink);letter-spacing:1.5px;text-transform:uppercase}
+h2{font-size:31px;margin:2px 0 12px;color:var(--white)}
+h2 u{text-decoration-color:var(--cyan);text-decoration-thickness:3px}
+h3{font-size:23px;margin:5px 0 9px;color:var(--white)}
+p.lead{color:#d0dbe1;font-size:14.5px}
+.card{background:var(--card);border:1px solid var(--card-line);border-radius:var(--radius);padding:19px 21px;margin:13px 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
+.callout{border:1px solid var(--green-dim);background:#8fe3a60d;color:var(--green);border-radius:10px;padding:12px 15px;margin:12px 0;font-size:13px}
+.callout.info{border-color:var(--cyan-dim);background:#5fd8e00b;color:var(--cyan)}
+.callout.warn{border-color:#5a4f2f;background:#f4cf5e0b;color:var(--yellow)}
+.callout.bad{border-color:var(--pink-dim);background:#f17fb00b;color:var(--pink)}
+.callout.purple{border-color:var(--purple-dim);background:#b39ddb0b;color:var(--purple)}
+.formula{background:#090d10;border:1px solid var(--card-line);border-radius:10px;padding:15px 17px;margin:12px 0;overflow:auto;text-align:center;color:var(--white)}
+.formula.left{text-align:left}
+.mathnote{font-size:12px;color:var(--chalk-dim);margin-top:-4px}
+.tbl{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font:12px ui-monospace,SFMono-Regular,Consolas,monospace}
+th{color:var(--chalk-dim);font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;text-align:left;border-bottom:1px solid var(--card-line);padding:7px 8px}
+td{padding:7px 8px;border-bottom:1px solid #ffffff08;vertical-align:top}
+td.hl{color:var(--yellow);font-weight:700}
+td.good{color:var(--green);font-weight:700}
+td.bad{color:var(--pink);font-weight:700}
+td.cyan{color:var(--cyan);font-weight:700}
+.step{display:flex;gap:12px;align-items:flex-start;margin:9px 0}
+.step .num{flex:0 0 30px;height:30px;border:1px solid var(--cyan-dim);color:var(--cyan);border-radius:50%;display:grid;place-items:center;font:12px ui-monospace}
+.step .body{flex:1}
+.badge{display:inline-block;font:10px ui-monospace;padding:2px 7px;border-radius:5px;margin-left:5px}
+.b-gbdt{color:var(--cyan);border:1px solid var(--cyan-dim)}
+.b-xgb{color:var(--yellow);border:1px solid #5a4f2f}
+.b-lgb{color:var(--purple);border:1px solid var(--purple-dim)}
+.b-sklearn{color:var(--green);border:1px solid var(--green-dim)}
+.code{background:#080b0e;border:1px solid var(--card-line);border-radius:10px;padding:14px 16px;overflow:auto;font:12px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace;color:#dce6eb;white-space:pre}
+.quote{font-family:"Trebuchet MS",sans-serif;font-size:16px;border-left:3px solid var(--yellow);padding:7px 17px;background:#f4cf5e08;border-radius:0 10px 10px 0}
+.flow{display:flex;align-items:stretch;overflow:auto;padding:8px 0}
+.flow .box{min-width:145px;background:var(--card);border:1px solid var(--card-line);border-radius:10px;padding:12px;text-align:center}
+.flow .box strong{display:block;color:var(--white);font-size:12px}
+.flow .box span{display:block;color:var(--chalk-dim);font-size:10px;margin-top:3px}
+.flow .arrow{min-width:30px;display:grid;place-items:center;color:var(--pink);font-size:20px}
+details{background:#ffffff04;border:1px solid var(--card-line);border-radius:9px;padding:10px 13px;margin:9px 0}
+summary{cursor:pointer;color:var(--yellow);font-weight:700}
+.source{font-size:11px;color:var(--chalk-dim)}
+.source a{color:var(--cyan)}
+.small{font-size:12px;color:var(--chalk-dim)}
+.kpi{font-size:25px;color:var(--yellow);font-weight:800}
+@media(max-width:920px){.layout{grid-template-columns:1fr}.toc{position:relative!important;max-height:none!important}.grid2,.grid3{grid-template-columns:1fr}}
+\n.deep-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}\n.math-chain{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:8px;align-items:center;margin:12px 0}\n.math-node{background:#090d10;border:1px solid var(--card-line);border-radius:10px;padding:12px;text-align:center}.math-node strong{display:block;color:var(--white)}.math-node span{display:block;color:var(--chalk-dim);font-size:11px;margin-top:4px}.math-arrow{color:var(--pink);font-size:20px;text-align:center}\n.tree{font:12px ui-monospace,SFMono-Regular,Consolas,monospace;background:#090d10;border:1px solid var(--card-line);border-radius:10px;padding:15px;overflow:auto;white-space:pre;line-height:1.5;color:#dce6eb}\n.mini{font-size:11px;color:var(--chalk-dim)}\n.tag{display:inline-block;padding:3px 7px;border-radius:5px;font:10px ui-monospace;margin:2px;border:1px solid var(--card-line);color:var(--chalk-dim)}\n.check{border-left:3px solid var(--cyan);padding:10px 14px;background:#5fd8e008;margin:12px 0}.check b{color:var(--cyan)}\n@media(max-width:920px){.deep-grid,.math-chain{grid-template-columns:1fr}.math-arrow{transform:rotate(90deg)}}\n
+.diagram{background:#090d10;border:1px solid var(--card-line);border-radius:12px;padding:15px;margin:14px 0;overflow:auto}
+.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;align-items:center;text-align:center;font:11px ui-monospace,SFMono-Regular,Consolas,monospace}
+.flow .node{border:1px solid var(--cyan-dim);border-radius:9px;padding:10px 6px;background:#0f171b}
+.flow .arrow{color:var(--pink);font-size:20px}.small{font-size:12px;color:var(--chalk-dim)}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:15px}.three-col{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
+.source{font-size:11px;color:var(--chalk-dim);border-left:2px solid var(--card-line);padding-left:10px;margin:10px 0}.source a{color:var(--cyan)}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.toc{position:relative!important}.grid2,.grid3,.two-col,.three-col,.flow{grid-template-columns:1fr}.flow .arrow{transform:rotate(90deg)}}
+
+/* COMPLETE-EQUATION PATCH
+   Keep the original masterclass design, but make every mathematical
+   expression readable, scroll-safe and visually complete. */
+.formula{
+  font-size:16px;
+  line-height:1.9;
+  min-height:52px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+.formula mjx-container{
+  max-width:100%;
+  overflow-x:auto;
+  overflow-y:hidden;
+  padding:2px 4px;
+}
+.formula.left{
+  justify-content:flex-start;
+  text-align:left;
+}
+.formula mjx-mtable{
+  margin-left:auto !important;
+  margin-right:auto !important;
+}
+.math-derivation{
+  background:#090d10;
+  border:1px solid var(--card-line);
+  border-left:3px solid var(--cyan);
+  border-radius:12px;
+  padding:15px 18px;
+  margin:14px 0;
+}
+.math-derivation .label{
+  color:var(--cyan);
+  font:10px ui-monospace,SFMono-Regular,Consolas,monospace;
+  text-transform:uppercase;
+  letter-spacing:1px;
+  margin-bottom:7px;
+}
+.equation-note{
+  color:var(--chalk-dim);
+  font-size:12px;
+  margin:4px 0 10px;
+}
+.complete-equation{
+  background:#0b1115;
+  border:1px solid #31414b;
+  border-radius:10px;
+  padding:14px 16px;
+  margin:10px 0;
+  overflow-x:auto;
+}
+.complete-equation mjx-container{
+  margin:0 !important;
+}
+.math-warning{
+  border-left:3px solid var(--yellow);
+  background:#f4cf5e08;
+  color:#e9e2c6;
+  padding:11px 14px;
+  border-radius:0 9px 9px 0;
+  margin:12px 0;
+  font-size:13px;
+}
+
+/* v3 deep derivation additions */
+.deep-patch{border-top:2px solid var(--cyan);}
+.deep-patch .math-derivation{margin-top:16px;}
+.deep-patch .complete-equation{font-size:16px;line-height:1.95;}
+.deep-patch .complete-equation mjx-container{max-width:100%;overflow-x:auto;}
+.deep-patch .tbl table{width:100%;}
+.deep-patch .tbl td,.deep-patch .tbl th{vertical-align:top;}
+.source-note{border-left:3px solid var(--yellow);}
+
+.section-intro{font-size:14px;color:#d0dbe1}
+.answer{border-left:3px solid var(--green);padding:10px 14px;background:#8fe3a608;margin:12px 0}
+.question{color:var(--yellow);font-weight:700}
+.math-derivation{background:#090d10;border:1px solid var(--card-line);border-left:3px solid var(--cyan);border-radius:12px;padding:15px 18px;margin:14px 0}
+.math-derivation .label{color:var(--cyan);font:10px ui-monospace,SFMono-Regular,Consolas,monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:7px}
+.complete-equation{background:#0b1115;border:1px solid #31414b;border-radius:10px;padding:14px 16px;margin:10px 0;overflow-x:auto}
+@media(max-width:920px){.two-col,.three-col{grid-template-columns:1fr}}
+
+.xg-badge{display:inline-block;padding:3px 9px;border-radius:6px;font:10px ui-monospace,monospace;margin-left:6px;background:rgba(241,127,176,0.12);border:1px solid var(--pink-dim);color:var(--pink)}
+.gbdt-badge{display:inline-block;padding:3px 9px;border-radius:6px;font:10px ui-monospace,monospace;margin-left:6px;background:rgba(95,216,224,0.12);border:1px solid var(--cyan-dim);color:var(--cyan)}
+.ask{border-left:3px solid var(--purple);padding:10px 14px;background:rgba(179,157,219,0.06);border-radius:0 10px 10px 0;margin:12px 0;font-size:13px;color:#d8d0ea}
+.ask b{color:var(--purple)}
+.misconception{border-left:3px solid var(--pink);padding:10px 14px;background:rgba(241,127,176,0.06);border-radius:0 10px 10px 0;margin:12px 0;font-size:13px;color:#f0d6e0}
+.misconception b{color:var(--pink)}
+.key{border-left:3px solid var(--green);padding:10px 14px;background:rgba(143,227,166,0.06);border-radius:0 10px 10px 0;margin:12px 0;font-size:13px;color:#d3ecdc}
+.key b{color:var(--green)}
+
+.lgb-badge{display:inline-block;padding:3px 9px;border-radius:6px;font:10px ui-monospace,monospace;margin-left:6px;background:rgba(179,157,219,0.12);border:1px solid var(--purple-dim);color:var(--purple)}
+.same-badge{display:inline-block;padding:3px 9px;border-radius:6px;font:10px ui-monospace,monospace;margin-right:6px;background:rgba(95,216,224,0.12);border:1px solid var(--cyan-dim);color:var(--cyan)}
+.new-badge{display:inline-block;padding:3px 9px;border-radius:6px;font:10px ui-monospace,monospace;margin-right:6px;background:rgba(179,157,219,0.15);border:1px solid var(--purple-dim);color:var(--purple)}
+.ask{border-left:3px solid var(--purple);padding:10px 14px;background:rgba(179,157,219,0.06);border-radius:0 10px 10px 0;margin:12px 0;font-size:13px;color:#d8d0ea}
+.ask b{color:var(--purple)}
+.misconception{border-left:3px solid var(--pink);padding:10px 14px;background:rgba(241,127,176,0.06);border-radius:0 10px 10px 0;margin:12px 0;font-size:13px;color:#f0d6e0}
+.misconception b{color:var(--pink)}
+.key{border-left:3px solid var(--green);padding:10px 14px;background:rgba(143,227,166,0.06);border-radius:0 10px 10px 0;margin:12px 0;font-size:13px;color:#d3ecdc}
+.key b{color:var(--green)}
+.tree-diagram{font:12px ui-monospace,monospace;background:#090d10;border:1px solid var(--card-line);border-radius:10px;padding:16px;overflow:auto;white-space:pre;line-height:1.6;color:#dce6eb}
+.matrix{font:12px ui-monospace,monospace;background:#090d10;border:1px solid var(--card-line);border-radius:10px;padding:14px;overflow:auto;white-space:pre;line-height:1.7;color:#dce6eb}
+</style><body><div class="wrap">
+<header class="hero">
+<div><span class="chip">ML Supervised Learning &middot; Class 17</span></div>
+<div><span class="chip">LIGHTGBM ONLY</span><span class="chip">BUILT ON TOP OF GBDT + XGBOOST</span><span class="chip">FULL DERIVATIONS</span><span class="chip">CLASSROOM NOTES</span></div>
+<h1>Mastering <span>LightGBM</span></h1>
+<p>You already know GBDT and XGBoost. This is what LightGBM changes, and why &mdash; histogram learning &rarr; leaf-wise (best-first) tree growth, with real iterations &rarr; GOSS, derived and computed numerically &rarr; EFB, from exclusive features to conflict graphs to graph coloring &rarr; native categorical handling &rarr; regression + classification &rarr; hyperparameters, interactions, and tuning.</p>
+</header>
+<div class="layout">
+<nav class="toc">
+<div class="toc-title">Bridge</div>
+<a href="#why">Why LightGBM, given XGBoost?</a>
+<a href="#same">What stays exactly the same?</a>
+<div class="toc-title">Histogram Learning</div>
+<a href="#hist">Histogram-based learning, from scratch</a>
+<a href="#hist-example">A complete histogram example</a>
+<div class="toc-title">Leaf-wise Growth</div>
+<a href="#level-vs-leaf">Level-wise vs leaf-wise</a>
+<a href="#leaf-iters">Leaf-wise growth, real iterations</a>
+<a href="#num-leaves">num_leaves vs max_depth</a>
+<div class="toc-title">Regression &amp; Classification</div>
+<a href="#reg-iters">Regression, 3 boosting iterations</a>
+<a href="#clf-bridge">Classification &mdash; what's the same</a>
+<div class="toc-title">GOSS</div>
+<a href="#goss-problem">The problem GOSS solves</a>
+<a href="#goss-idea">The GOSS idea</a>
+<a href="#goss-example">GOSS, a complete numerical example</a>
+<a href="#goss-reweight">Why the reweighting factor exists</a>
+<a href="#goss-gain">GOSS and split gain, compared</a>
+<a href="#goss-iters">GOSS across boosting iterations</a>
+<a href="#goss-tradeoffs">When GOSS helps &mdash; and when it doesn't</a>
+<div class="toc-title">EFB</div>
+<a href="#efb-problem">Why sparse high-dimensional data hurts</a>
+<a href="#efb-exclusive">What "exclusive" means</a>
+<a href="#efb-bundle">How bundling actually works</a>
+<a href="#efb-conflict">Conflicts &amp; conflict rate</a>
+<a href="#efb-graph">EFB as a graph-colouring problem</a>
+<a href="#efb-example">A complete EFB example</a>
+<a href="#efb-goss">GOSS + EFB, together</a>
+<div class="toc-title">Categorical Features</div>
+<a href="#cat-question">What does LightGBM actually receive?</a>
+<a href="#cat-compare">One-hot vs ordinal vs native</a>
+<a href="#cat-native">How native categorical splitting works</a>
+<a href="#cat-example">A complete categorical example</a>
+<a href="#cat-ordinal-trap">The ordinal-encoding trap</a>
+<a href="#cat-params">Categorical comparison &amp; parameters</a>
+<div class="toc-title">Tuning</div>
+<a href="#regularisation">Regularisation, connected to XGBoost</a>
+<a href="#hyperparams">Hyperparameter master table</a>
+<a href="#goss-params">GOSS hyperparameters, deep</a>
+<a href="#fit">Underfitting vs overfitting</a>
+<a href="#compare-xgb">LightGBM vs XGBoost, precisely</a>
+<div class="toc-title">Wrap-up</div>
+<a href="#new-summary">What's actually new &mdash; the summary</a>
+<a href="#mental-model">The one-picture mental model</a>
+<a href="#final-compare">Final master comparison</a>
+<a href="#cheat-sheet">Hyperparameter cheat sheet</a>
+<a href="#checklist">Mastery checklist</a>
+</nav>
+<main>
+<section class="block" id="why">
+<div class="eyebrow">01 &middot; the bridge</div>
+<h2>We already know GBDT and XGBoost. <u>So why LightGBM?</u></h2>
+<div class="card">
+<div class="tree-diagram">Decision Trees
+      &darr;
+Bagging / Random Forest
+      &darr;
+GBDT              &nbsp;(first-order, sequential correction)
+      &darr;
+XGBoost           &nbsp;(second-order + explicit regularisation)
+      &darr;
+LightGBM          &nbsp;(same math, engineered for genuine scale)</div>
+<div class="ask"><b>Ask yourself:</b> if XGBoost already uses histograms, second-order optimisation, and regularisation &mdash; what's actually left to speed up?</div>
+</div>
+<div class="card">
+<h3>The computational problem, precisely</h3>
+<p class="lead" style="margin-top:0;">Imagine: millions of rows, thousands of features, many of them sparse, some high-cardinality categorical columns. Even with histograms, XGBoost's exact/histogram split search still has to:</p>
+<ul style="font-size:13px;color:#cdd8de;line-height:1.9;">
+<li>Scan (almost) <b>every row</b> to build every feature's histogram, every tree, every round.</li>
+<li>Grow trees <b>level-wise</b> &mdash; expanding every node at a depth before going deeper, even nodes with barely any gain to offer.</li>
+<li>Compute split statistics on <b>every sparse feature independently</b>, even when most columns are mostly zero.</li>
+<li>Handle categorical variables through generic numeric encodings, since it has no dedicated categorical split search.</li>
+</ul>
+<div class="key">LightGBM keeps every piece of math you already know &mdash; gradients, Hessians, Taylor approximation, regularised leaf weight, regularised Gain &mdash; and attacks exactly these four bottlenecks with four targeted engineering ideas.</div>
+</div>
+<div class="card">
+<h3>LightGBM's major innovations</h3>
+<div class="tbl"><table>
+<tr><th>Concept</th><th>GBDT</th><th>XGBoost</th><th>LightGBM</th></tr>
+<tr><td class="left">Gradient boosting</td><td class="good">&check;</td><td class="good">&check;</td><td class="good">&check;</td></tr>
+<tr><td class="left">Second-order optimisation</td><td class="left">implementation-dependent</td><td class="good">&check;</td><td class="good">&check;</td></tr>
+<tr><td class="left">Regularised leaf weights</td><td class="left">varies</td><td class="good">&check;</td><td class="good">&check;</td></tr>
+<tr><td class="left">Histogram learning</td><td class="left">varies</td><td class="good">&check;</td><td class="good">&check;</td></tr>
+<tr><td class="left">Level-wise tree growth</td><td class="left">common</td><td class="left">common</td><td class="bad">&mdash;</td></tr>
+<tr><td class="left hl"><b>Leaf-wise (best-first) growth</b></td><td class="bad">&mdash;</td><td class="bad">&mdash;</td><td class="hl"><b>&check;</b></td></tr>
+<tr><td class="left hl"><b>GOSS (row sampling by gradient)</b></td><td class="bad">&mdash;</td><td class="bad">&mdash;</td><td class="hl"><b>&check;</b></td></tr>
+<tr><td class="left hl"><b>EFB (sparse feature bundling)</b></td><td class="bad">&mdash;</td><td class="bad">&mdash;</td><td class="hl"><b>&check;</b></td></tr>
+<tr><td class="left hl"><b>Native categorical handling</b></td><td class="left">varies</td><td class="left">varies</td><td class="hl"><b>&check;</b></td></tr>
+</table></div>
+<div class="misconception"><b>Do not assume every implementation detail is identical across library versions.</b> The <i>algorithmic ideas</i> above (leaf-wise, GOSS, EFB, categorical handling) are LightGBM's genuine contribution; specific default values, exact APIs, and some internals do shift between versions &mdash; treat this as the durable concepts, and check current docs for version-specific behaviour.</div>
+</div>
+</section>
+
+<section class="block" id="same">
+<div class="eyebrow">02 &middot; the bridge</div>
+<h2>Does LightGBM throw away <u>everything we learned in XGBoost?</u></h2>
+<div class="card">
+<div class="ask"><b>Ask yourself:</b> is this a new algorithm family, or the same one, re-engineered?</div>
+<p class="lead"><b>No, it doesn't throw anything away.</b> The model is still additive:</p>
+<div class="formula">\[
+F_t(x)=F_{t-1}(x)+\eta\, f_t(x)
+\]</div>
+<p>Gradients and Hessians remain exactly as defined for any differentiable loss:</p>
+<div class="formula">\[
+g_i=\frac{\partial l(y_i,F_i)}{\partial F_i},\qquad h_i=\frac{\partial^2 l(y_i,F_i)}{\partial F_i^2}
+\]</div>
+<p>The regularised leaf weight and split Gain are the <b>same formulas</b> you already derived for XGBoost:</p>
+<div class="formula">\[
+w_j^*=-\frac{G_j}{H_j+\lambda},\qquad Gain=\frac12\left(\frac{G_L^2}{H_L+\lambda}+\frac{G_R^2}{H_R+\lambda}-\frac{G^2}{H+\lambda}\right)-\gamma
+\]</div>
+</div>
+<div class="key">Throughout this chapter: <span class="same-badge">SAME</span> marks anything you already know from XGBoost &mdash; we won't re-derive it. <span class="new-badge">NEW</span> marks a genuine LightGBM idea, and those get full derivations, worked numbers, and iterations.</div>
+</section>
+<section class="block" id="hist">
+<div class="eyebrow">03 &middot; histogram learning <span class="new-badge">NEW EMPHASIS</span></div>
+<h2>Histogram-based learning, <u>from first principles</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">A feature can easily have 100,000+ unique values in a large dataset:</p>
+<div class="tree-diagram">1
+1.03
+1.07
+1.12
+1.18
+...
+100,000 unique values</div>
+<div class="ask"><b>Ask yourself:</b> do we really want to examine every possible threshold, for every feature, at every node, in every tree?</div>
+<p style="font-size:13px;color:#cdd8de">No &mdash; that's \(O(n)\) candidates per feature per split, repeated across the whole ensemble. LightGBM's answer, like XGBoost's histogram mode, is to discretize first:</p>
+<div class="tree-diagram">Raw values:
+1.1  1.2  1.3  1.8  2.1  2.3  2.7  ...
+
+        &darr;  bin into a histogram
+
+Bin 1: 1.0&ndash;1.5
+Bin 2: 1.5&ndash;2.0
+Bin 3: 2.0&ndash;2.5
+Bin 4: 2.5&ndash;3.0
+...</div>
+<p style="font-size:13px;color:#cdd8de">For every bin, aggregate the gradient and Hessian of every row that falls in it:</p>
+<div class="formula">\[
+G_{\text{bin}}=\sum_{i\in\text{bin}}g_i,\qquad H_{\text{bin}}=\sum_{i\in\text{bin}}h_i
+\]</div>
+<p style="font-size:13px;color:#cdd8de">A candidate split after bin \(k\) then uses a cumulative (prefix) sum over bins, not over raw rows &mdash; the full step-by-step mechanics of that are in &sect;4 below.</p>
+</div>
+<div class="card">
+<h3>So what does LightGBM actually upgrade here, versus XGBoost?</h3>
+<div class="misconception"><b>Binning itself is not the upgrade &mdash; XGBoost already bins.</b> The genuine LightGBM-emphasised upgrade is in <i>how cheaply the histogram for each new node is built</i>, using two compounding tricks:</div>
+<div class="tbl"><table><tr><th>#</th><th>Trick</th><th>What it buys</th></tr>
+<tr><td>1</td><td class="left"><b>Histogram subtraction</b></td><td class="left">A sibling's histogram is computed by pure subtraction from its parent's &mdash; zero extra row-scanning</td></tr>
+<tr><td>2</td><td class="left"><b>GOSS-reduced row scanning</b></td><td class="left">The histogram that <i>does</i> get built from scratch is built from the smaller GOSS-sampled row set (&sect;10&ndash;16), not the full data</td></tr>
+</table></div>
+<p style="font-size:13px;color:#cdd8de">Trick 2 you already understand fully from the GOSS chapter. Trick 1 is new &mdash; walked through with real numbers in &sect;4.</p>
+</div>
+</section>
+<section class="block" id="hist-example">
+<div class="eyebrow">04 &middot; histogram learning</div>
+<h2>A complete histogram example, <u>every cumulative sum shown</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">12 rows of a feature "age", each with its current \(g_i\) (\(h_i=1\), i.e. squared-error regression):</p>
+<div class="tbl"><table><tr><th>age</th><td>12</td><td>15</td><td>18</td><td>22</td><td>25</td><td>29</td><td>33</td><td>38</td><td>44</td><td>51</td><td>60</td><td>72</td></tr>
+<tr><th>g</th><td>-3</td><td>-2</td><td>-2</td><td>-1</td><td>-1</td><td>0</td><td>0</td><td>1</td><td>1</td><td>2</td><td>2</td><td>3</td></tr></table></div>
+<p>Exact greedy: 11 candidate thresholds. With <code>max_bin=4</code>, group into 4 equal-mass bins:</p>
+<div class="tbl"><table><tr><th>Bin</th><th>Ages inside</th><th>G (bin total)</th><th>H (bin total)</th></tr>
+<tr><td>1</td><td class="left">12, 15, 18</td><td>-3-2-2 = -7</td><td>3</td></tr>
+<tr><td>2</td><td class="left">22, 25, 29</td><td>-1-1+0 = -2</td><td>3</td></tr>
+<tr><td>3</td><td class="left">33, 38, 44</td><td>0+1+1 = 2</td><td>3</td></tr>
+<tr><td>4</td><td class="left">51, 60, 72</td><td>2+2+3 = 7</td><td>3</td></tr>
+</table></div>
+<p style="font-size:12.5px;color:var(--chalk-dim)">Grand total (all 12 rows): \(G=0\), \(H=12\).</p>
+</div>
+<div class="card">
+<h3>Step-by-step: turning per-bin totals into a candidate split, via a running cumulative sum</h3>
+<p style="font-size:13px;color:#cdd8de">Walk through the bins <b>left to right, one at a time</b>, keeping a running total. This running total IS \(G_L,H_L\) &mdash; there is no other computation happening:</p>
+<div class="tbl"><table><tr><th>After scanning&hellip;</th><th>This bin's (G,H)</th><th>Running total G<sub>L</sub></th><th>Running total H<sub>L</sub></th><th>&rarr; G<sub>R</sub>=G&minus;G<sub>L</sub></th><th>&rarr; H<sub>R</sub>=H&minus;H<sub>L</sub></th><th>Gain at this boundary</th></tr>
+<tr><td class="left">&hellip;Bin 1</td><td class="left">(-7, 3)</td><td>-7</td><td>3</td><td>0&minus;(-7)=7</td><td>12&minus;3=9</td><td>8.58</td></tr>
+<tr class="hl"><td class="left">&hellip;Bin 1+2</td><td class="left">(-2, 3)</td><td class="hl"><b>-7+(-2)=-9</b></td><td class="hl"><b>3+3=6</b></td><td class="hl"><b>0&minus;(-9)=9</b></td><td class="hl"><b>12&minus;6=6</b></td><td class="hl"><b>11.57</b></td></tr>
+<tr><td class="left">&hellip;Bin 1+2+3</td><td class="left">(2, 3)</td><td>-9+2=-7</td><td>6+3=9</td><td>0&minus;(-7)=7</td><td>12&minus;9=3</td><td>8.58</td></tr>
+</table></div>
+<div class="key"><b>This is the entire mechanism, made explicit:</b> at each boundary, \(G_L\) is just "add this bin's \(G\) to the running total so far." \(G_R\) is never separately scanned &mdash; it's always <b>grand total minus the running total</b>. We only ever touch each bin once, moving strictly left to right. The winning boundary is after Bin 1+2, Gain=11.57.</div>
+</div>
+<div class="card">
+<h3>Now the LightGBM upgrade, with real numbers: histogram subtraction between siblings</h3>
+<p style="font-size:13px;color:#cdd8de">The split above creates two children: <b>Left</b> = Bins 1+2 (ages 12&ndash;29), <b>Right</b> = Bins 3+4 (ages 33&ndash;72). Both children will eventually need their own histograms, to search for their own further splits.</p>
+<div class="step"><div class="num">1</div><div class="body"><b>Pick the smaller child to build directly.</b> Left has 6 rows, Right has 6 rows here (a tie in this toy example — in practice one side is almost always smaller). Say we build <b>Left's</b> histogram by actually scanning its 6 rows: \(G_{\text{Left}}=-9\), \(H_{\text{Left}}=6\) (exactly the running total we already computed above).</div></div>
+<div class="step"><div class="num">2</div><div class="body"><b>Get Right's histogram for free &mdash; no row scanning at all.</b> Since <i>Parent = Left + Right</i> for every bin, and we already know the Parent's total (\(G=0,H=12\)) from before this split ever happened:
+<div class="formula">\[
+G_{\text{Right}}=G_{\text{Parent}}-G_{\text{Left}}=0-(-9)=9,\qquad H_{\text{Right}}=H_{\text{Parent}}-H_{\text{Left}}=12-6=6
+\]</div>
+</div></div>
+<div class="step"><div class="num">3</div><div class="body"><b>Verify:</b> this matches exactly what we'd get by directly scanning Right's own rows (Bins 3+4: \(2+7=9\), \(3+3=6\)) &mdash; confirmed identical, but computed with <b>zero</b> additional row scans.</div></div>
+<div class="key"><b>Why this compounds:</b> at every single split, in every tree, LightGBM only ever pays the row-scanning cost for the <b>smaller</b> of the two new children. The larger child's histogram is pure subtraction &mdash; one array subtraction, per bin, no data access. Across a whole tree with many splits, this roughly halves the histogram-building work compared to naively rebuilding both children's histograms from scratch every time. Layer GOSS on top (&sect;3) and the child that <i>is</i> built from scratch is built from a GOSS-reduced row set, not the full data &mdash; two independent savings, multiplying together.</div>
+</div>
+</section>
+
+<section class="block" id="level-vs-leaf">
+<div class="eyebrow">05 &middot; leaf-wise growth <span class="new-badge">NEW</span></div>
+<h2>The most important difference: <u>level-wise vs leaf-wise</u></h2>
+<div class="card">
+<div class="ask"><b>Ask yourself:</b> you already know how a single split is chosen. Now: in what <b>order</b> does a tree decide which node to split next?</div>
+<h3>Level-wise (depth-wise) &mdash; GBDT / XGBoost default</h3>
+<div class="tree-diagram">             Root
+            /    \
+           A      B
+         /  \    /  \
+        C    D  E    F</div>
+<p style="font-size:13px;color:#cdd8de">Every node <b>at the current depth</b> gets expanded before the tree goes deeper &mdash; A and B both split together, <i>regardless of how much gain each actually offers</i>.</p>
+</div>
+<div class="card">
+<h3>Leaf-wise / best-first &mdash; LightGBM</h3>
+<div class="tree-diagram">             Root
+            /    \
+           A      B
+         /  \
+        C    D</div>
+<p style="font-size:13px;color:#cdd8de">Suppose \(Gain(A)=12\), \(Gain(B)=4\). LightGBM splits whichever <b>currently open leaf</b> has the highest gain:</p>
+<div class="formula">\[
+\boxed{\text{split } A}\quad(\text{Gain}=12 > 4)
+\]</div>
+<p style="font-size:13px;color:#cdd8de">B stays a leaf, untouched, for now. Now suppose the next round of candidate gains are \(Gain(C)=2\), \(Gain(D)=15\), \(Gain(B)=4\):</p>
+<div class="formula">\[
+\boxed{\text{split } D}\quad(\text{Gain}=15\text{, the global best}\text{ — even though }D\text{ is deeper than }B)
+\]</div>
+<div class="key"><b>The key intuition:</b> leaf-wise never asks "whose turn is it at this depth." It asks "across every currently open leaf, anywhere in the tree, which one gives the single biggest improvement right now?" &mdash; and splits exactly that one.</div>
+</div>
+</section>
+<section class="block" id="leaf-iters">
+<div class="eyebrow">06 &middot; leaf-wise growth <span class="new-badge">NEW</span></div>
+<h2>Leaf-wise growth, <u>real numbers, not just a picture</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">8 rows, squared-error regression. \(\lambda=0,\gamma=0\) so the mechanics are crystal clear (no shrinkage muddying the numbers).</p>
+<div class="tbl"><table><tr><th>x</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th></tr>
+<tr><td>y</td><td>1</td><td>2</td><td>3</td><td>4</td><td>50</td><td>52</td><td>54</td><td>56</td></tr></table></div>
+<p>\(F_0=\bar y=27.75\). \(g_i=F_0-y_i\), \(h_i=1\):</p>
+<div class="tbl"><table><tr><th>x</th><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td><td>8</td></tr>
+<tr><td>g</td><td>26.75</td><td>25.75</td><td>24.75</td><td>23.75</td><td>-22.25</td><td>-24.25</td><td>-26.25</td><td>-28.25</td></tr></table></div>
+</div>
+<div class="card">
+<h3>Iteration 1 &mdash; the root, only one leaf exists</h3>
+<div class="tbl"><table><tr><th>Split</th><th>Gain</th></tr>
+<tr><td class="left">x&le;1.5</td><td>408.89</td></tr><tr><td class="left">x&le;2.5</td><td>918.75</td></tr>
+<tr><td class="left">x&le;3.5</td><td>1591.35</td></tr>
+<tr class="hl"><td class="left"><b>x&le;4.5</b></td><td class="hl"><b>2550.25</b></td></tr>
+<tr><td class="left">x&le;5.5</td><td>1653.75</td></tr><tr><td class="left">x&le;6.5</td><td>990.08</td></tr><tr><td class="left">x&le;7.5</td><td>456.04</td></tr>
+</table></div>
+<p style="font-size:12.5px;color:var(--chalk-dim)">Only candidate available &rarr; split at \(x\le4.5\). Two leaves now exist: <b>Left</b> {1,2,3,4} and <b>Right</b> {5,6,7,8}.</p>
+</div>
+<div class="card">
+<h3>Iteration 2 &mdash; compare BOTH currently open leaves' best move</h3>
+<div class="tbl"><table><tr><th>Leaf</th><th>Best internal split</th><th>Gain</th></tr>
+<tr><td class="left">Left {1,2,3,4}</td><td class="left">x&le;2.5</td><td>2.00</td></tr>
+<tr class="hl"><td class="left"><b>Right {5,6,7,8}</b></td><td class="left"><b>x&le;6.5</b></td><td class="hl"><b>8.00</b></td></tr>
+</table></div>
+<div class="key">Left's best available split (Gain 2.00) is <b>not</b> chosen. Right's is higher (8.00) &mdash; a genuinely leaf-wise decision. A level-wise tree, by contrast, would have split <b>both</b> Left and Right right here, regardless of gain. Leaves now: Left {1,2,3,4}, Right-A {5,6}, Right-B {7,8}.</div>
+</div>
+<div class="card">
+<h3>Iteration 3 &mdash; compare ALL THREE currently open leaves</h3>
+<div class="tbl"><table><tr><th>Leaf</th><th>Depth</th><th>Best internal split</th><th>Gain</th></tr>
+<tr class="hl"><td class="left"><b>Left {1,2,3,4}</b></td><td>1</td><td class="left"><b>x&le;2.5</b></td><td class="hl"><b>2.00</b></td></tr>
+<tr><td class="left">Right-A {5,6}</td><td>2</td><td class="left">x&le;5.5</td><td>1.00</td></tr>
+<tr><td class="left">Right-B {7,8}</td><td>2</td><td class="left">x&le;7.5</td><td>1.00</td></tr>
+</table></div>
+<div class="misconception"><b>Notice what just happened:</b> Left has been sitting there, un-split, since Iteration 1 &mdash; it simply wasn't the best option yet. Now, at Iteration 3, it finally wins, beating two <i>deeper</i> leaves (Right-A, Right-B) that only came into existence at Iteration 2. Tree position never mattered &mdash; only the gain, compared globally, every single time.</div>
+<div class="key">Final tree, after 3 splits: 4 leaves &mdash; Left-A{1,2}, Left-B{3,4}, Right-A{5,6}, Right-B{7,8}. Leaf weights (\(w^*=-G/H\), \(\lambda=0\)): -26.25, -24.25, +23.25, +27.25. With \(\eta=0.3\): predictions move from 27.75 toward 19.9 / 20.5 / 34.7 / 35.9 &mdash; heading toward each leaf's true local mean, in one conservative step.</div>
+</div>
+</section>
+<section class="block" id="num-leaves">
+<div class="eyebrow">07 &middot; leaf-wise growth <span class="new-badge">NEW</span></div>
+<h2>num_leaves vs max_depth: <u>are these the same thing?</u></h2>
+<div class="card">
+<div class="ask"><b>Ask yourself:</b> our example above just grew 4 leaves at 2 different depths in the same tree. Does "depth" even mean the same thing here as it did for a level-wise tree?</div>
+<div class="grid2">
+<div class="card"><h3 style="color:var(--cyan)">max_depth</h3><p style="font-size:12.5px;color:var(--chalk-dim)">Caps the <b>longest root-to-leaf path</b> allowed anywhere in the tree.</p></div>
+<div class="card"><h3 style="color:var(--pink)">num_leaves</h3><p style="font-size:12.5px;color:var(--chalk-dim)">Caps the <b>total leaf count</b>, directly &mdash; the actual unit leaf-wise growth spends its "budget" in.</p></div>
+</div>
+<div class="tree-diagram">Two trees, same num_leaves = 4, very different depth:
+
+  BALANCED (level-wise-shaped)      UNBALANCED (leaf-wise-typical)
+         Root                              Root
+        /    \                            /    \
+       A      B                          A      B
+      / \    / \                               / \
+     C   D  E   F  &larr; depth 2, 4 leaves       C   D  &larr; depth 3, 4 leaves
+                                                / \
+                                               E   F</div>
+<div class="key">Leaf-wise trees are <b>not required to be balanced</b> &mdash; exactly like our worked example, where Right kept splitting to depth 2 while Left sat untouched. A perfectly balanced tree gives \(num\_leaves\le2^{max\_depth}\), but leaf-wise routinely produces long, narrow branches that violate that bound's spirit &mdash; a handful of leaves at great depth, everywhere else shallow.</div>
+<div class="misconception"><b>Do not blindly set \(num\_leaves=2^{max\_depth}\).</b> That value assumes a balanced tree, which leaf-wise growth has no reason to produce. Setting num_leaves that high with an unconstrained max_depth is a common way to accidentally build very deep, overfit-prone trees &mdash; num_leaves is the primary lever in LightGBM; max_depth is usually a secondary safety cap.</div>
+</div>
+</section>
+<section class="block" id="reg-iters">
+<div class="eyebrow">08 &middot; regression <span class="same-badge">SAME</span></div>
+<h2>Regression boosting: <u>same math, same numbers, as XGBoost</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">The exact dataset and settings from the XGBoost masterclass (\(\lambda=1,\gamma=0,\eta=0.3\)): \(x=1..6\), \(y=2,4,\dots,12\). At \(\lambda\ge0\), LightGBM's leaf weight, Gain, and update rule are <b>identical formulas</b>. Because each of these tiny trees only ever needs <b>one</b> split to fully separate the data, leaf-wise and level-wise growth produce the exact same tree here &mdash; the difference only shows up once a tree needs more than one split (as in the leaf-wise example above).</p>
+<div class="tbl"><table>
+<tr><th>Round</th><th>Best split</th><th>Gain</th><th>w<sub>L</sub><sup>*</sup>, w<sub>R</sub><sup>*</sup></th><th>New F (groups)</th><th>Loss</th></tr>
+<tr><td>0 (init)</td><td colspan="4" class="left">&mdash;</td><td>35.00</td></tr>
+<tr><td>1</td><td class="left">x&le;3.5</td><td>20.25</td><td>-2.250, 2.250</td><td class="left">6.325 / 7.675</td><td>24.22</td></tr>
+<tr><td>2</td><td class="left">x&le;3.5</td><td>12.16</td><td>-1.744, 1.744</td><td class="left">5.802 / 8.198</td><td>17.74</td></tr>
+<tr><td>3</td><td class="left" style="color:var(--pink)">x&le;2.5</td><td>8.37</td><td>-1.868, 1.121</td><td class="left">5.242,5.242 / 6.138 / 8.534&times;3</td><td>13.26</td></tr>
+</table></div>
+<div class="key">Every number here matches the XGBoost derivation exactly &mdash; that's the point. LightGBM changes <i>how</i> a tree with multiple candidate leaves picks which one to grow next, and <i>how</i> the histogram/rows/features feeding that decision are made cheaper. It does not change the leaf-value or Gain formula themselves.</div>
+</div>
+</section>
+<section class="block" id="clf-bridge">
+<div class="eyebrow">09 &middot; classification <span class="same-badge">SAME</span></div>
+<h2>Classification: <u>the underlying boosting math is unchanged</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">For binary log loss, everything you derived in the XGBoost chapter carries over exactly:</p>
+<div class="formula">\[
+p_i=\sigma(F_i),\qquad g_i=p_i-y_i,\qquad h_i=p_i(1-p_i)
+\]</div>
+<p>Initial score, leaf weight, split Gain &mdash; all identical formulas. What changes for LightGBM is purely <b>mechanism</b>: histogram construction on \(g,h\), leaf-wise selection among currently open leaves, GOSS row sampling, EFB feature bundling, and native categorical splitting &mdash; layered on top of the same \(g,h\) you already know how to derive.</p>
+<div class="misconception">With the small, perfectly-separable 6-row toy dataset from the XGBoost chapter (\(x=1..6\), \(y=0,0,0,1,1,1\)), a single split at \(x\le3.5\) already separates the classes cleanly &mdash; there's no further-split gain left to compare, so it can't demonstrate leaf-wise growth meaningfully. Real classification datasets are never this clean, which is exactly why leaf-wise growth matters in practice; the comparison mechanism is identical to the regression leaf-wise walkthrough above &mdash; compare every open leaf's best candidate gain, split the global maximum, regardless of depth.</div>
+</div>
+</section>
+<section class="block" id="goss-problem">
+<div class="eyebrow">10 &middot; GOSS <span class="new-badge">NEW</span></div>
+<h2>GOSS: <u>the problem, from scratch</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">Assume you know nothing about GOSS yet. Start from the computational reality: \(n=10{,}000{,}000\) rows. After computing every row's gradient, ask:</p>
+<div class="ask"><b>Ask yourself:</b> are all 10 million rows equally useful for deciding the <b>next</b> split?</div>
+<p style="font-size:13px;color:#cdd8de">Compare two rows: one with \(|g_i|=0.01\), another with \(|g_i|=2.5\).</p>
+<div class="grid2">
+<div class="card"><h3 style="color:var(--pink)">Large \(|g_i|\)</h3><p style="font-size:12.5px;color:var(--chalk-dim)">The current model is making a relatively <b>large</b> error on this row &mdash; it still needs a strong correction. This row carries a lot of information about where the model is wrong.</p></div>
+<div class="card"><h3 style="color:var(--cyan)">Small \(|g_i|\)</h3><p style="font-size:12.5px;color:var(--chalk-dim)">The model is already <b>close</b> to correct here. This row still matters (for coverage, for not overfitting the "hard" rows) &mdash; but it's less informative about which direction to correct next.</p></div>
+</div>
+<div class="key">Large-gradient rows are disproportionately informative about where the next tree should focus. GOSS &mdash; <b>G</b>radient-based <b>O</b>ne-<b>S</b>ide <b>S</b>ampling &mdash; exploits exactly this asymmetry to use fewer rows per split search, without simply discarding the "easy" rows.</div>
+</div>
+</section>
+
+<section class="block" id="goss-idea">
+<div class="eyebrow">11 &middot; GOSS <span class="new-badge">NEW</span></div>
+<h2>The GOSS idea, <u>name broken down</u></h2>
+<div class="card">
+<div class="grid2">
+<div class="card"><h3 style="color:var(--cyan)">Gradient-based</h3><p style="font-size:12.5px;color:var(--chalk-dim)">Which rows to sample is decided by \(|g_i|\), nothing else.</p></div>
+<div class="card"><h3 style="color:var(--pink)">One-Side</h3><p style="font-size:12.5px;color:var(--chalk-dim)">We keep one side outright &mdash; the large-gradient rows &mdash; and only <i>sample</i> from the other side (small-gradient rows). Not symmetric random sampling of everything.</p></div>
+</div>
+<p>Mechanically, with \(n=1000\):</p>
+<div class="tree-diagram">1. Sort all rows by |g_i|, descending
+2. Keep the top a = 20% outright         &rarr; 200 rows, ALL of them, full weight
+3. From the remaining 80% (800 rows),
+   randomly sample b = 10% of THAT       &rarr; 80 rows, reweighted
+4. Total used for this split search:       200 + 80 = 280 rows (instead of 1000)</div>
+<div class="key">This is not a one-time filter on the dataset. It's recomputed every boosting round, on that round's current gradients &mdash; see &sect;16.</div>
+</div>
+</section>
+<section class="block" id="goss-example">
+<div class="eyebrow">12 &middot; GOSS <span class="new-badge">NEW</span></div>
+<h2>GOSS, <u>a complete numerical example</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">10 rows, each with a current gradient (\(h_i=1\) for simplicity). Settings: \(a=20\%\) (top rate), \(b=50\%\) (other rate) &mdash; deliberately large here so every step is easy to see by hand.</p>
+<div class="tbl"><table><tr><th>Row</th><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td><td>8</td><td>9</td><td>10</td></tr>
+<tr><th>g</th><td>2.0</td><td>-1.8</td><td>1.5</td><td>-0.2</td><td>0.1</td><td>-0.05</td><td>0.3</td><td>-0.1</td><td>0.05</td><td>-0.15</td></tr></table></div>
+<div class="step"><div class="num">1</div><div class="body"><b>Sort by \(|g_i|\), descending:</b> Row1(2.0), Row2(1.8), Row3(1.5), Row7(0.3), Row4(0.2), Row10(0.15), Row5(0.1), Row8(0.1), Row6(0.05), Row9(0.05)</div></div>
+<div class="step"><div class="num">2</div><div class="body"><b>Keep top \(a=20\%\)</b> of 10 rows \(=2\) rows outright, full weight: <b>{Row1, Row2}</b>.</div></div>
+<div class="step"><div class="num">3</div><div class="body"><b>Randomly sample \(b=50\%\)</b> of the remaining 8 rows \(=4\) rows. Suppose the draw lands on: <b>{Row3, Row4, Row5, Row6}</b>.</div></div>
+<div class="step"><div class="num">4</div><div class="body"><b>Total GOSS sample: 6 rows</b> instead of 10 &mdash; but the 4 sampled small-gradient rows need a correction before they're used (next section).</div></div>
+</div>
+</section>
+
+<section class="block" id="goss-reweight">
+<div class="eyebrow">13 &middot; GOSS <span class="new-badge">NEW</span></div>
+<h2>Why the reweighting factor <u>has to exist</u></h2>
+<div class="card">
+<div class="ask"><b>Ask yourself:</b> if we only look at half of the small-gradient rows, but treat them exactly like the ones we kept, what happens to their total contribution to \(G,H\)?</div>
+<p style="font-size:13px;color:#cdd8de">It gets <b>underestimated</b> &mdash; by construction, we only observed \(b\) of the \((1-a)\) fraction of the population, so whatever those \(b\) rows sum to needs to be scaled back up to represent the <i>whole</i> \((1-a)\) group, not just the sampled sliver.</p>
+<div class="complete-equation">\[
+\boxed{\text{reweight factor}=\frac{1-a}{b}}
+\]</div>
+<p style="font-size:13px;color:#cdd8de">Here: \(\dfrac{1-0.2}{0.5}=\dfrac{0.8}{0.5}=1.6\). Every sampled small-gradient row's \(g_i\) and \(h_i\) gets multiplied by 1.6 before entering any \(G,H\) sum &mdash; this keeps the GOSS sample's aggregated statistics an <b>unbiased estimate</b> of what the full small-gradient population would have contributed.</p>
+<div class="tbl"><table><tr><th>Row</th><th>Original g</th><th>Weight</th><th>Weighted g</th><th>Weighted h</th></tr>
+<tr><td class="left">Row1 (kept)</td><td>2.00</td><td>1.0</td><td>2.00</td><td>1.00</td></tr>
+<tr><td class="left">Row2 (kept)</td><td>-1.80</td><td>1.0</td><td>-1.80</td><td>1.00</td></tr>
+<tr><td class="left">Row3 (sampled)</td><td>1.50</td><td>1.6</td><td>2.40</td><td>1.60</td></tr>
+<tr><td class="left">Row4 (sampled)</td><td>-0.20</td><td>1.6</td><td>-0.32</td><td>1.60</td></tr>
+<tr><td class="left">Row5 (sampled)</td><td>0.10</td><td>1.6</td><td>0.16</td><td>1.60</td></tr>
+<tr><td class="left">Row6 (sampled)</td><td>-0.05</td><td>1.6</td><td>-0.08</td><td>1.60</td></tr>
+</table></div>
+<div class="key">Rows 7&ndash;10 (not sampled) contribute nothing this round &mdash; not zero-weighted, simply <b>absent</b> from this split search. Only the 6 rows above enter the histogram.</div>
+</div>
+</section>
+<section class="block" id="goss-gain">
+<div class="eyebrow">14 &middot; GOSS <span class="new-badge">NEW</span></div>
+<h2>GOSS and split gain, <u>full data vs GOSS sample</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">Suppose rows are ordered by an index feature \(x=1..10\) matching the row numbers above. Compare the candidate split \(x\le5.5\) computed on the <b>full 10 rows</b> vs on the <b>6-row GOSS sample</b>, \(\lambda=1,\gamma=0\).</p>
+<div class="tbl"><table><tr><th></th><th>G<sub>L</sub></th><th>H<sub>L</sub></th><th>G<sub>R</sub></th><th>H<sub>R</sub></th><th>Gain</th></tr>
+<tr><td class="left"><b>Full data</b> (10 rows)</td><td>1.600</td><td>5</td><td>0.050</td><td>5</td><td class="hl"><b>0.0898</b></td></tr>
+<tr><td class="left"><b>GOSS sample</b> (6 rows, reweighted)</td><td>2.440</td><td>6.8</td><td>-0.080</td><td>1.6</td><td class="hl"><b>0.0866</b></td></tr>
+</table></div>
+<div class="key">The two Gain values are close (0.0898 vs 0.0866) despite the GOSS sample using 40% fewer rows &mdash; both correctly favour the same split direction. At toy scale (n=10) this is a coarse approximation by nature; at real scale (millions of rows) the same mechanism gives a statistically much tighter approximation while genuinely cutting the rows scanned per split.</div>
+<div class="misconception">GOSS does not attempt to reproduce the exact full-data Gain value &mdash; it aims to preserve the <b>ranking</b> of candidate splits (which threshold looks best) cheaply, which is all a split-finder actually needs.</div>
+</div>
+</section>
+<section class="block" id="goss-iters">
+<div class="eyebrow">15 &middot; GOSS <span class="new-badge">NEW</span></div>
+<h2>GOSS across boosting iterations: <u>it's not a one-time sample</u></h2>
+<div class="card">
+<div class="misconception"><b>Common misconception:</b> GOSS is not "downsample the dataset once, then boost on that fixed subset." The gradients themselves change every round as the model updates &mdash; so which rows count as "large-gradient" changes too.</div>
+<p style="font-size:13px;color:#cdd8de">Continuing the 10-row example illustratively: after round 1's tree corrects the model, rows 1 and 2 (previously the largest errors) are now partly fixed, while other rows may have grown relatively larger residuals.</p>
+<div class="tbl"><table><tr><th>Iteration</th><th>Top-gradient rows (kept)</th><th>Sampled small-gradient rows</th><th>Effective subset size</th></tr>
+<tr><td>1</td><td class="left">{1, 2}</td><td class="left">{3, 4, 5, 6} (illustrative draw)</td><td>6 of 10</td></tr>
+<tr><td>2</td><td class="left">{2, 7} <span class="mini">(gradients shifted after round 1's correction)</span></td><td class="left">{1, 3, 8, 9} (new draw)</td><td>6 of 10</td></tr>
+<tr><td>3</td><td class="left">{7, 10} <span class="mini">(shifted again)</span></td><td class="left">{2, 4, 5, 9} (new draw)</td><td>6 of 10</td></tr>
+</table></div>
+<div class="key">The <b>mechanism</b> is identical every round &mdash; recompute \(|g_i|\) on the current predictions, take the new top \(a\), resample \(b\) of the new remainder, reweight by \((1-a)/b\). Only the <i>membership</i> of "top" and "sampled" shifts as the model improves.</div>
+</div>
+</section>
+
+<section class="block" id="goss-tradeoffs">
+<div class="eyebrow">16 &middot; GOSS <span class="new-badge">NEW</span></div>
+<h2>When GOSS helps &mdash; <u>and when it doesn't</u></h2>
+<div class="grid2">
+<div class="card"><h3 style="color:var(--cyan)">Without GOSS</h3><p style="font-size:12.5px;color:var(--chalk-dim)">Every row scanned, every split, every tree. Maximum information, maximum cost.</p></div>
+<div class="card"><h3 style="color:var(--pink)">With GOSS</h3><p style="font-size:12.5px;color:var(--chalk-dim)">Fewer rows scanned, prioritising the ones that matter most right now. Lower cost, an approximation of the full-data Gain.</p></div>
+</div>
+<div class="card">
+<div class="tbl"><table><tr><th>Dimension</th><th>Effect</th></tr>
+<tr><td class="left">Computation / split search</td><td class="left good">Meaningfully cheaper &mdash; fewer rows per histogram build</td></tr>
+<tr><td class="left">Memory</td><td class="left good">Smaller working set per split search</td></tr>
+<tr><td class="left">Statistical approximation</td><td class="left">Ranking of splits usually preserved well; exact Gain values are approximate</td></tr>
+</table></div>
+<div class="misconception"><b>"Better" does not mean "universally more accurate."</b> It means a better efficiency/accuracy trade-off specifically when \(n\) is large. On small datasets, the sampling noise can outweigh the speed benefit &mdash; GOSS is most valuable exactly where the original problem (millions of rows) lives.</div>
+</div>
+</section>
+<section class="block" id="efb-problem">
+<div class="eyebrow">17 &middot; EFB <span class="new-badge">NEW</span></div>
+<h2>EFB: <u>why high-dimensional sparse data is a problem</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">Forget abstract feature names for a moment. Here is where this problem shows up constantly in real data: <b>one-hot encoding.</b></p>
+<p style="font-size:13px;color:#cdd8de">Suppose you one-hot encode a "City" column with 1,000 distinct cities. You now have <b>1,000 brand-new columns</b>: <code>City_Chennai</code>, <code>City_Mumbai</code>, <code>City_Delhi</code>, &hellip; For any single row, exactly <b>one</b> of these 1,000 columns is 1, and the other <b>999</b> are 0.</p>
+<div class="matrix">Row 1 (lives in Chennai):
+City_Chennai=1  City_Mumbai=0  City_Delhi=0  City_Bangalore=0  ...  (997 more zeros)
+
+Row 2 (lives in Mumbai):
+City_Chennai=0  City_Mumbai=1  City_Delhi=0  City_Bangalore=0  ...  (997 more zeros)</div>
+<div class="ask"><b>Ask yourself:</b> to build a histogram for <code>City_Chennai</code> alone, you must scan <b>every single row</b> in the dataset &mdash; even though 999 times out of 1,000, that row is going to contribute a zero. Same for <code>City_Mumbai</code>. Same for all 1,000 columns. Is that not an enormous amount of wasted scanning?</div>
+<div class="key">EFB &mdash; <b>E</b>xclusive <b>F</b>eature <b>B</b>undling &mdash; asks exactly this: since <code>City_Chennai</code> and <code>City_Mumbai</code> are <i>never both non-zero on the same row</i> (a person can't simultaneously "be" both Chennai and Mumbai in a one-hot column), can we merge many of these columns into <b>one</b>, so we only ever build <b>one</b> histogram instead of a thousand?</div>
+<p style="font-size:12.5px;color:var(--chalk-dim)">This is the single biggest source of the "1,000,000 sparse features" scenario in practice &mdash; one-hot encoded categoricals, bag-of-words text features, and rare interaction features all produce exactly this pattern: many columns, almost all zero, rarely non-zero together.</p>
+</div>
+</section>
+
+<section class="block" id="efb-exclusive">
+<div class="eyebrow">18 &middot; EFB <span class="new-badge">NEW</span></div>
+<h2>What does <u>"exclusive" actually mean?</u> &mdash; slowly</h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">Continue the City example, now with actual rows written out. 3 one-hot columns, 6 people:</p>
+<div class="tbl"><table><tr><th>Row</th><th>City_Chennai</th><th>City_Mumbai</th><th>City_Delhi</th></tr>
+<tr><td>1</td><td class="hl"><b>1</b></td><td>0</td><td>0</td></tr>
+<tr><td>2</td><td>0</td><td class="hl"><b>1</b></td><td>0</td></tr>
+<tr><td>3</td><td>0</td><td>0</td><td class="hl"><b>1</b></td></tr>
+<tr><td>4</td><td class="hl"><b>1</b></td><td>0</td><td>0</td></tr>
+<tr><td>5</td><td>0</td><td class="hl"><b>1</b></td><td>0</td></tr>
+<tr><td>6</td><td>0</td><td>0</td><td class="hl"><b>1</b></td></tr>
+</table></div>
+<div class="key">Look at any single row: exactly <b>one</b> column is non-zero, the rest are always 0. This is what "mutually exclusive" means, precisely &mdash; not "rarely together," but structurally guaranteed <b>never</b> both non-zero, by the very definition of one-hot encoding. That's the strongest, cleanest case for bundling.</div>
+<p style="font-size:13px;color:#cdd8de">The abstract version, with actual non-binary values (so you can see it isn't limited to 0/1 one-hot columns &mdash; any sparse numeric features work the same way):</p>
+<div class="tbl"><table><tr><th>Row</th><th>Feature A</th><th>Feature B</th></tr>
+<tr><td>1</td><td class="hl"><b>1</b></td><td>0</td></tr><tr><td>2</td><td>0</td><td class="hl"><b>2</b></td></tr>
+<tr><td>3</td><td class="hl"><b>3</b></td><td>0</td></tr><tr><td>4</td><td>0</td><td class="hl"><b>4</b></td></tr>
+<tr><td>5</td><td class="hl"><b>5</b></td><td>0</td></tr></table></div>
+<div class="misconception"><b>The definition again, stated as plainly as possible:</b> Feature A and Feature B are mutually exclusive if, scanning down every row, you never find a row where <b>both</b> are non-zero at the same time. That's the entire condition &mdash; nothing more subtle than that.</div>
+<div class="tree-diagram">Feature A &#9492;
+           &#9500;&#9472; can be safely merged into one Bundle
+Feature B &#9496;</div>
+</div>
+</section>
+
+<section class="block" id="efb-bundle">
+<div class="eyebrow">19 &middot; EFB <span class="new-badge">NEW</span></div>
+<h2>How bundling actually works &mdash; <u>every step, no skipping</u></h2>
+<div class="card">
+<div class="ask"><b>Ask yourself, first:</b> since A and B never overlap, why not just create one new column that's simply \(A+B\)?</div>
+<div class="misconception"><b>Because addition destroys identity.</b> Suppose Feature A can take bin-value 2, and Feature B can <i>also</i> take bin-value 2 (on a different row, since they're exclusive). If we compute \(A+B\), a row where \(A{=}2,B{=}0\) gives bundle value 2. A <i>different</i> row where \(A{=}0,B{=}2\) <b>also</b> gives bundle value 2. The split-finder now sees two identical bundle values that actually came from two completely different features &mdash; it has no way to tell them apart anymore. This is the exact problem we must solve.</div>
+</div>
+<div class="card">
+<h3>Step 1 &mdash; give each feature its own private "address range" (the offset)</h3>
+<p style="font-size:13px;color:#cdd8de">Think of it like a building with numbered floors. Feature A gets floors 0&ndash;3 all to itself. Feature B gets floors 4&ndash;7, all to itself. As long as the floor ranges never overlap, you can always tell which "tenant" (which original feature) a floor number belongs to, just by looking at the number.</p>
+<div class="tree-diagram">Feature A's own bins:     0, 1, 2, 3           &larr; occupies range [0, 3]
+Feature B's own bins:     0, 1, 2, 3   +4 offset &rarr; becomes  4, 5, 6, 7   &larr; occupies range [4, 7]</div>
+<div class="key">The "+4" is called the <b>offset</b>. It's just Feature A's own bin count (4 bins &rarr; offset of 4) added onto every one of Feature B's bin values, so B's numbers start exactly where A's numbers end.</div>
+</div>
+<div class="card">
+<h3>Step 2 &mdash; build the bundle value, row by row (all 5 rows, fully worked)</h3>
+<p style="font-size:13px;color:#cdd8de">Rule for each row: <b>if A is non-zero, the bundle value is just A's own bin. If A is zero, look at B instead &mdash; and if B is non-zero, the bundle value is B's bin PLUS the offset (4). If both are zero, the bundle value is 0 (nothing active).</b></p>
+<div class="tbl"><table><tr><th>Row</th><th>A (bin)</th><th>B (bin)</th><th>Which is non-zero?</th><th>Bundle value</th></tr>
+<tr><td>1</td><td>2</td><td>0</td><td class="left">A</td><td class="hl"><b>2</b> <span class="mini">(just A's own bin, untouched)</span></td></tr>
+<tr><td>2</td><td>0</td><td>1</td><td class="left">B</td><td class="hl"><b>4+1=5</b> <span class="mini">(B's bin, shifted by the offset)</span></td></tr>
+<tr><td>3</td><td>3</td><td>0</td><td class="left">A</td><td class="hl"><b>3</b></td></tr>
+<tr><td>4</td><td>0</td><td>3</td><td class="left">B</td><td class="hl"><b>4+3=7</b></td></tr>
+<tr><td>5</td><td>0</td><td>0</td><td class="left">neither</td><td class="hl"><b>0</b> <span class="mini">(both inactive — common for sparse data)</span></td></tr>
+</table></div>
+<p style="font-size:13px;color:#cdd8de">One merged column, 5 rows: <code>[2, 5, 3, 7, 0]</code>. That's the entire bundle &mdash; a single array of numbers, built once.</p>
+</div>
+<div class="card">
+<h3>Step 3 &mdash; decoding: recovering which feature owned each value</h3>
+<p style="font-size:13px;color:#cdd8de">To read a bundle value back, just check which range it falls in &mdash; this is the whole reason the offset had to be big enough to keep ranges disjoint:</p>
+<div class="tbl"><table><tr><th>Bundle value</th><th>Falls in range</th><th>Recovered as</th></tr>
+<tr><td>2</td><td class="left">[0,3] &rarr; belongs to A</td><td class="left">Feature A, bin 2</td></tr>
+<tr><td>5</td><td class="left">[4,7] &rarr; belongs to B</td><td class="left">Feature B, bin \(5-4=1\)</td></tr>
+<tr><td>0</td><td class="left">the shared "zero" bin</td><td class="left">both inactive</td></tr>
+</table></div>
+<div class="key"><b>Nothing is lost.</b> The split-finder now builds and scans <b>one</b> histogram over this single bundled column instead of two separate (mostly-empty) ones &mdash; and can still fully recover, for any candidate split, exactly which original feature and which of its bins is on each side.</div>
+</div>
+</section>
+
+<section class="block" id="efb-conflict">
+<div class="eyebrow">20 &middot; EFB <span class="new-badge">NEW</span></div>
+<h2>Conflicts: <u>when exclusivity isn't perfect</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">Real features are rarely perfectly exclusive. Modify one row of our original A/B example:</p>
+<div class="tbl"><table><tr><th>Row</th><th>A</th><th>B</th></tr>
+<tr><td>1</td><td>1</td><td>0</td></tr><tr><td>2</td><td>0</td><td>2</td></tr>
+<tr><td>3</td><td>3</td><td>0</td></tr><tr><td>4</td><td>0</td><td>4</td></tr>
+<tr class="hl"><td><b>5</b></td><td class="hl"><b>5</b></td><td class="hl"><b>7</b></td></tr></table></div>
+<div class="ask"><b>Ask yourself:</b> row 5 now has both A and B non-zero at once. If we still force them into one bundle, what actually breaks?</div>
+<p style="font-size:13px;color:#cdd8de">Our Step 2 rule from &sect;19 said "if A is non-zero, use A's bin; only look at B if A is zero." So for row 5, the bundle would record <b>only A's value (bin for 5)</b> &mdash; <b>B's value (7) for that row is silently dropped.</b> That row now behaves, to the split-finder, as if Feature B were 0 there, which is simply wrong.</p>
+<div class="key">This is a <b>conflict</b>: a specific row where two "supposedly exclusive" features are simultaneously non-zero, forcing the bundling rule to lose one of the two values.</div>
+<div class="math-derivation">
+<div class="label">Conflict rate, with a bigger worked example</div>
+<p>Suppose across 20 rows, exactly 2 rows have both A and B non-zero at once:</p>
+<div class="complete-equation">\[
+\text{conflict rate}=\frac{\#\text{ rows with a conflict}}{\#\text{ total rows}}=\frac{2}{20}=0.10=10\%
+\]</div>
+<div class="key">LightGBM allows bundling two features together as long as their conflict rate stays under a chosen tolerance (a max-conflict-rate setting). Allow more conflicts &rarr; more aggressive, more compressed bundling, but slightly wrong statistics on those specific conflicting rows. Allow fewer &rarr; safer, but less compression. In practice, genuinely sparse one-hot-style features have a conflict rate at or near exactly 0%, so this is rarely a hard trade-off for the classic use case &mdash; it starts to matter more for less cleanly sparse features.</div>
+</div>
+</div>
+</section>
+
+<section class="block" id="efb-graph">
+<div class="eyebrow">21 &middot; EFB <span class="new-badge">NEW</span></div>
+<h2>EFB as a graph problem: <u>why graph colouring shows up</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">With thousands of features, "which ones are safe to bundle together" isn't a single yes/no question &mdash; it's a genuine combinatorial puzzle. Here's how to represent it as a graph, one piece at a time.</p>
+<div class="step"><div class="num">1</div><div class="body"><b>Every feature becomes a dot (a "node").</b> If you have 5 features A, B, C, D, E, you draw 5 dots.</div></div>
+<div class="step"><div class="num">2</div><div class="body"><b>Draw a line ("edge") between two dots exactly when those two features conflict too often to bundle</b> (their conflict rate is above your tolerance &mdash; often meaning "they're ever non-zero on the same row at all," for the strict case).</div></div>
+<div class="step"><div class="num">3</div><div class="body"><b>No line between two dots means those two features are safe to put in the same bundle.</b></div></div>
+<div class="tree-diagram">A &mdash;&mdash; C          (A and C conflict — cannot share a bundle)
+
+B &mdash;&mdash; D          (B and D conflict — cannot share a bundle)
+
+E                    (E conflicts with nobody — free to join any bundle)</div>
+<div class="ask"><b>Ask yourself:</b> we now want to sort every dot into groups ("bundles"), such that <b>no two dots connected by a line ever land in the same group</b>. Where exactly have you seen this problem before, under a different name?</div>
+<div class="key"><b>Graph colouring.</b> Give every node a "colour" (think: a bundle ID, like Bundle-1, Bundle-2, &hellip;) such that no two nodes joined by an edge ever share a colour. The goal is to use as <b>few colours as possible</b> &mdash; fewer colours means fewer final bundles, which means more compression. Finding the true minimum is NP-hard in general, so LightGBM uses a fast, practical <b>greedy</b> colouring heuristic instead of solving it exactly (worked by hand next, in &sect;22).</div>
+<div class="tree-diagram">Raw sparse features
+        &darr;
+Build the conflict graph   (node = feature, edge = "too conflicting to bundle")
+        &darr;
+Greedy graph colouring     (assign each node the lowest-numbered colour that avoids its neighbours)
+        &darr;
+Each colour = one final feature bundle</div>
+<div class="misconception">Reducing, say, 10,000 sparse features down to roughly 2,000 bundles is exactly this mechanism running at scale &mdash; not a fixed compression ratio anyone chose, but simply the natural outcome of however sparse and however mutually exclusive the real feature set happens to be.</div>
+</div>
+</section>
+
+<section class="block" id="efb-example">
+<div class="eyebrow">22 &middot; EFB <span class="new-badge">NEW</span></div>
+<h2>A complete EFB example, <u>graph &rarr; colouring &rarr; bundles &rarr; matrix</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">Same 5 features as &sect;21, conflicts listed explicitly:</p>
+<div class="tbl"><table><tr><th>Feature</th><th>Conflicts with</th></tr>
+<tr><td>A</td><td class="left">C</td></tr><tr><td>B</td><td class="left">D</td></tr>
+<tr><td>C</td><td class="left">A</td></tr><tr><td>D</td><td class="left">B</td></tr>
+<tr><td>E</td><td class="left">&mdash; (none)</td></tr></table></div>
+<p><b>Greedy colouring, one feature at a time, in order A, B, C, D, E</b> &mdash; the rule at each step is always: "use the lowest-numbered colour that none of my already-coloured neighbours are using."</p>
+<div class="step"><div class="num">1</div><div class="body"><b>A:</b> no colours used yet anywhere &rarr; assign <b>Colour 1</b>.</div></div>
+<div class="step"><div class="num">2</div><div class="body"><b>B:</b> is B connected to A? No (B only conflicts with D). So B is free to reuse the lowest colour, <b>Colour 1</b>.</div></div>
+<div class="step"><div class="num">3</div><div class="body"><b>C:</b> is C connected to A? <b>Yes</b> &mdash; and A is Colour 1. So Colour 1 is forbidden for C. Lowest available &rarr; <b>Colour 2</b>.</div></div>
+<div class="step"><div class="num">4</div><div class="body"><b>D:</b> is D connected to B? <b>Yes</b> &mdash; B is Colour 1, so Colour 1 is forbidden. Is D connected to C? No. So the lowest available colour is <b>Colour 2</b>.</div></div>
+<div class="step"><div class="num">5</div><div class="body"><b>E:</b> connected to nobody at all &rarr; every colour is available &rarr; take the lowest, <b>Colour 1</b>.</div></div>
+<div class="tbl"><table><tr><th>Bundle (colour)</th><th>Features inside</th></tr>
+<tr><td class="hl">Bundle 1</td><td class="left hl"><b>A, B, E</b></td></tr>
+<tr><td class="hl">Bundle 2</td><td class="left hl"><b>C, D</b></td></tr></table></div>
+<div class="key">Check it: A and C are never in the same bundle (good, they conflict). B and D are never in the same bundle (good, they conflict). Nothing else was forbidden, so B, A, and E happily share Bundle 1.</div>
+</div>
+<div class="card">
+<h3>Before vs after, as an actual matrix</h3>
+<p style="font-size:13px;color:#cdd8de">This is the entire point of EFB, made visible in one picture &mdash; 5 sparse columns become 2 dense-ish bundled columns:</p>
+<div class="matrix">BEFORE EFB (5 separate columns, mostly zero):
+
+  A    B    C    D    E
+  &middot;    &middot;    &middot;    &middot;    &middot;      &larr; 5 separate histograms, 5 separate full-column scans
+
+
+AFTER EFB (2 bundled columns):
+
+  Bundle1(A,B,E)     Bundle2(C,D)
+  &middot;                  &middot;              &larr; only 2 histograms, only 2 full-column scans</div>
+<div class="key"><b>Before EFB:</b> 5 separate histogram builds, each one a full pass over the rows. <b>After EFB:</b> just 2 bundled histogram builds &mdash; \(N{=}5 \to B{=}2\). Every split search downstream (Gain calculations, leaf-wise comparisons, all of it) now runs on 2 columns instead of 5, with no information genuinely lost for the non-conflicting rows.</div>
+</div>
+</section>
+
+
+<section class="block" id="efb-goss">
+<div class="eyebrow">23 &middot; EFB + GOSS <span class="new-badge">NEW</span></div>
+<h2>GOSS + EFB <u>together</u> &mdash; different bottlenecks, same tree</h2>
+<div class="card">
+<div class="tbl"><table><tr><th></th><th>Reduces</th></tr>
+<tr><td class="left"><b>GOSS</b></td><td class="left">number of <b>rows</b> used for split finding, per round</td></tr>
+<tr><td class="left"><b>EFB</b></td><td class="left">effective number of <b>sparse features</b> scanned, every round</td></tr>
+</table></div>
+<div class="diagram"><div class="flow" style="grid-template-columns:1fr auto 1fr auto 1fr;">
+<div class="node"><strong>Huge dataset</strong><br><span>millions of rows, thousands of sparse features</span></div>
+<div class="arrow">&rarr;</div>
+<div class="node"><strong>GOSS</strong><br><span>&darr; rows</span></div>
+<div class="arrow">+</div>
+<div class="node"><strong>EFB</strong><br><span>&darr; effective features</span></div>
+</div></div>
+<div class="key"><b>Whether bundling repeats each round:</b> EFB's bundling assignment is computed <b>once</b>, up front, from the static sparsity pattern of the raw features (which columns tend to be non-zero together doesn't change tree-to-tree). GOSS, by contrast, is recomputed <b>every</b> boosting round, because gradients change every round. Together: much cheaper histogram construction feeding into exactly the same leaf-wise split search you already know.</div>
+<div class="tree-diagram">Original sparse features
+        &darr;
+   EFB bundling         (one-time, from sparsity pattern)
+        &darr;
+Bundled representation
+        &darr;
+Histogram construction  (repeated every tree)
+        &darr;
+Leaf-wise tree growth   (repeated every split)
+        &darr;
+GOSS resampling         (repeated every boosting round)
+        &darr;
+Next boosting iteration</div>
+</div>
+</section>
+<section class="block" id="cat-question">
+<div class="eyebrow">24 &middot; categorical features <span class="new-badge">NEW</span></div>
+<h2>What happens if I hand LightGBM <u>a categorical feature?</u></h2>
+<div class="card">
+<div class="tree-diagram">City:
+Chennai
+Mumbai
+Delhi
+Bangalore</div>
+<div class="ask"><b>Ask yourself:</b> does LightGBM automatically one-hot encode this? Does it just treat the codes as numbers?</div>
+<p class="lead">Neither, automatically &mdash; it depends entirely on what you hand it. Be precise about the distinct cases:</p>
+<div class="tbl"><table><tr><th>#</th><th>What you pass</th><th>What the model sees</th></tr>
+<tr><td>1</td><td class="left">Raw string / object column</td><td class="left">Not usable directly &mdash; must be encoded or passed via an API that accepts strings and encodes internally</td></tr>
+<tr><td>2</td><td class="left">Pandas <code>category</code> dtype</td><td class="left">LightGBM's Python API can recognise this automatically as categorical</td></tr>
+<tr><td>3</td><td class="left">Integer-coded, <b>not flagged</b> as categorical</td><td class="left">Treated as an ordinary <b>numeric</b> feature &mdash; ordering is assumed to be meaningful</td></tr>
+<tr><td>4</td><td class="left">One-hot encoded columns</td><td class="left">A set of independent binary numeric features &mdash; no native categorical logic involved</td></tr>
+<tr><td>5</td><td class="left">Ordinal / label encoded</td><td class="left">Same as case 3 unless explicitly flagged &mdash; risk of an artificial numeric order (&sect;28)</td></tr>
+<tr><td>6</td><td class="left">Integer-coded <b>and</b> explicitly passed via <code>categorical_feature</code></td><td class="left">LightGBM's <b>native</b> categorical split search (&sect;26)</td></tr>
+</table></div>
+<div class="misconception"><b>Being an integer is not enough.</b> Whether a column gets native categorical treatment depends entirely on whether you told LightGBM it's categorical &mdash; via dtype or the explicit parameter. Silence defaults to "numeric."</div>
+</div>
+</section>
+
+<section class="block" id="cat-compare">
+<div class="eyebrow">25 &middot; categorical features <span class="new-badge">NEW</span></div>
+<h2>One-hot vs ordinal vs native, <u>side by side</u></h2>
+<div class="card">
+<div class="tree-diagram">Color: Red, Blue, Green, Yellow</div>
+<div class="grid2">
+<div class="card"><h3 style="color:var(--cyan)">One-hot</h3>
+<div class="matrix">Red  Blue  Green  Yellow
+ 1    0     0      0
+ 0    1     0      0
+ 0    0     1      0
+ 0    0     0      1</div>
+<p style="font-size:12px;color:var(--chalk-dim)">Dimensionality explodes with cardinality &mdash; 4 categories &rarr; 4 columns, mostly zero, sparse.</p></div>
+<div class="card"><h3 style="color:var(--pink)">Ordinal</h3>
+<div class="tree-diagram">Red=0, Blue=1, Green=2, Yellow=3</div>
+<p style="font-size:12px;color:var(--chalk-dim)">One column, but a numeric split like \(x<1.5\) implies {Red,Blue} vs {Green,Yellow} &mdash; an ordering that may have <b>no real meaning</b>.</p></div>
+</div>
+<div class="key">Native categorical handling (next) avoids both problems: no dimensionality explosion, and no arbitrary imposed order.</div>
+</div>
+</section>
+<section class="block" id="cat-native">
+<div class="eyebrow">26 &middot; categorical features <span class="new-badge">NEW</span></div>
+<h2>How native categorical splitting <u>actually works</u></h2>
+<div class="card">
+<div class="ask"><b>Ask yourself:</b> with \(K\) categories, there are up to \(2^{K-1}-1\) meaningfully different ways to partition them into two groups. Do we really enumerate all of them?</div>
+<p class="lead">No. LightGBM orders the categories by a relevant statistic, then only searches thresholds <b>along that ordering</b> &mdash; exactly like a numeric split, but on a smart, data-driven order instead of an arbitrary one.</p>
+<div class="math-derivation">
+<div class="label">The ordering statistic</div>
+<p>For each category value, aggregate its rows' gradient and Hessian sums, then rank categories by:</p>
+<div class="complete-equation">\[
+\text{stat}(\text{category})=\frac{\sum_{i\in\text{category}} g_i}{\sum_{i\in\text{category}} h_i}
+\]</div>
+<div class="key">This is precisely the un-regularised optimal leaf value shape you already know (\(-G/H\)) &mdash; categories are sorted by "how much correction this category alone would want," from most-negative to most-positive. Categories that behave similarly end up adjacent in the ordering.</div>
+</div>
+<div class="key"><b>Then:</b> instead of enumerating every subset, LightGBM only tries the \(K-1\) contiguous splits along this single ordering &mdash; "first \(k\) categories in this order vs the rest," exactly the same prefix-sum mechanism as a numeric histogram split. \(K-1\) candidates, not \(2^{K-1}-1\).</div>
+</div>
+<div class="card">
+<h3>Is this just target encoding, then?</h3>
+<div class="ask"><b>Ask yourself:</b> "order categories by a target-related statistic" sounds a lot like target encoding. Are they the same thing?</div>
+<p class="lead"><b>Related in spirit, but genuinely different in mechanism.</b> Here's the precise distinction, side by side:</p>
+<div class="tbl"><table><tr><th></th><th>Target encoding</th><th>LightGBM native categorical</th></tr>
+<tr><td class="left">What gets computed</td><td class="left">One scalar per category (e.g. mean target), from the <b>whole training set</b> (usually with smoothing/out-of-fold to fight leakage)</td><td class="left">An ordering statistic \(G/H\), from only the rows <b>currently at this specific tree node</b></td></tr>
+<tr><td class="left">Is it saved as a feature?</td><td class="left good">Yes &mdash; becomes a permanent new numeric column, reused everywhere, every tree, every round</td><td class="left">No &mdash; the ordering is <b>recomputed fresh</b>, purely to decide scan order for this one split search, then discarded</td></tr>
+<tr><td class="left">What does it use as the target?</td><td class="left">The raw label \(y\) (fixed, from the original data)</td><td class="left">The <b>current</b> gradient \(g\) and Hessian \(h\) &mdash; which change every boosting round as the model updates</td></tr>
+<tr><td class="left">Does the order ever change?</td><td class="left">No &mdash; fixed once the encoding is computed</td><td class="left">Yes &mdash; can differ at every node and every round, since it depends on which rows reached that node and what the model currently gets wrong there</td></tr>
+<tr><td class="left">Resulting split type</td><td class="left">An ordinary <b>numeric</b> threshold split on the encoded scalar column</td><td class="left">A genuine <b>categorical</b> partition &mdash; explicit subsets of category IDs on each side</td></tr>
+</table></div>
+<div class="key"><b>The honest one-line summary:</b> target encoding permanently replaces a category with a number and then treats it exactly like any other numeric feature. LightGBM's native handling never replaces anything &mdash; the category IDs stay categorical throughout; a target/gradient-based statistic is only borrowed, briefly and locally, to decide a sensible <i>order</i> to scan candidate partitions in, and that borrowed order can be completely different at the next node or the next tree.</div>
+<div class="misconception">Because target encoding bakes a fixed, whole-dataset statistic into a persistent feature, it's genuinely leakage-prone without careful regularisation (smoothing, out-of-fold computation). LightGBM's native approach is less exposed to that specific failure mode &mdash; each ordering is recomputed from the small, local set of rows at that node using current gradients &mdash; though rare categories with very few rows at a node can still produce a noisy, unstable order, which is exactly what <code>cat_smooth</code> exists to dampen.</div>
+</div>
+</section>
+<section class="block" id="cat-example">
+<div class="eyebrow">27 &middot; categorical features <span class="new-badge">NEW</span></div>
+<h2>A complete categorical example, <u>start to finish</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">Binary classification, base rate \(p_0=0.5\) (so \(g_i=0.5-y_i\), \(h_i=0.25\) for every row), \(\lambda=1\):</p>
+<div class="tbl"><table><tr><th>City</th><th>Target rows</th></tr>
+<tr><td>A</td><td class="left">0, 1</td></tr><tr><td>B</td><td class="left">1, 1</td></tr>
+<tr><td>C</td><td class="left">0, 0</td></tr><tr><td>D</td><td class="left">1, 0</td></tr></table></div>
+<p><b>Step 1 &mdash; category statistics</b> (\(G=\sum g\), \(H=\sum h\), and the ordering stat \(G/H\)):</p>
+<div class="tbl"><table><tr><th>City</th><th>G</th><th>H</th><th>Mean target</th></tr>
+<tr><td>A</td><td>0.0</td><td>0.5</td><td>0.5</td></tr>
+<tr><td>B</td><td>-1.0</td><td>0.5</td><td>1.0</td></tr>
+<tr><td>C</td><td>1.0</td><td>0.5</td><td>0.0</td></tr>
+<tr><td>D</td><td>0.0</td><td>0.5</td><td>0.5</td></tr>
+</table></div>
+<p><b>Step 2 &mdash; order categories</b> by the statistic (ascending mean target, ties broken alphabetically):</p>
+<div class="tree-diagram">C  (0.0)   &rarr;   A  (0.5)   &rarr;   D  (0.5)   &rarr;   B  (1.0)</div>
+<p><b>Step 3 &mdash; only \(K-1=3\) contiguous partitions along this order</b> need checking, instead of \(2^{K-1}-1=7\) arbitrary subsets:</p>
+<div class="tbl"><table><tr><th>Partition</th><th>G<sub>L</sub>,H<sub>L</sub></th><th>G<sub>R</sub>,H<sub>R</sub></th><th>Gain</th></tr>
+<tr class="hl"><td class="left"><b>{C} | {A,D,B}</b></td><td>1.0, 0.5</td><td>-1.0, 1.5</td><td class="hl"><b>0.533</b></td></tr>
+<tr><td class="left">{C,A} | {D,B}</td><td>1.0, 1.0</td><td>-1.0, 1.0</td><td>0.500</td></tr>
+<tr class="hl"><td class="left"><b>{C,A,D} | {B}</b></td><td>1.0, 1.5</td><td>-1.0, 0.5</td><td class="hl"><b>0.533</b></td></tr>
+</table></div>
+<div class="key">Two partitions tie for the best Gain here (0.533): separating C alone, or separating B alone &mdash; both make sense given C is the strongest "0-leaning" category and B is the strongest "1-leaning" one. Either is a valid choice for the winning split; LightGBM's implementation resolves ties deterministically.</div>
+</div>
+</section>
+
+<section class="block" id="cat-ordinal-trap">
+<div class="eyebrow">28 &middot; categorical features <span class="new-badge">NEW</span></div>
+<h2>The ordinal-encoding trap, <u>precisely</u></h2>
+<div class="card">
+<div class="tree-diagram">Low = 0
+Medium = 1
+High = 2</div>
+<div class="ask"><b>Ask yourself:</b> does LightGBM know these are categories just because they're small integers?</div>
+<p class="lead"><b>Not automatically.</b> If this column is passed as an ordinary numeric feature, \(0<1<2\) is taken at face value &mdash; the model assumes Medium sits "between" Low and High in whatever sense the split search cares about.</p>
+<div class="key">If instead this column is explicitly marked categorical (via dtype or <code>categorical_feature</code>), LightGBM switches to the ordering-by-statistic search from &sect;26 &mdash; it may still discover that Low &lt; Medium &lt; High behaves sensibly (often true for genuinely ordinal data like this), but it derives that from the data's actual gradient behaviour, not from assuming it upfront.</div>
+<div class="misconception">For genuinely ordinal categories (Low/Medium/High), passing them as plain numeric 0/1/2 is often fine in practice, precisely because the "natural" order usually does align with outcome behaviour. The trap is for <b>nominal</b> categories with no true order (city names, product IDs) &mdash; there, an arbitrary integer code can silently mislead a numeric split search into inventing an order that doesn't exist.</div>
+</div>
+</section>
+<section class="block" id="cat-params">
+<div class="eyebrow">29 &middot; categorical features <span class="new-badge">NEW</span></div>
+<h2>Categorical handling: <u>the comparison, and the parameters</u></h2>
+<div class="card">
+<div class="tbl"><table><tr><th>Method</th><th>What the model sees</th><th>Main issue</th></tr>
+<tr><td class="left">One-hot</td><td class="left">Binary columns, one per category</td><td class="left">Dimensionality explosion with high cardinality</td></tr>
+<tr><td class="left">Ordinal + treated as numeric</td><td class="left">A single numeric column</td><td class="left">Artificial order, potentially misleading splits</td></tr>
+<tr><td class="left hl"><b>Ordinal + native categorical flag</b></td><td class="left hl">Category IDs</td><td class="left hl"><b>Ordered-by-statistic native split search</b></td></tr>
+<tr><td class="left">Raw strings</td><td class="left">Depends on API / dtype handling</td><td class="left">Must be represented correctly before training</td></tr>
+</table></div>
+<div class="tbl"><table><tr><th>Parameter</th><th>Meaning</th></tr>
+<tr><td><code>categorical_feature</code></td><td class="left">Explicitly names which column indices/names get native categorical treatment</td></tr>
+<tr><td><code>max_cat_to_onehot</code></td><td class="left">Below this cardinality, fall back to simple one-vs-rest splits instead of full ordered search &mdash; cheaper for low-cardinality columns</td></tr>
+<tr><td><code>cat_smooth</code></td><td class="left">Smooths the category statistic (\(G/H\)-style ranking) for categories with few rows, reducing noisy ordering from small samples</td></tr>
+<tr><td><code>cat_l2</code></td><td class="left">L2-style regularisation specific to categorical split statistics</td></tr>
+<tr><td><code>min_data_per_group</code></td><td class="left">Minimum rows a category needs to be treated as its own group rather than merged with rare categories</td></tr>
+</table></div>
+<div class="misconception">Native categorical handling, GBDT-style sklearn trees, and XGBoost all differ in this area &mdash; be precise: sklearn's classic trees have no native categorical support at all (encode manually); XGBoost added experimental native categorical support in recent versions; LightGBM's native handling (ordering-by-statistic) has been a core feature for longer. Always check the specific library/version in use.</div>
+</div>
+</section>
+<section class="block" id="regularisation">
+<div class="eyebrow">30 &middot; tuning <span class="same-badge">SAME</span></div>
+<h2>Regularisation: <u>connected straight to XGBoost</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">Conceptually unchanged: L1 (\(\lambda_{L1}\)), L2 (\(\lambda_{L2}\)), minimum leaf support, minimum Hessian per leaf, and learning rate all work exactly as derived in the XGBoost chapter. LightGBM renames a few:</p>
+<div class="tbl"><table><tr><th>XGBoost name</th><th>LightGBM name</th><th>Same meaning?</th></tr>
+<tr><td><code>reg_alpha</code></td><td><code>lambda_l1</code></td><td class="good">Yes &mdash; identical role</td></tr>
+<tr><td><code>reg_lambda</code></td><td><code>lambda_l2</code></td><td class="good">Yes &mdash; identical role</td></tr>
+<tr><td><code>gamma</code></td><td><code>min_gain_to_split</code></td><td class="good">Yes &mdash; minimum Gain required to accept a split</td></tr>
+<tr><td><code>min_child_weight</code></td><td><code>min_sum_hessian_in_leaf</code></td><td class="good">Yes &mdash; minimum \(\sum h\) per leaf</td></tr>
+<tr><td><code>(no direct equivalent)</code></td><td><code>min_data_in_leaf</code></td><td class="left">New emphasis &mdash; a hard row-count floor per leaf, on top of the Hessian-based constraint</td></tr>
+</table></div>
+<div class="key">Same math, mostly renamed knobs &mdash; plus one new hard constraint (<code>min_data_in_leaf</code>) that matters more here <i>because</i> leaf-wise growth can otherwise carve out extremely small, thinly-supported leaves that level-wise growth would never reach.</div>
+</div>
+</section>
+
+<section class="block" id="hyperparams">
+<div class="eyebrow">31 &middot; tuning</div>
+<h2>Hyperparameter master table</h2>
+<div class="card">
+<h3>Tree complexity</h3>
+<div class="tbl"><table><tr><th>Parameter</th><th>Controls</th><th>Effect</th></tr>
+<tr><td><code>num_leaves</code></td><td class="left">total leaf budget &mdash; the primary capacity control</td><td class="left">&uarr; more capacity, overfit risk; &darr; simpler tree</td></tr>
+<tr><td><code>max_depth</code></td><td class="left">secondary safety cap on path length</td><td class="left">usually left loose; tightened if leaf-wise trees get pathologically deep</td></tr>
+<tr><td><code>min_data_in_leaf</code></td><td class="left">minimum row count per leaf</td><td class="left">&uarr; fewer, more conservative splits; &darr; risk of tiny, noisy leaves</td></tr>
+<tr><td><code>min_sum_hessian_in_leaf</code></td><td class="left">minimum curvature mass per leaf</td><td class="left">same role as XGBoost's min_child_weight</td></tr>
+<tr><td><code>min_gain_to_split</code></td><td class="left">minimum Gain to accept a split</td><td class="left">same role as XGBoost's &gamma;</td></tr>
+</table></div>
+</div>
+<div class="card">
+<h3>Boosting</h3>
+<div class="tbl"><table><tr><th>Parameter</th><th>Controls</th><th>Effect</th></tr>
+<tr><td><code>learning_rate</code></td><td class="left">step size per tree</td><td class="left">&darr; usually needs more trees, better generalisation</td></tr>
+<tr><td><code>n_estimators</code> / <code>num_boost_round</code></td><td class="left">number of trees</td><td class="left">pair with early stopping</td></tr>
+<tr><td><code>boosting_type</code></td><td class="left">gbdt / dart / rf mode</td><td class="left">changes the boosting mechanism itself &mdash; gbdt is the standard mode covered here</td></tr>
+</table></div>
+</div>
+<div class="card">
+<h3>Sampling</h3>
+<div class="tbl"><table><tr><th>Parameter</th><th>Controls</th><th>Effect</th></tr>
+<tr><td><code>bagging_fraction</code></td><td class="left">row fraction per iteration (ordinary random subsampling)</td><td class="left">adds stochasticity, reduces variance</td></tr>
+<tr><td><code>bagging_freq</code></td><td class="left">how often bagging is refreshed (every N iterations)</td><td class="left">0 disables bagging</td></tr>
+<tr><td><code>feature_fraction</code></td><td class="left">feature fraction per tree</td><td class="left">reduces reliance on any one feature</td></tr>
+</table></div>
+</div>
+<div class="card">
+<h3>GOSS-specific</h3>
+<div class="tbl"><table><tr><th>Parameter</th><th>Controls</th></tr>
+<tr><td><code>top_rate</code></td><td class="left">\(a\) &mdash; fraction of large-gradient rows kept outright</td></tr>
+<tr><td><code>other_rate</code></td><td class="left">\(b\) &mdash; fraction of the remaining rows sampled</td></tr>
+</table></div>
+<p style="font-size:12px;color:var(--chalk-dim)">Only active when <code>boosting_type='goss'</code>; mutually exclusive with ordinary <code>bagging_fraction</code> row sampling in most implementations &mdash; check current docs.</p>
+</div>
+<div class="card">
+<h3>Efficiency &amp; regularisation</h3>
+<div class="tbl"><table><tr><th>Parameter</th><th>Controls</th></tr>
+<tr><td><code>max_bin</code></td><td class="left">histogram resolution (same role as XGBoost's max_bin)</td></tr>
+<tr><td><code>lambda_l1</code>, <code>lambda_l2</code></td><td class="left">L1 / L2 leaf weight penalties</td></tr>
+<tr><td><code>categorical_feature</code>, <code>max_cat_to_onehot</code>, <code>cat_smooth</code>, <code>cat_l2</code>, <code>min_data_per_group</code></td><td class="left">categorical handling (&sect;29)</td></tr>
+</table></div>
+</div>
+</section>
+<section class="block" id="goss-params">
+<div class="eyebrow">32 &middot; tuning <span class="new-badge">NEW</span></div>
+<h2>GOSS hyperparameters, <u>especially deep</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">Recall from &sect;12: \(top\_rate=0.2\), \(other\_rate=0.1\) means <b>keep the top 20% by \(|g|\) outright, then sample 10% of the remaining 80%</b>.</p>
+<div class="tbl"><table><tr><th>Change</th><th>Effect</th></tr>
+<tr><td class="left"><code>top_rate</code> &uarr;</td><td class="left">More large-gradient rows kept outright &mdash; closer to full-data accuracy, less speed benefit</td></tr>
+<tr><td class="left"><code>top_rate</code> &darr;</td><td class="left">Fewer rows guaranteed kept &mdash; faster, risk of missing genuinely important high-error rows</td></tr>
+<tr><td class="left"><code>other_rate</code> &uarr;</td><td class="left">More of the "easy" rows sampled &mdash; better small-gradient coverage, slower</td></tr>
+<tr><td class="left"><code>other_rate</code> &darr;</td><td class="left">Sparser small-gradient coverage &mdash; faster, more sampling noise in the reweighted contribution</td></tr>
+</table></div>
+<div class="key">The trade-off is always the same shape: <b>higher rates &rarr; closer to the exact full-data Gain, slower; lower rates &rarr; cheaper, noisier approximation.</b> \(top\_rate\) protects against missing the rows that matter most; \(other\_rate\) protects against systematically ignoring the "easy" majority.</div>
+</div>
+</section>
+
+<section class="block" id="fit">
+<div class="eyebrow">33 &middot; tuning</div>
+<h2>Underfitting vs overfitting, <u>LightGBM-specific</u></h2>
+<div class="card">
+<div class="misconception"><b>Leaf-wise growth can overfit faster than level-wise growth</b> for the same leaf count &mdash; because it always spends its next split where the *training* loss improves most, it can carve out very deep, narrow, thinly-supported branches chasing a handful of outlier rows, while a level-wise tree spreads the same leaf budget evenly and stays shallower everywhere.</div>
+<div class="tree-diagram">Level-wise (same leaf budget, spread evenly):      Leaf-wise (same budget, can go very deep):
+
+        root                                              root
+       /    \                                             /    \
+      A      B                                           A      B
+     / \    / \                                                 / \
+                                                                C   D
+                                                                   / \
+                                                                  E   F</div>
+</div>
+<div class="grid2">
+<div class="card"><h3 style="color:var(--cyan)">Underfitting</h3><ul style="font-size:12.5px;color:#cdd8de;line-height:1.9;">
+<li><code>num_leaves</code> too low</li>
+<li><code>min_data_in_leaf</code> / <code>min_sum_hessian_in_leaf</code> too high</li>
+<li><code>min_gain_to_split</code> too high</li>
+<li><code>lambda_l1</code> / <code>lambda_l2</code> too high</li>
+<li><code>learning_rate</code> too small with too few trees</li>
+</ul></div>
+<div class="card"><h3 style="color:var(--pink)">Overfitting</h3><ul style="font-size:12.5px;color:#cdd8de;line-height:1.9;">
+<li><code>num_leaves</code> too high (the #1 lever here)</li>
+<li><code>max_depth</code> unconstrained alongside high <code>num_leaves</code></li>
+<li><code>min_data_in_leaf</code> too low</li>
+<li><code>feature_fraction</code> / <code>bagging_fraction</code> too high (no stochastic dampening)</li>
+<li><code>learning_rate</code> too high, too many trees, no early stopping</li>
+</ul></div>
+</div>
+<div class="card">
+<h3>Diagnostic table</h3>
+<div class="tbl"><table><tr><th>Parameter</th><th>Too low</th><th>Too high</th></tr>
+<tr><td><code>num_leaves</code></td><td class="left">underfit</td><td class="left">overfit &mdash; primary risk</td></tr>
+<tr><td><code>min_data_in_leaf</code></td><td class="left">overfit (tiny, noisy leaves)</td><td class="left">underfit</td></tr>
+<tr><td><code>min_gain_to_split</code></td><td class="left">overfit (marginal splits kept)</td><td class="left">underfit (tree stops early)</td></tr>
+<tr><td><code>lambda_l1</code>/<code>lambda_l2</code></td><td class="left">overfit</td><td class="left">underfit</td></tr>
+<tr><td><code>learning_rate</code></td><td class="left">underfit (unless trees compensated)</td><td class="left">overfit / unstable</td></tr>
+</table></div>
+</div>
+</section>
+<section class="block" id="compare-xgb">
+<div class="eyebrow">34 &middot; tuning</div>
+<h2>LightGBM vs XGBoost, <u>precisely &mdash; not just "faster"</u></h2>
+<div class="card">
+<div class="tbl"><table>
+<tr><th>Dimension</th><th>XGBoost</th><th>LightGBM</th></tr>
+<tr><td class="left">Tree growth</td><td class="left">Level-wise / depth-wise</td><td class="left hl"><b>Leaf-wise / best-first</b></td></tr>
+<tr><td class="left">Split search</td><td class="left">Exact greedy or histogram</td><td class="left">Histogram, with subtraction trick (sibling = parent &minus; other sibling)</td></tr>
+<tr><td class="left">Row sampling</td><td class="left">Uniform row/column subsampling</td><td class="left hl"><b>GOSS</b> (gradient-prioritised) + ordinary bagging</td></tr>
+<tr><td class="left">Sparse features</td><td class="left">Handled per-feature</td><td class="left hl"><b>EFB</b> &mdash; bundles mutually-exclusive sparse features</td></tr>
+<tr><td class="left">Categorical features</td><td class="left">Native support in recent versions</td><td class="left hl"><b>Native, ordered-by-statistic search</b>, a long-standing core feature</td></tr>
+</table></div>
+<div class="key"><b>Why "LightGBM is faster," precisely:</b> leaf-wise growth reduces wasted splits on low-gain nodes; GOSS reduces the number of rows scanned per split; EFB reduces the number of effectively-distinct sparse features scanned; native categorical search avoids one-hot dimensionality blow-ups. Four independent multipliers on cost, not one single trick.</div>
+<div class="misconception">Speed is not free. Leaf-wise growth's overfitting risk (&sect;33) and GOSS's approximation noise are the direct costs of those speed gains &mdash; which is why <code>num_leaves</code>, <code>min_data_in_leaf</code>, and validation-driven early stopping matter more here than they typically do for a level-wise XGBoost model.</div>
+</div>
+</section>
+<section class="block" id="new-summary">
+<div class="eyebrow">35 &middot; wrap-up</div>
+<h2>What's actually new, <u>the honest summary</u></h2>
+<div class="grid2">
+<div class="card"><h3 style="color:var(--cyan)">Already known from GBDT</h3><ul style="font-size:12.5px;color:#cdd8de;line-height:1.9;">
+<li>Boosting, additive trees</li>
+<li>Residual / gradient correction</li>
+<li>Learning rate</li>
+</ul></div>
+<div class="card"><h3 style="color:var(--cyan)">Already known from XGBoost</h3><ul style="font-size:12.5px;color:#cdd8de;line-height:1.9;">
+<li>Gradient \(g\), Hessian \(h\)</li>
+<li>Taylor approximation</li>
+<li>\((G,H)\) aggregation, leaf weight \(-G/(H+\lambda)\)</li>
+<li>Regularised split Gain</li>
+<li>L1 / L2 / \(\gamma\)</li>
+</ul></div>
+</div>
+<div class="card">
+<h3 style="color:var(--purple)">Genuinely new in LightGBM</h3>
+<div class="tbl"><table><tr><th>#</th><th>Innovation</th><th>What it does</th></tr>
+<tr><td>1</td><td class="left"><b>Leaf-wise growth</b></td><td class="left">Splits the single best-gain leaf globally, regardless of depth</td></tr>
+<tr><td>2</td><td class="left"><b>Histogram engineering</b></td><td class="left">Same idea as XGBoost, plus histogram subtraction for cheaper sibling construction</td></tr>
+<tr><td>3</td><td class="left"><b>GOSS</b></td><td class="left">Keeps all large-gradient rows, samples+reweights the rest</td></tr>
+<tr><td>4</td><td class="left"><b>EFB</b></td><td class="left">Bundles mutually-exclusive sparse features via graph colouring</td></tr>
+<tr><td>5</td><td class="left"><b>Native categorical handling</b></td><td class="left">Orders categories by \(G/H\), searches \(K-1\) contiguous partitions</td></tr>
+</table></div>
+</div>
+</section>
+
+<section class="block" id="mental-model">
+<div class="eyebrow">36 &middot; wrap-up</div>
+<h2>LightGBM in <u>one picture</u></h2>
+<div class="card">
+<div class="tree-diagram">                    LIGHTGBM
+                       &#124;
+             Gradient Boosting
+                       &#124;
+             Gradient + Hessian
+                       &#124;
+          &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9524;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+          &#124;                         &#124;
+        GOSS                       EFB
+   Reduce rows               Reduce sparse
+                              feature count
+          &#124;                         &#124;
+          &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9500;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;
+                       &darr;
+                 Histograms
+                       &darr;
+              Candidate splits
+             (native ordering if categorical)
+                       &darr;
+              Calculate gain
+                       &darr;
+            Choose BEST LEAF  (globally, any depth)
+                       &darr;
+              Split that leaf
+                       &darr;
+             Leaf-wise growth
+                       &darr;
+               Leaf prediction   w* = -G/(H+&lambda;)
+                       &darr;
+                Learning rate
+                       &darr;
+              Updated prediction
+                       &darr;
+                   Repeat</div>
+</div>
+<div class="card">
+<h3>The one-sentence mental model</h3>
+<div class="quote">LightGBM keeps XGBoost's exact second-order math, then makes every stage cheaper: GOSS prioritises which rows matter, EFB collapses redundant sparse features, native categorical search avoids a combinatorial subset search, and leaf-wise growth spends every split where the tree needs it most &mdash; not wherever "the current depth" happens to be.</div>
+</div>
+</section>
+<section class="block" id="final-compare">
+<div class="eyebrow">37 &middot; wrap-up</div>
+<h2>Final master comparison</h2>
+<div class="card">
+<div class="tbl"><table>
+<tr><th></th><th>GBDT</th><th>XGBoost</th><th>LightGBM</th></tr>
+<tr><td class="left">Boosting</td><td class="good">&check;</td><td class="good">&check;</td><td class="good">&check;</td></tr>
+<tr><td class="left">Gradient</td><td class="good">&check;</td><td class="good">&check;</td><td class="good">&check;</td></tr>
+<tr><td class="left">Hessian</td><td class="left">varies</td><td class="good">&check;</td><td class="good">&check;</td></tr>
+<tr><td class="left">Leaf weight</td><td class="left">mean residual</td><td class="left">\(-G/(H+\lambda)\)</td><td class="left">\(-G/(H+\lambda)\)</td></tr>
+<tr><td class="left">Regularisation</td><td class="left">limited</td><td class="good">L1/L2/&gamma;</td><td class="good">L1/L2/min_gain_to_split</td></tr>
+<tr><td class="left">Tree growth</td><td class="left">level-wise, typically</td><td class="left">level-wise</td><td class="left hl"><b>leaf-wise</b></td></tr>
+<tr><td class="left">Histogram</td><td class="left">varies</td><td class="good">&check;</td><td class="good">&check; + subtraction trick</td></tr>
+<tr><td class="left">GOSS</td><td class="bad">&mdash;</td><td class="bad">&mdash;</td><td class="good hl"><b>&check;</b></td></tr>
+<tr><td class="left">EFB</td><td class="bad">&mdash;</td><td class="bad">&mdash;</td><td class="good hl"><b>&check;</b></td></tr>
+<tr><td class="left">Categorical</td><td class="left">manual encoding</td><td class="left">native (recent versions)</td><td class="good hl"><b>native, long-standing</b></td></tr>
+<tr><td class="left">Missing values</td><td class="left">implementation-dependent</td><td class="good">learned default direction</td><td class="good">learned default direction</td></tr>
+<tr><td class="left">Row sampling</td><td class="left">implementation-dependent</td><td class="left">uniform subsample</td><td class="left">GOSS + bagging</td></tr>
+<tr><td class="left">Feature sampling</td><td class="left">implementation-dependent</td><td class="left">colsample_*</td><td class="left">feature_fraction</td></tr>
+<tr><td class="left">Main overfitting control</td><td class="left">depth / leaf limits</td><td class="left">max_depth, &gamma;, &lambda;</td><td class="left hl"><b>num_leaves</b> + min_data_in_leaf</td></tr>
+<tr><td class="left">Main computational advantage</td><td class="left">&mdash;</td><td class="left">2nd-order + regularisation</td><td class="left hl"><b>leaf-wise + GOSS + EFB</b></td></tr>
+</table></div>
+</div>
+</section>
+
+<section class="block" id="cheat-sheet">
+<div class="eyebrow">38 &middot; wrap-up</div>
+<h2>Hyperparameter cheat sheet</h2>
+<div class="grid2">
+<div class="card"><h3 style="color:var(--pink)">If overfitting&hellip;</h3><ul style="font-size:12.5px;color:#cdd8de;line-height:1.9;">
+<li>decrease <code>num_leaves</code> &mdash; directly cuts capacity, the single biggest lever</li>
+<li>decrease <code>max_depth</code> &mdash; caps runaway deep branches</li>
+<li>increase <code>min_data_in_leaf</code> &mdash; forces leaves to have real support</li>
+<li>increase <code>min_sum_hessian_in_leaf</code> &mdash; forces real curvature evidence</li>
+<li>increase <code>min_gain_to_split</code> &mdash; makes every split earn its keep</li>
+<li>increase <code>lambda_l1</code> / <code>lambda_l2</code> &mdash; shrinks/zeroes leaf weights</li>
+<li>decrease <code>feature_fraction</code> / <code>bagging_fraction</code> &mdash; adds stochastic dampening</li>
+<li>decrease <code>learning_rate</code>, use early stopping &mdash; more cautious, validation-driven steps</li>
+</ul></div>
+<div class="card"><h3 style="color:var(--cyan)">If underfitting&hellip;</h3><ul style="font-size:12.5px;color:#cdd8de;line-height:1.9;">
+<li>increase <code>num_leaves</code> &mdash; more capacity</li>
+<li>decrease <code>min_data_in_leaf</code> / <code>min_sum_hessian_in_leaf</code> &mdash; allow finer leaves</li>
+<li>decrease <code>min_gain_to_split</code> &mdash; allow more marginal splits</li>
+<li>decrease <code>lambda_l1</code> / <code>lambda_l2</code> &mdash; let weights move further</li>
+<li>increase <code>learning_rate</code> or <code>n_estimators</code> &mdash; more total correction</li>
+</ul></div>
+</div>
+<div class="key">Every one of these works <i>because</i> of the mechanism you derived earlier in this chapter, not by coincidence &mdash; e.g. <code>num_leaves</code> directly caps how many times leaf-wise growth is allowed to chase the next-best gain; <code>min_gain_to_split</code> is literally the &gamma;-style threshold from the Gain formula.</div>
+</section>
+<section class="block" id="checklist">
+<div class="eyebrow">39 &middot; mastery checklist</div>
+<h2>Questions I must be able to <u>answer</u></h2>
+<div class="grid2">
+<div class="card"><h3>Fundamentals</h3><ul style="font-size:12.5px;color:#cdd8de;line-height:1.9;">
+<li>Why was LightGBM created &mdash; what bottleneck, precisely?</li>
+<li>What problem does histogram learning solve? What's the approximation?</li>
+<li>What is leaf-wise growth, and why can it overfit faster than level-wise?</li>
+</ul></div>
+<div class="card"><h3>Histogram</h3><ul style="font-size:12.5px;color:#cdd8de;line-height:1.9;">
+<li>How are \(G,H\) aggregated per bin?</li>
+<li>What does max_bin control, and what's the trade-off?</li>
+</ul></div>
+<div class="card"><h3>GOSS</h3><ul style="font-size:12.5px;color:#cdd8de;line-height:1.9;">
+<li>Why preserve large-gradient rows and only sample the rest?</li>
+<li>Why does the reweighting factor \((1-a)/b\) exist &mdash; derive it.</li>
+<li>Does GOSS select the same rows every boosting round?</li>
+<li>What do top_rate and other_rate each control?</li>
+</ul></div>
+<div class="card"><h3>EFB</h3><ul style="font-size:12.5px;color:#cdd8de;line-height:1.9;">
+<li>What does "exclusive" mean? Why can't we just add feature values?</li>
+<li>What is a conflict, and a conflict rate?</li>
+<li>Why does graph colouring appear in EFB?</li>
+<li>Is bundling repeated every tree, or computed once?</li>
+</ul></div>
+<div class="card"><h3>Categorical</h3><ul style="font-size:12.5px;color:#cdd8de;line-height:1.9;">
+<li>Does LightGBM automatically know an integer column is categorical?</li>
+<li>How does native categorical search avoid enumerating \(2^{K-1}-1\) subsets?</li>
+<li>Why can ordinal encoding of nominal categories be dangerous?</li>
+</ul></div>
+<div class="card"><h3>Practical</h3><ul style="font-size:12.5px;color:#cdd8de;line-height:1.9;">
+<li>Why might LightGBM overfit more easily than XGBoost on a small dataset?</li>
+<li>How do num_leaves and max_depth interact?</li>
+<li>When is GOSS particularly worth using? When is EFB particularly useful?</li>
+</ul></div>
+</div>
+<div class="callout"><b>The full chain, one line:</b> GBDT &rarr; XGBoost &rarr; LightGBM, with the key innovations being Histogram engineering + Leaf-wise growth + GOSS + EFB + Native categorical handling. For each: Problem &rarr; Idea &rarr; Math &rarr; Numerical example &rarr; Trade-off &rarr; Hyperparameter &rarr; Practical usage. Know why every step exists, not just what it does.</div>
+</section>
+
+</main></div></div><script>document.querySelectorAll("nav a").forEach(a=>a.addEventListener("click",()=>{document.querySelectorAll("nav a").forEach(x=>x.style.background="");a.style.background="#ffffff08";}));window.addEventListener("load",()=>{if(window.MathJax&&window.MathJax.typesetPromise)window.MathJax.typesetPromise();});</script></body></html>

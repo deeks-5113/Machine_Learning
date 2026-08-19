@@ -1,0 +1,900 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Multiclass Gradient Boosting Masterclass</title><script>window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]'],['$$','$$']],tags:'ams',packages:{'[+]':['ams']}},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']},svg:{fontCache:'global'}};</script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script><style>
+:root{
+  --board:#0c1014; --card:#151b21; --card-line:#263039;
+  --chalk:#e9eef2; --chalk-dim:#9fb0bb; --cyan:#5fd8e0; --cyan-dim:#2c5a5e;
+  --pink:#f17fb0; --pink-dim:#5a2f42; --yellow:#f4cf5e; --green:#8fe3a6;
+  --green-dim:#2f4f3a; --purple:#b39ddb; --purple-dim:#4a3f6b;
+  --white:#f5f5f0; --red:#ff9a9a; --radius:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--board);color:var(--chalk);font-family:Inter,Segoe UI,Arial,sans-serif;line-height:1.6}
+.wrap{max-width:1220px;margin:auto;padding:0 24px 110px}
+h1,h2,h3,.hand{font-family:Caveat,"Comic Sans MS",cursive;font-weight:700}
+.hero{text-align:center;padding:54px 0 28px}
+.chip{display:inline-block;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11px;letter-spacing:1.3px;text-transform:uppercase;color:var(--cyan);border:1px solid var(--cyan-dim);padding:6px 13px;border-radius:999px;margin:4px}
+.hero h1{font-size:clamp(34px,5vw,54px);margin:8px 0;color:var(--white)}
+.hero h1 span{color:var(--pink)}
+.hero p{font-family:"Trebuchet MS",sans-serif;color:var(--chalk-dim);max-width:900px;margin:auto;font-size:16px}
+.layout{display:grid;grid-template-columns:275px 1fr;gap:34px;align-items:start}
+nav.toc{position:sticky;top:18px;background:var(--card);border:1px solid var(--card-line);border-radius:var(--radius);padding:16px;max-height:calc(100vh - 36px);overflow:auto;font:11px ui-monospace,SFMono-Regular,Consolas,monospace}
+.toc-title{color:var(--chalk-dim);text-transform:uppercase;letter-spacing:1px;font-size:10px;margin:14px 0 6px}
+.toc-title:first-child{margin-top:0}
+nav a{display:block;color:var(--chalk-dim);text-decoration:none;padding:4px 7px;border-radius:7px}
+nav a:hover{background:#ffffff08;color:var(--chalk)}
+section.block{margin-bottom:46px;scroll-margin-top:18px}
+.eyebrow{font:11px ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--pink);letter-spacing:1.5px;text-transform:uppercase}
+h2{font-size:31px;margin:2px 0 12px;color:var(--white)}
+h2 u{text-decoration-color:var(--cyan);text-decoration-thickness:3px}
+h3{font-size:23px;margin:5px 0 9px;color:var(--white)}
+p.lead{color:#d0dbe1;font-size:14.5px}
+.card{background:var(--card);border:1px solid var(--card-line);border-radius:var(--radius);padding:19px 21px;margin:13px 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
+.callout{border:1px solid var(--green-dim);background:#8fe3a60d;color:var(--green);border-radius:10px;padding:12px 15px;margin:12px 0;font-size:13px}
+.callout.info{border-color:var(--cyan-dim);background:#5fd8e00b;color:var(--cyan)}
+.callout.warn{border-color:#5a4f2f;background:#f4cf5e0b;color:var(--yellow)}
+.callout.bad{border-color:var(--pink-dim);background:#f17fb00b;color:var(--pink)}
+.callout.purple{border-color:var(--purple-dim);background:#b39ddb0b;color:var(--purple)}
+.formula{background:#090d10;border:1px solid var(--card-line);border-radius:10px;padding:15px 17px;margin:12px 0;overflow:auto;text-align:center;color:var(--white)}
+.formula.left{text-align:left}
+.mathnote{font-size:12px;color:var(--chalk-dim);margin-top:-4px}
+.tbl{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font:12px ui-monospace,SFMono-Regular,Consolas,monospace}
+th{color:var(--chalk-dim);font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;text-align:left;border-bottom:1px solid var(--card-line);padding:7px 8px}
+td{padding:7px 8px;border-bottom:1px solid #ffffff08;vertical-align:top}
+td.hl{color:var(--yellow);font-weight:700}
+td.good{color:var(--green);font-weight:700}
+td.bad{color:var(--pink);font-weight:700}
+td.cyan{color:var(--cyan);font-weight:700}
+.step{display:flex;gap:12px;align-items:flex-start;margin:9px 0}
+.step .num{flex:0 0 30px;height:30px;border:1px solid var(--cyan-dim);color:var(--cyan);border-radius:50%;display:grid;place-items:center;font:12px ui-monospace}
+.step .body{flex:1}
+.badge{display:inline-block;font:10px ui-monospace;padding:2px 7px;border-radius:5px;margin-left:5px}
+.b-gbdt{color:var(--cyan);border:1px solid var(--cyan-dim)}
+.b-xgb{color:var(--yellow);border:1px solid #5a4f2f}
+.b-lgb{color:var(--purple);border:1px solid var(--purple-dim)}
+.b-sklearn{color:var(--green);border:1px solid var(--green-dim)}
+.code{background:#080b0e;border:1px solid var(--card-line);border-radius:10px;padding:14px 16px;overflow:auto;font:12px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace;color:#dce6eb;white-space:pre}
+.quote{font-family:"Trebuchet MS",sans-serif;font-size:16px;border-left:3px solid var(--yellow);padding:7px 17px;background:#f4cf5e08;border-radius:0 10px 10px 0}
+.flow{display:flex;align-items:stretch;overflow:auto;padding:8px 0}
+.flow .box{min-width:145px;background:var(--card);border:1px solid var(--card-line);border-radius:10px;padding:12px;text-align:center}
+.flow .box strong{display:block;color:var(--white);font-size:12px}
+.flow .box span{display:block;color:var(--chalk-dim);font-size:10px;margin-top:3px}
+.flow .arrow{min-width:30px;display:grid;place-items:center;color:var(--pink);font-size:20px}
+details{background:#ffffff04;border:1px solid var(--card-line);border-radius:9px;padding:10px 13px;margin:9px 0}
+summary{cursor:pointer;color:var(--yellow);font-weight:700}
+.source{font-size:11px;color:var(--chalk-dim)}
+.source a{color:var(--cyan)}
+.small{font-size:12px;color:var(--chalk-dim)}
+.kpi{font-size:25px;color:var(--yellow);font-weight:800}
+@media(max-width:920px){.layout{grid-template-columns:1fr}.toc{position:relative!important;max-height:none!important}.grid2,.grid3{grid-template-columns:1fr}}
+\n.deep-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}\n.math-chain{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:8px;align-items:center;margin:12px 0}\n.math-node{background:#090d10;border:1px solid var(--card-line);border-radius:10px;padding:12px;text-align:center}.math-node strong{display:block;color:var(--white)}.math-node span{display:block;color:var(--chalk-dim);font-size:11px;margin-top:4px}.math-arrow{color:var(--pink);font-size:20px;text-align:center}\n.tree{font:12px ui-monospace,SFMono-Regular,Consolas,monospace;background:#090d10;border:1px solid var(--card-line);border-radius:10px;padding:15px;overflow:auto;white-space:pre;line-height:1.5;color:#dce6eb}\n.mini{font-size:11px;color:var(--chalk-dim)}\n.tag{display:inline-block;padding:3px 7px;border-radius:5px;font:10px ui-monospace;margin:2px;border:1px solid var(--card-line);color:var(--chalk-dim)}\n.check{border-left:3px solid var(--cyan);padding:10px 14px;background:#5fd8e008;margin:12px 0}.check b{color:var(--cyan)}\n@media(max-width:920px){.deep-grid,.math-chain{grid-template-columns:1fr}.math-arrow{transform:rotate(90deg)}}\n
+.diagram{background:#090d10;border:1px solid var(--card-line);border-radius:12px;padding:15px;margin:14px 0;overflow:auto}
+.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;align-items:center;text-align:center;font:11px ui-monospace,SFMono-Regular,Consolas,monospace}
+.flow .node{border:1px solid var(--cyan-dim);border-radius:9px;padding:10px 6px;background:#0f171b}
+.flow .arrow{color:var(--pink);font-size:20px}.small{font-size:12px;color:var(--chalk-dim)}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:15px}.three-col{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
+.source{font-size:11px;color:var(--chalk-dim);border-left:2px solid var(--card-line);padding-left:10px;margin:10px 0}.source a{color:var(--cyan)}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.toc{position:relative!important}.grid2,.grid3,.two-col,.three-col,.flow{grid-template-columns:1fr}.flow .arrow{transform:rotate(90deg)}}
+
+/* COMPLETE-EQUATION PATCH
+   Keep the original masterclass design, but make every mathematical
+   expression readable, scroll-safe and visually complete. */
+.formula{
+  font-size:16px;
+  line-height:1.9;
+  min-height:52px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+.formula mjx-container{
+  max-width:100%;
+  overflow-x:auto;
+  overflow-y:hidden;
+  padding:2px 4px;
+}
+.formula.left{
+  justify-content:flex-start;
+  text-align:left;
+}
+.formula mjx-mtable{
+  margin-left:auto !important;
+  margin-right:auto !important;
+}
+.math-derivation{
+  background:#090d10;
+  border:1px solid var(--card-line);
+  border-left:3px solid var(--cyan);
+  border-radius:12px;
+  padding:15px 18px;
+  margin:14px 0;
+}
+.math-derivation .label{
+  color:var(--cyan);
+  font:10px ui-monospace,SFMono-Regular,Consolas,monospace;
+  text-transform:uppercase;
+  letter-spacing:1px;
+  margin-bottom:7px;
+}
+.equation-note{
+  color:var(--chalk-dim);
+  font-size:12px;
+  margin:4px 0 10px;
+}
+.complete-equation{
+  background:#0b1115;
+  border:1px solid #31414b;
+  border-radius:10px;
+  padding:14px 16px;
+  margin:10px 0;
+  overflow-x:auto;
+}
+.complete-equation mjx-container{
+  margin:0 !important;
+}
+.math-warning{
+  border-left:3px solid var(--yellow);
+  background:#f4cf5e08;
+  color:#e9e2c6;
+  padding:11px 14px;
+  border-radius:0 9px 9px 0;
+  margin:12px 0;
+  font-size:13px;
+}
+
+/* v3 deep derivation additions */
+.deep-patch{border-top:2px solid var(--cyan);}
+.deep-patch .math-derivation{margin-top:16px;}
+.deep-patch .complete-equation{font-size:16px;line-height:1.95;}
+.deep-patch .complete-equation mjx-container{max-width:100%;overflow-x:auto;}
+.deep-patch .tbl table{width:100%;}
+.deep-patch .tbl td,.deep-patch .tbl th{vertical-align:top;}
+.source-note{border-left:3px solid var(--yellow);}
+
+.section-intro{font-size:14px;color:#d0dbe1}
+.answer{border-left:3px solid var(--green);padding:10px 14px;background:#8fe3a608;margin:12px 0}
+.question{color:var(--yellow);font-weight:700}
+.math-derivation{background:#090d10;border:1px solid var(--card-line);border-left:3px solid var(--cyan);border-radius:12px;padding:15px 18px;margin:14px 0}
+.math-derivation .label{color:var(--cyan);font:10px ui-monospace,SFMono-Regular,Consolas,monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:7px}
+.complete-equation{background:#0b1115;border:1px solid #31414b;border-radius:10px;padding:14px 16px;margin:10px 0;overflow-x:auto}
+@media(max-width:920px){.two-col,.three-col{grid-template-columns:1fr}}
+
+.xg-badge{display:inline-block;padding:3px 9px;border-radius:6px;font:10px ui-monospace,monospace;margin-left:6px;background:rgba(241,127,176,0.12);border:1px solid var(--pink-dim);color:var(--pink)}
+.gbdt-badge{display:inline-block;padding:3px 9px;border-radius:6px;font:10px ui-monospace,monospace;margin-left:6px;background:rgba(95,216,224,0.12);border:1px solid var(--cyan-dim);color:var(--cyan)}
+.ask{border-left:3px solid var(--purple);padding:10px 14px;background:rgba(179,157,219,0.06);border-radius:0 10px 10px 0;margin:12px 0;font-size:13px;color:#d8d0ea}
+.ask b{color:var(--purple)}
+.misconception{border-left:3px solid var(--pink);padding:10px 14px;background:rgba(241,127,176,0.06);border-radius:0 10px 10px 0;margin:12px 0;font-size:13px;color:#f0d6e0}
+.misconception b{color:var(--pink)}
+.key{border-left:3px solid var(--green);padding:10px 14px;background:rgba(143,227,166,0.06);border-radius:0 10px 10px 0;margin:12px 0;font-size:13px;color:#d3ecdc}
+.key b{color:var(--green)}
+
+.lgb-badge{display:inline-block;padding:3px 9px;border-radius:6px;font:10px ui-monospace,monospace;margin-left:6px;background:rgba(179,157,219,0.12);border:1px solid var(--purple-dim);color:var(--purple)}
+.same-badge{display:inline-block;padding:3px 9px;border-radius:6px;font:10px ui-monospace,monospace;margin-right:6px;background:rgba(95,216,224,0.12);border:1px solid var(--cyan-dim);color:var(--cyan)}
+.new-badge{display:inline-block;padding:3px 9px;border-radius:6px;font:10px ui-monospace,monospace;margin-right:6px;background:rgba(179,157,219,0.15);border:1px solid var(--purple-dim);color:var(--purple)}
+.ask{border-left:3px solid var(--purple);padding:10px 14px;background:rgba(179,157,219,0.06);border-radius:0 10px 10px 0;margin:12px 0;font-size:13px;color:#d8d0ea}
+.ask b{color:var(--purple)}
+.misconception{border-left:3px solid var(--pink);padding:10px 14px;background:rgba(241,127,176,0.06);border-radius:0 10px 10px 0;margin:12px 0;font-size:13px;color:#f0d6e0}
+.misconception b{color:var(--pink)}
+.key{border-left:3px solid var(--green);padding:10px 14px;background:rgba(143,227,166,0.06);border-radius:0 10px 10px 0;margin:12px 0;font-size:13px;color:#d3ecdc}
+.key b{color:var(--green)}
+.tree-diagram{font:12px ui-monospace,monospace;background:#090d10;border:1px solid var(--card-line);border-radius:10px;padding:16px;overflow:auto;white-space:pre;line-height:1.6;color:#dce6eb}
+.matrix{font:12px ui-monospace,monospace;background:#090d10;border:1px solid var(--card-line);border-radius:10px;padding:14px;overflow:auto;white-space:pre;line-height:1.7;color:#dce6eb}
+</style><body><div class="wrap">
+<header class="hero">
+<div><span class="chip">ML Supervised Learning &middot; Class 17</span></div>
+<div><span class="chip">MULTICLASS ONLY</span><span class="chip">BUILT ON TOP OF GBDT + XGBOOST + LIGHTGBM</span><span class="chip">FULL DERIVATIONS</span><span class="chip">CLASSROOM NOTES</span></div>
+<h1>Mastering <span>Multiclass</span> Gradient Boosting</h1>
+<p>You already know binary GBDT, XGBoost, and LightGBM end-to-end. This is the one conceptual jump multiclass adds: one raw score becomes <b>K</b> raw scores, softmax replaces sigmoid, one boosting iteration builds <b>K trees</b> instead of one &mdash; then everything else (gradients, Hessians, splits, leaf values, learning rate) is the exact machinery you already have, run K times per round. 3 classes, 3 full boosting iterations, every number verified.</p>
+</header>
+<div class="layout">
+<nav class="toc">
+<div class="toc-title">The Bridge</div>
+<a href="#why">One score becomes K scores</a>
+<a href="#softmax">Softmax</a>
+<a href="#init">Initial prediction: before any tree exists</a>
+<div class="toc-title">The Core Jump</div>
+<a href="#k-trees">One iteration = K trees</a>
+<a href="#onehot">The target, one-hot</a>
+<a href="#loss">Multiclass cross-entropy</a>
+<a href="#gradient-derive">Deriving the gradient, in full</a>
+<a href="#gradient-interpret">What the gradient means, numerically</a>
+<a href="#hessian">The Hessian &mdash; and a nuance</a>
+<a href="#tree-learns">How does a tree learn from this?</a>
+<div class="toc-title">Iteration 1, Completely</div>
+<a href="#dataset">The dataset, and the full iteration-1 table</a>
+<a href="#splitting">Splitting: one Gain search per class</a>
+<a href="#trees-differ">Why the three trees can look completely different</a>
+<a href="#leaf-pred">Leaf prediction, per class</a>
+<a href="#learning-rate">Applying the learning rate</a>
+<a href="#after-iter1">Updated scores &rarr; softmax again</a>
+<div class="toc-title">Iterations 2 &amp; 3</div>
+<a href="#iter2">Iteration 2, fully repeated</a>
+<a href="#iter3">Iteration 3, fully repeated</a>
+<a href="#algorithm">The complete algorithm</a>
+<div class="toc-title">The Subtlety</div>
+<a href="#coupling">Are the K trees independent? No.</a>
+<div class="toc-title">Test Time</div>
+<a href="#test-time">From raw scores to a class, at inference</a>
+<a href="#big-picture">The complete pipeline, one picture</a>
+<div class="toc-title">Wrap-up</div>
+<a href="#compare">GBDT vs XGBoost vs LightGBM, for multiclass</a>
+<a href="#distinction">K trees, not one tree with K leaf values</a>
+<a href="#mental-model">Binary vs multiclass, side by side</a>
+<a href="#checklist">Mastery checklist</a>
+</nav>
+<main>
+<section class="block" id="why">
+<div class="eyebrow">01 &middot; the bridge</div>
+<h2>One raw score becomes <u>K raw scores</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">In binary classification, every row got exactly one raw score \(F(x)\), squeezed through a sigmoid into one probability. With \(K=3\) classes &mdash; say A, B, C &mdash; that single number isn't enough to describe "how much do I believe this row is A, vs B, vs C." So the model keeps <b>three</b> separate raw scores per row:</p>
+<div class="diagram"><div class="flow">
+<div class="node"><strong>Binary</strong><br><span>x &rarr; one raw score &rarr; sigmoid &rarr; one probability</span></div>
+</div></div>
+<div class="tree-diagram">                    &#9484;&#9472;&#9472; F_A
+                    &#9500;
+x &#9472;&#9472;&rarr; model &#9472;&#9472;&#9472;&#9472;&#9500;&#9472;&#9472; F_B
+                    &#9500;
+                    &#9492;&#9472;&#9472; F_C</div>
+<div class="key">This is the single biggest conceptual jump in this whole chapter. Everything else &mdash; gradients, Hessians, splits, leaf weights, learning rate &mdash; is machinery you already fully know. What's new is simply: <b>there are now \(K\) of everything</b>, one per class, and they interact through one new piece: softmax.</div>
+</div>
+</section>
+
+<section class="block" id="softmax">
+<div class="eyebrow">02 &middot; the bridge</div>
+<h2>Softmax: <u>turning K scores into K probabilities</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">Sigmoid took one raw score and squeezed it into \([0,1]\). Softmax takes <b>all K</b> raw scores together and turns them into a full probability distribution that sums to 1:</p>
+<div class="complete-equation">\[
+p_{k}=\frac{e^{F_{k}}}{\displaystyle\sum_{j=1}^{K}e^{F_{j}}}
+\]</div>
+<p style="font-size:13px;color:#cdd8de">For 3 classes, spelled out completely:</p>
+<div class="formula">\[
+p_A=\frac{e^{F_A}}{e^{F_A}+e^{F_B}+e^{F_C}},\quad
+p_B=\frac{e^{F_B}}{e^{F_A}+e^{F_B}+e^{F_C}},\quad
+p_C=\frac{e^{F_C}}{e^{F_A}+e^{F_B}+e^{F_C}}
+\]</div>
+<div class="key">Notice every one of the three probabilities depends on <b>all three</b> raw scores, not just its own. That single fact is the root of an important subtlety we come back to in &sect;20 &mdash; the three classes are never quite independent, because they all share the same denominator.</div>
+<div class="misconception">By construction, \(p_A+p_B+p_C=1\) always &mdash; softmax is exactly the multiclass generalisation of sigmoid, and reduces to it exactly when \(K=2\).</div>
+</div>
+</section>
+
+<section class="block" id="init">
+<div class="eyebrow">03 &middot; the bridge</div>
+<h2>Before any tree exists: <u>what should the model predict?</u></h2>
+<div class="card">
+<div class="ask"><b>Ask yourself, properly:</b> in the binary chapter, the initial prediction wasn't just assumed to be 0.5 &mdash; it was <i>derived</i> as \(p_0=\#\text{positive}/n\), the base rate. Shouldn't multiclass get the same treatment, \(n_k/n\) per class, instead of just declaring \(1/K\) for everyone?</div>
+<p class="lead"><b>Yes &mdash; and it's worth deriving properly here, because the "uniform 1/3" answer is secretly a special case, not a different rule.</b></p>
+</div>
+<div class="math-derivation">
+<div class="label">Derive it the same way binary did: minimise the loss over a constant prediction</div>
+<p>Exactly like the binary derivation, find the constant probability vector \(p=[p_A,p_B,p_C]\) (same for every row) that minimises total cross-entropy loss, subject to \(\sum_k p_k=1\):</p>
+<div class="formula">\[
+\min_{p}\ -\sum_k n_k\log p_k\quad\text{subject to}\quad\sum_k p_k=1
+\]</div>
+<p style="font-size:12.5px;color:var(--chalk-dim)">where \(n_k\) is simply how many training rows actually belong to class \(k\).</p>
+<p>Using a Lagrange multiplier \(\mu\) for the constraint, differentiate and set to zero:</p>
+<div class="formula">\[
+\frac{\partial}{\partial p_k}\left[-\sum_k n_k\log p_k+\mu\left(\sum_k p_k-1\right)\right]=-\frac{n_k}{p_k}+\mu=0\ \Rightarrow\ p_k=\frac{n_k}{\mu}
+\]</div>
+<p>Substitute back into \(\sum_k p_k=1\) to solve for \(\mu\): \(\sum_k n_k/\mu=1\Rightarrow\mu=n\) (the total row count). Therefore:</p>
+<div class="complete-equation">\[
+\boxed{p_k^{(0)}=\frac{n_k}{n}}
+\]</div>
+<div class="key">Exactly the same shape as binary's \(p_0=\#\text{positive}/n\) &mdash; just one base rate per class instead of one base rate for "positive." This <b>is</b> the general rule; \(1/K\) is not a separate assumption, it's what this formula gives you when every class happens to be equally represented.</div>
+</div>
+<div class="card">
+<h3>Turning the base rate into a raw score</h3>
+<p style="font-size:13px;color:#cdd8de">Binary needed \(F_0=\log(p_0/(1-p_0))\) because sigmoid needed inverting. Softmax inverts just as directly &mdash; if you want softmax to output exactly \(p_k\), simply set:</p>
+<div class="complete-equation">\[
+F_k^{(0)}=\log(p_k^{(0)})=\log\!\left(\frac{n_k}{n}\right)
+\]</div>
+<p style="font-size:13px;color:#cdd8de">Check it: \(\text{softmax}(\log p)_k=\dfrac{e^{\log p_k}}{\sum_j e^{\log p_j}}=\dfrac{p_k}{\sum_j p_j}=\dfrac{p_k}{1}=p_k\) &mdash; recovers the base rate exactly, since probabilities already sum to 1.</p>
+</div>
+<div class="card">
+<h3>So why did &sect;3's original walkthrough just say "start at 0"?</h3>
+<p class="lead" style="margin-top:0;">Apply the formula to our actual dataset: 2 rows each of A, B, C, out of 6 total.</p>
+<div class="tbl"><table><tr><th>Class</th><th>n<sub>k</sub></th><th>p<sub>k</sub><sup>(0)</sup> = n<sub>k</sub>/n</th><th>F<sub>k</sub><sup>(0)</sup> = log(p<sub>k</sub><sup>(0)</sup>)</th></tr>
+<tr><td>A</td><td>2</td><td>2/6 = 0.333</td><td>log(0.333) = &minus;1.0986</td></tr>
+<tr><td>B</td><td>2</td><td>2/6 = 0.333</td><td>log(0.333) = &minus;1.0986</td></tr>
+<tr><td>C</td><td>2</td><td>2/6 = 0.333</td><td>log(0.333) = &minus;1.0986</td></tr>
+</table></div>
+<div class="ask"><b>Here's the key fact that resolves it:</b> softmax is <b>shift-invariant</b> &mdash; adding the <i>same</i> constant to every class's raw score changes nothing:</div>
+<div class="formula">\[
+\text{softmax}(F+c)_k=\frac{e^{F_k+c}}{\sum_j e^{F_j+c}}=\frac{e^c\cdot e^{F_k}}{e^c\cdot\sum_j e^{F_j}}=\text{softmax}(F)_k
+\]</div>
+<p style="font-size:13px;color:#cdd8de">Our derived scores are \([-1.0986,-1.0986,-1.0986]\) &mdash; add \(c=+1.0986\) to every one (a valid shift, since it's the <i>same</i> amount added to all three) and you land exactly on \([0,0,0]\), with <b>identical</b> resulting probabilities. That's the entire resolution: <b>"start at 0" is only ever correct when every class's base rate is equal</b> &mdash; it happened to be true for our clean 2-2-2 dataset, so the simplified version and the properly-derived version are the same numbers in disguise.</p>
+<div class="misconception"><b>This does not generalise to imbalanced data.</b> Sigmoid, unlike softmax, is <b>not</b> shift-invariant &mdash; \(\sigma(F+c)\ne\sigma(F)\) in general &mdash; which is exactly why the binary chapter couldn't skip the \(\log(p_0/(1-p_0))\) derivation and just default to \(F=0\). For multiclass, if the class counts were, say, \(n_A=100,n_B=50,n_C=10\), starting every class at \(F=0\) would be genuinely wrong &mdash; it would silently assume a balanced dataset that doesn't exist. The correct, general initialisation &mdash; and what real implementations use &mdash; is \(\boxed{F_k^{(0)}=\log(n_k/n)}\), which only simplifies to a shared constant (equivalent to 0 after shifting) when the classes are balanced.</div>
+</div>
+</section>
+<section class="block" id="k-trees">
+<div class="eyebrow">04 &middot; the core jump</div>
+<h2>The key idea: <u>one boosting iteration = K trees</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">In binary boosting, one iteration built <b>one</b> tree. With \(K=3\) classes, one iteration builds <b>three</b> &mdash; one dedicated tree per class, every single round:</p>
+<div class="tree-diagram">Iteration 1
+
+             Current model
+                  &#9474;
+        &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9474;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9492;
+        &darr;                 &darr;                 &darr;
+     Tree A          Tree B          Tree C
+        &#9474;                 &#9474;                 &#9474;
+        &darr;                 &darr;                 &darr;
+   correction        correction       correction
+      for A             for B            for C</div>
+<div class="complete-equation">\[
+\boxed{K=3\ \Rightarrow\ 3\text{ trees per boosting iteration}}
+\]</div>
+<div class="key">Do 3 boosting iterations with 3 classes and you've trained \(3\times3=\boxed{9}\) trees total &mdash; not 3. This single fact changes training cost, model size, and inference cost roughly \(K\)-fold versus binary classification, and it's worth internalising before any of the maths below.</div>
+</div>
+</section>
+
+<section class="block" id="onehot">
+<div class="eyebrow">05 &middot; the core jump</div>
+<h2>The target, <u>one-hot</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">A single label like "class A" needs to become something with the same shape as the model's output &mdash; 3 numbers, one per class:</p>
+<div class="tbl"><table><tr><th>True class</th><th>\(y_A\)</th><th>\(y_B\)</th><th>\(y_C\)</th></tr>
+<tr><td>A</td><td class="hl"><b>1</b></td><td>0</td><td>0</td></tr>
+<tr><td>B</td><td>0</td><td class="hl"><b>1</b></td><td>0</td></tr>
+<tr><td>C</td><td>0</td><td>0</td><td class="hl"><b>1</b></td></tr>
+</table></div>
+<div class="key">Exactly one entry is 1 (the true class), the rest are 0 &mdash; this is <b>one-hot encoding</b>, and it's what makes the loss and gradient formulas below work cleanly: comparing a full probability vector \([p_A,p_B,p_C]\) against a full target vector \([y_A,y_B,y_C]\), entry by entry.</div>
+</div>
+</section>
+<section class="block" id="loss">
+<div class="eyebrow">06 &middot; the core jump</div>
+<h2>Multiclass cross-entropy</h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">Binary log loss generalises directly &mdash; sum the same "\(-y\log p\)" penalty across all K classes:</p>
+<div class="complete-equation">\[
+\boxed{L_i=-\sum_{k=1}^{K}y_{ik}\log p_{ik}}
+\]</div>
+<p>For 3 classes, spelled out:</p>
+<div class="formula">\[
+L_i=-y_{i,A}\log p_{i,A}-y_{i,B}\log p_{i,B}-y_{i,C}\log p_{i,C}
+\]</div>
+<div class="key">Because \(y\) is one-hot, only <b>one</b> term survives per row. If the true class is A (\(y_A{=}1,y_B{=}0,y_C{=}0\)):
+<div class="formula">\[
+L_i=-\log p_{i,A}
+\]</div>
+Exactly the same shape as binary log loss &mdash; "penalise the log-probability the model assigned to the class that was actually true" &mdash; just now that probability comes from softmax over 3 scores instead of sigmoid over 1.</div>
+</div>
+</section>
+
+<section class="block" id="gradient-derive">
+<div class="eyebrow">07 &middot; the core jump</div>
+<h2>Deriving the gradient, <u>in full</u> &mdash; not just stating it</h2>
+<div class="math-derivation">
+<div class="label">Substitute softmax into the loss</div>
+<p>Start from \(L=-\sum_k y_k\log p_k\) with \(p_k=\dfrac{e^{F_k}}{\sum_j e^{F_j}}\):</p>
+<div class="complete-equation">\[
+L=-\sum_k y_k\log\left(\frac{e^{F_k}}{\sum_j e^{F_j}}\right)
+\]</div>
+<p>Use \(\log(a/b)=\log a-\log b\):</p>
+<div class="complete-equation">\[
+L=-\sum_k y_k\left(F_k-\log\sum_j e^{F_j}\right)=-\sum_k y_kF_k+\left(\sum_k y_k\right)\log\sum_j e^{F_j}
+\]</div>
+<p>Because \(y\) is one-hot, \(\sum_k y_k=1\) always &mdash; that whole factor simply disappears:</p>
+<div class="complete-equation">\[
+L=-\sum_k y_kF_k+\log\sum_j e^{F_j}
+\]</div>
+</div>
+<div class="math-derivation">
+<div class="label">Differentiate with respect to one class's raw score, \(F_k\)</div>
+<p>The first term is linear in \(F_k\): \(\dfrac{\partial}{\partial F_k}\left(-\sum_j y_jF_j\right)=-y_k\). The second term needs the chain rule:</p>
+<div class="complete-equation">\[
+\frac{\partial}{\partial F_k}\log\sum_j e^{F_j}=\frac{e^{F_k}}{\sum_j e^{F_j}}=p_k
+\]</div>
+<p>Add both pieces together:</p>
+<div class="complete-equation">\[
+g_k=\frac{\partial L}{\partial F_k}=-y_k+p_k
+\]</div>
+<div class="complete-equation">\[
+\boxed{g_{ik}=p_{ik}-y_{ik}}
+\]</div>
+</div>
+<div class="key"><b>The exact same shape as binary classification's \(g=p-y\)</b> &mdash; the only difference is there are now \(K\) of these, one per class, and \(p_k\) comes from softmax (which depends on <i>all</i> \(K\) scores) rather than sigmoid.</div>
+</section>
+<section class="block" id="gradient-interpret">
+<div class="eyebrow">08 &middot; the core jump</div>
+<h2>What the gradient means, <u>numerically</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">Take a row whose true class is A, right at initialisation (\(p=[0.333,0.333,0.333]\), \(y=[1,0,0]\)):</p>
+<div class="tbl"><table><tr><th>Class</th><th>p</th><th>y</th><th>g = p&minus;y</th></tr>
+<tr><td>A</td><td>0.333</td><td>1</td><td class="good">-0.667</td></tr>
+<tr><td>B</td><td>0.333</td><td>0</td><td class="bad">+0.333</td></tr>
+<tr><td>C</td><td>0.333</td><td>0</td><td class="bad">+0.333</td></tr>
+</table></div>
+<div class="grid2">
+<div class="card"><h3 style="color:var(--cyan)">\(g_A=-0.667<0\)</h3><p style="font-size:12.5px;color:var(--chalk-dim)">Negative gradient means the model needs to <b>increase</b> the A score &mdash; it's currently under-confident about the true class.</p></div>
+<div class="card"><h3 style="color:var(--pink)">\(g_B,g_C=+0.333>0\)</h3><p style="font-size:12.5px;color:var(--chalk-dim)">Positive gradient means the model needs to <b>decrease</b> these scores &mdash; it's currently over-confident about classes that aren't true.</p></div>
+</div>
+<div class="key">One row, one true class, but <b>three</b> separate correction signals &mdash; "push A up, push B down, push C down." All three feed into three completely separate trees this round.</div>
+</div>
+</section>
+
+<section class="block" id="hessian">
+<div class="eyebrow">09 &middot; the core jump</div>
+<h2>The Hessian &mdash; <u>every calculation shown, plus an honest nuance</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">The diagonal second derivative, used by every implementation covered in this chapter:</p>
+<div class="complete-equation">\[
+\boxed{h_k=p_k(1-p_k)}
+\]</div>
+<div class="ask"><b>Ask yourself:</b> where does this actually come from, and how do you compute it for a real number?</div>
+<p style="font-size:13px;color:#cdd8de"><b>Where it comes from:</b> it's the second derivative of the loss with respect to \(F_k\) &mdash; literally, differentiate \(g_k=p_k-y_k\) once more with respect to \(F_k\). Since \(y_k\) is a fixed constant (the label doesn't move), only \(p_k\) contributes, and \(\dfrac{\partial p_k}{\partial F_k}=p_k(1-p_k)\) is a standard property of the softmax/sigmoid shape &mdash; the same derivative you already used in the binary chapter, just relabelled per class.</p>
+<p style="font-size:13px;color:#cdd8de"><b>How to actually compute it, arithmetic spelled out:</b> take whatever \(p_k\) is for that row and class, subtract it from 1, and multiply the two numbers together. That's it &mdash; no other inputs, no \(y\) involved at all.</p>
+<div class="math-derivation">
+<div class="label">Worked at initialisation, every class, full arithmetic</div>
+<p>Every class starts at \(p_k=1/3\approx0.333\):</p>
+<div class="formula">\[
+h_A=p_A\times(1-p_A)=0.333\times(1-0.333)=0.333\times0.667=0.222
+\]</div>
+<div class="formula">\[
+h_B=p_B\times(1-p_B)=0.333\times0.667=0.222,\qquad h_C=p_C\times(1-p_C)=0.333\times0.667=0.222
+\]</div>
+<div class="key">All three come out identical here only because all three probabilities happen to be identical at initialisation. The moment the probabilities diverge (from round 2 onward), each class's \(h\) diverges too &mdash; shown next.</div>
+</div>
+<div class="tbl"><table><tr><th>Class</th><th>p</th><th>y</th><th>g=p&minus;y</th><th>h = p &times; (1&minus;p)</th></tr>
+<tr><td>A</td><td>0.333</td><td>1</td><td>-0.667</td><td>0.333 &times; 0.667 = <b>0.222</b></td></tr>
+<tr><td>B</td><td>0.333</td><td>0</td><td>0.333</td><td>0.333 &times; 0.667 = <b>0.222</b></td></tr>
+<tr><td>C</td><td>0.333</td><td>0</td><td>0.333</td><td>0.333 &times; 0.667 = <b>0.222</b></td></tr>
+</table></div>
+<div class="misconception"><b>The honest nuance:</b> the <i>true</i> multiclass Hessian is not just a single number per class &mdash; softmax couples every pair of classes, so the full second-derivative object is a \(K\times K\) matrix per row, with off-diagonal terms \(\partial^2L/\partial F_j\partial F_k=-p_jp_k\) for \(j\ne k\). Every implementation in this chapter uses the <b>diagonal approximation</b> \(h_k=p_k(1-p_k)\) &mdash; ignoring the cross-class curvature &mdash; because it lets each class's tree be built independently with the exact same \(G,H\)-based machinery you already know, at the cost of a slightly less precise second-order step. This is a deliberate, standard simplification, not an oversight.</div>
+</div>
+</section>
+<section class="block" id="tree-learns">
+<div class="eyebrow">10 &middot; the core jump</div>
+<h2>How does a tree actually <u>learn from these numbers?</u></h2>
+<div class="card">
+<div class="ask"><b>Ask yourself:</b> we now have three separate columns of \((g,h)\) per row &mdash; one per class. What do we do with them?</div>
+<p class="lead">Treat each class's column as its own separate regression target, and build its own separate regression tree &mdash; exactly the same tree-building machinery from the GBDT/XGBoost/LightGBM chapters, just run three times:</p>
+<div class="tree-diagram">                    Dataset
+                       &#9474;
+          &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9474;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9492;
+          &darr;                &darr;                &darr;
+       Class A          Class B          Class C
+       target column    target column    target column
+          &darr;                &darr;                &darr;
+       Tree A           Tree B           Tree C</div>
+<div class="misconception"><b>Correction, important:</b> "the same tree-building machinery" does <b>not</b> mean every implementation splits the same way internally. Classic GBDT never computes a Hessian \(h\) or a \(G,H\)-based Gain at all &mdash; it simply fits an ordinary CART regression tree (identical splitting rule to a plain <code>DecisionTreeRegressor</code>: minimise MSE / maximise variance reduction) to that class's pseudo-residual target. XGBoost and LightGBM are the ones that replace that plain MSE split with the \(G,H\)-weighted, regularised Gain formula. Full side-by-side, with the derivation of why they end up numerically related, is in &sect;12.</div>
+<div class="key">What genuinely stays true for every implementation: this entire tree-building process happens <b>three times</b>, once per class, on that class's own target column, every single round &mdash; only the internal splitting rule differs.</div>
+</div>
+</section>
+<section class="block" id="dataset">
+<div class="eyebrow">11 &middot; iteration 1, completely</div>
+<h2>The dataset, and <u>the full iteration-1 table</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">6 students, 3 classes, one feature (hours studied) for a clean, hand-verifiable tree:</p>
+<div class="tbl"><table><tr><th>Row</th><th>Hours (x)</th><th>Class</th></tr>
+<tr><td>1</td><td>1</td><td>A</td></tr><tr><td>2</td><td>2</td><td>A</td></tr>
+<tr><td>3</td><td>5</td><td>B</td></tr><tr><td>4</td><td>6</td><td>B</td></tr>
+<tr><td>5</td><td>9</td><td>C</td></tr><tr><td>6</td><td>10</td><td>C</td></tr>
+</table></div>
+<p style="font-size:12.5px;color:var(--chalk-dim)">Settings throughout: \(\lambda=1,\gamma=0,\eta=0.3\) &mdash; the same defaults used in every earlier chapter.</p>
+</div>
+<div class="card">
+<h3>What GBDT literally trains on: X, and each class's pseudo-residual</h3>
+<p style="font-size:13px;color:#cdd8de">Classic GBDT's own vocabulary is <b>pseudo-residual</b>, \(r=y-p\) (not \(g=p-y\)) &mdash; the negative of the gradient, same information, opposite sign, chosen so it reads like an ordinary "actual minus predicted" residual. Three separate trees, each trained as <b>X &rarr; that class's residual column</b>, nothing else:</p>
+<div class="tbl"><table><tr><th>Row</th><th>X (hours)</th><th>True</th><th>Tree A target: r<sub>A</sub>=y<sub>A</sub>&minus;p<sub>A</sub></th><th>Tree B target: r<sub>B</sub>=y<sub>B</sub>&minus;p<sub>B</sub></th><th>Tree C target: r<sub>C</sub>=y<sub>C</sub>&minus;p<sub>C</sub></th></tr>
+<tr><td>1</td><td>1</td><td>A</td><td class="good">1&minus;0.333=+0.667</td><td>0&minus;0.333=&minus;0.333</td><td>0&minus;0.333=&minus;0.333</td></tr>
+<tr><td>2</td><td>2</td><td>A</td><td class="good">+0.667</td><td>&minus;0.333</td><td>&minus;0.333</td></tr>
+<tr><td>3</td><td>5</td><td>B</td><td>&minus;0.333</td><td class="good">+0.667</td><td>&minus;0.333</td></tr>
+<tr><td>4</td><td>6</td><td>B</td><td>&minus;0.333</td><td class="good">+0.667</td><td>&minus;0.333</td></tr>
+<tr><td>5</td><td>9</td><td>C</td><td>&minus;0.333</td><td>&minus;0.333</td><td class="good">+0.667</td></tr>
+<tr><td>6</td><td>10</td><td>C</td><td>&minus;0.333</td><td>&minus;0.333</td><td class="good">+0.667</td></tr>
+</table></div>
+<div class="key">This is the exact table handed to <code>DecisionTreeRegressor.fit(X, r_A)</code>, <code>.fit(X, r_B)</code>, <code>.fit(X, r_C)</code> &mdash; three completely ordinary regression-tree fits, three completely ordinary targets, one per class. Note \(r_k=-g_k\): a row's pseudo-residual for its true class is always positive (the tree needs to raise that score), and negative for every other class (needs lowering) &mdash; same story as &sect;8, opposite sign convention.</div>
+</div>
+<div class="card">
+<h3>The (g,h) view &mdash; needed for XGBoost/LightGBM's Hessian-weighted version</h3>
+<div class="tbl"><table><tr><th>Row</th><th>x</th><th>True</th><th>g<sub>A</sub></th><th>g<sub>B</sub></th><th>g<sub>C</sub></th><th>h (all classes)</th></tr>
+<tr><td>1</td><td>1</td><td>A</td><td class="good">-0.667</td><td>0.333</td><td>0.333</td><td>0.222</td></tr>
+<tr><td>2</td><td>2</td><td>A</td><td class="good">-0.667</td><td>0.333</td><td>0.333</td><td>0.222</td></tr>
+<tr><td>3</td><td>5</td><td>B</td><td>0.333</td><td class="good">-0.667</td><td>0.333</td><td>0.222</td></tr>
+<tr><td>4</td><td>6</td><td>B</td><td>0.333</td><td class="good">-0.667</td><td>0.333</td><td>0.222</td></tr>
+<tr><td>5</td><td>9</td><td>C</td><td>0.333</td><td>0.333</td><td class="good">-0.667</td><td>0.222</td></tr>
+<tr><td>6</td><td>10</td><td>C</td><td>0.333</td><td>0.333</td><td class="good">-0.667</td><td>0.222</td></tr>
+</table></div>
+<div class="key">Three complete gradient columns, ready to become three separate trees. Notice the pattern: whichever class is <b>true</b> for a row gets the negative gradient (needs boosting up); every other class gets a positive gradient (needs pushing down).</div>
+</div>
+</section>
+<section class="block" id="splitting">
+<div class="eyebrow">12 &middot; iteration 1, completely</div>
+<h2>Splitting: <u>GBDT's plain MSE reduction vs XGBoost/LightGBM's G,H Gain</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">Multiclass doesn't force one specific tree-building method &mdash; it only forces "one tree per class." Which method that tree uses underneath is exactly the choice you already learned to make in the earlier chapters. Both versions below use the very same class-A/B/C residual/gradient columns from &sect;11 &mdash; they just process them completely differently internally.</p>
+<div class="grid2">
+<div class="card"><h3 style="color:var(--cyan)">Classic GBDT</h3><p style="font-size:12.5px;color:var(--chalk-dim)">No gradient sums, no Hessian, no regularisation anywhere. An ordinary CART regression tree, splitting purely to minimise MSE / maximise variance reduction on the pseudo-residual target \(r\) &mdash; identical rule to a plain <code>DecisionTreeRegressor</code>:</p>
+<div class="formula">\[
+\Delta\text{MSE}=\text{SSE}_{\text{parent}}-\text{SSE}_{\text{left}}-\text{SSE}_{\text{right}}
+\]</div></div>
+<div class="card"><h3 style="color:var(--pink)">XGBoost/LightGBM</h3><p style="font-size:12.5px;color:var(--chalk-dim)">Weight every row by its actual Hessian \(h_i=p_i(1-p_i)\), add L2 regularisation \(\lambda\):</p>
+<div class="formula">\[
+Gain_{\text{XGB}}=\frac12\left(\frac{G_L^2}{H_L+\lambda}+\frac{G_R^2}{H_R+\lambda}-\frac{G^2}{H+\lambda}\right)-\gamma
+\]</div>
+<p style="font-size:12px;color:var(--chalk-dim)">where \(H_L,H_R,H\) are true <b>Hessian sums</b> (&sect;9), and \(\lambda=1,\gamma=0\) throughout this chapter.</p></div>
+</div>
+<div class="misconception"><b>To correct a common mix-up directly:</b> GBDT does <b>not</b> internally compute anything called "\(G\)" or "\(H\)" or "Gain." It only ever computes MSE reduction, exactly as an ordinary regression tree would. The reason we can still <i>write</i> GBDT's splitting rule using \(G,H\)-shaped notation (below) is a mathematical coincidence worth deriving properly, not because GBDT is secretly doing a second-order calculation.</div>
+</div>
+<div class="math-derivation">
+<div class="label">Why MSE reduction happens to look like the G,H formula, with H=row count</div>
+<p>For a set of residuals with sum \(G\) and count \(n\), the sum of squared errors around the mean is:</p>
+<div class="complete-equation">\[
+\text{SSE}=\sum_i r_i^2-\frac{G^2}{n}
+\]</div>
+<p>Since \(\sum_i r_i^2\) splits additively across left and right rows (every row belongs to exactly one side), it cancels out of the <i>reduction</i>:</p>
+<div class="complete-equation">\[
+\Delta\text{MSE}=\text{SSE}_{\text{parent}}-\text{SSE}_L-\text{SSE}_R=\frac{G_L^2}{n_L}+\frac{G_R^2}{n_R}-\frac{G^2}{n}
+\]</div>
+<div class="key">This is <b>exactly</b> the shape of the XGBoost Gain formula with \(H\to n\) (plain row count instead of a Hessian sum) and \(\lambda=\gamma=0\). That's the entire relationship: ordinary variance-reduction splitting <i>can be written</i> in \(G,H\)-shaped notation for easy comparison &mdash; it is not evidence that classic GBDT computes a Hessian. We use this notation purely so the two methods can sit side by side in the same table below.</div>
+</div>
+<div class="card">
+<h3>Both versions, computed on the same iteration-1 data</h3>
+
+<div class="tbl"><table><tr><th>Class</th><th>GBDT split</th><th>GBDT Gain</th><th>XGBoost split</th><th>XGBoost Gain</th></tr>
+<tr><td class="left"><b>Tree A</b></td><td class="left">x&le;3.5</td><td>0.667</td><td class="left hl"><b>x&le;3.5</b></td><td class="hl"><b>1.086</b></td></tr>
+<tr><td class="left"><b>Tree B</b></td><td class="left">x&le;3.5</td><td>0.167</td><td class="left hl"><b>x&le;3.5</b></td><td class="hl"><b>0.272</b></td></tr>
+<tr><td class="left"><b>Tree C</b></td><td class="left">x&le;7.5</td><td>0.667</td><td class="left hl"><b>x&le;7.5</b></td><td class="hl"><b>1.086</b></td></tr>
+</table></div>
+<div class="key">On this clean, well-separated toy dataset, both methods happen to <b>agree on the winning threshold</b> for every class &mdash; the data is easy enough that Hessian-weighting doesn't change which split wins, only the Gain's numeric size. On messier real data, the two methods can genuinely disagree on the winning split, precisely because XGBoost's version down-weights rows the model is already confident about (low \(h\)) and up-weights the ones it's still uncertain on (high \(h\), near \(p{=}0.5\)) &mdash; GBDT's plain MSE version has no such notion of "confidence," every row counts equally. One thing is true for <b>both</b> methods, though: each class's split search runs completely independently, on that class's own target column &mdash; the best split for Tree A has no obligation to match Tree B's or Tree C's.</div>
+</div>
+</section>
+
+<section class="block" id="trees-differ">
+<div class="eyebrow">13 &middot; iteration 1, completely</div>
+<h2>Why the three trees <u>can look completely different</u></h2>
+<div class="card">
+<div class="tree-diagram">Tree A                     Tree B                    Tree C
+
+      x&le;3.5?                    x&le;3.5?                    x&le;7.5?
+      /    \                      /    \                      /    \
+    ...    ...                  ...    ...                  ...    ...</div>
+<p style="font-size:13px;color:#cdd8de">Each tree is answering a genuinely different question:</p>
+<div class="tbl"><table><tr><th>Tree</th><th>Question it's solving</th></tr>
+<tr><td class="left">Tree A</td><td class="left">"Where am I currently under-predicting class A?"</td></tr>
+<tr><td class="left">Tree B</td><td class="left">"Where am I currently under-predicting class B?"</td></tr>
+<tr><td class="left">Tree C</td><td class="left">"Where am I currently under-predicting class C?"</td></tr>
+</table></div>
+<div class="key">There is no requirement, anywhere in the math, that these three questions share an answer. In general, with more features and more complex data, the three trees can have completely different structures, use different features to split on, and reach different depths &mdash; they're independent regression trees that just happen to be trained in the same round, on the same rows, with different targets.</div>
+</div>
+</section>
+<section class="block" id="leaf-pred">
+<div class="eyebrow">14 &middot; iteration 1, completely</div>
+<h2>Leaf prediction, per class &mdash; <u>both versions</u></h2>
+<div class="card">
+<div class="grid2">
+<div class="card"><h3 style="color:var(--cyan)">GBDT leaf value</h3><p style="font-size:12.5px;color:var(--chalk-dim)">Just the plain mean of the pseudo-residuals \(r\) landing in that leaf &mdash; the same rule an ordinary regression tree uses at every leaf:</p>
+<div class="formula">\[
+w^*_{\text{GBDT}}=\text{mean}(r)=-\text{mean}(g)=-\frac{G}{n}
+\]</div>
+<p style="font-size:11.5px;color:var(--chalk-dim)">(\(G=\sum g\) here, in the gradient notation from &sect;7&ndash;8; since \(r=-g\), the mean of the residuals is minus the mean of the gradients)</p></div>
+<div class="card"><h3 style="color:var(--pink)">XGBoost/LightGBM leaf value</h3><p style="font-size:12.5px;color:var(--chalk-dim)">Hessian-weighted and regularised &mdash; the formula you already derived:</p>
+<div class="formula">\[
+w^*_{\text{XGB}}=-\frac{G}{H+\lambda}
+\]</div></div>
+</div>
+<div class="tbl"><table><tr><th>Class</th><th>Split</th><th>GBDT w<sub>L</sub></th><th>GBDT w<sub>R</sub></th><th>XGBoost w<sub>L</sub></th><th>XGBoost w<sub>R</sub></th></tr>
+<tr><td>A</td><td class="left">x&le;3.5</td><td class="good">+0.667</td><td class="bad">-0.333</td><td class="good">+0.923</td><td class="bad">-0.706</td></tr>
+<tr><td>B</td><td class="left">x&le;3.5</td><td class="bad">-0.333</td><td class="good">+0.167</td><td class="bad">-0.462</td><td class="good">+0.353</td></tr>
+<tr><td>C</td><td class="left">x&le;7.5</td><td class="bad">-0.333</td><td class="good">+0.667</td><td class="bad">-0.706</td><td class="good">+0.923</td></tr>
+</table></div>
+<div class="key">Same <b>direction</b> every time (both agree whether to push a class's score up or down), but different <b>magnitude</b>. XGBoost's leaf values are consistently larger here &mdash; because \(H+\lambda\) with \(H{\approx}0.44\text{-}0.89\) and \(\lambda{=}1\) is smaller than GBDT's plain row-count denominator (2 or 4), \(-G/(H+\lambda)\) ends up dividing by a smaller number than \(-G/H_{\text{rows}}\) does here. This exact relationship flips depending on the dataset &mdash; the point isn't "XGBoost is always bigger," it's that regularisation and Hessian-weighting genuinely change the leaf value, not just the split search.</div>
+<p style="font-size:12.5px;color:var(--chalk-dim)">The rest of this chapter continues with the <b>XGBoost-style</b> values (as the earlier XGBoost/LightGBM chapters did), since it's the version with explicit regularisation worth tracking round to round &mdash; but every remaining iteration table could equally be re-run with the GBDT-style formulas above.</p>
+</div>
+</section>
+
+<section class="block" id="learning-rate">
+<div class="eyebrow">15 &middot; iteration 1, completely</div>
+<h2>Applying the <u>learning rate</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">With \(\eta=0.3\), take Row 1 (\(x=1\), true class A) through all three trees:</p>
+<div class="tbl"><table><tr><th>Class</th><th>Leaf reached (x=1)</th><th>w<sup>*</sup></th><th>&eta;&middot;w<sup>*</sup></th></tr>
+<tr><td>A</td><td class="left">x&le;3.5 &rarr; left leaf</td><td>+0.923</td><td class="good">+0.277</td></tr>
+<tr><td>B</td><td class="left">x&le;3.5 &rarr; left leaf</td><td>-0.462</td><td class="bad">-0.139</td></tr>
+<tr><td>C</td><td class="left">x&le;7.5 &rarr; left leaf</td><td>-0.706</td><td class="bad">-0.212</td></tr>
+</table></div>
+<div class="key">Three separate, small, conservative corrections &mdash; one per class &mdash; all computed for the very same row, from three completely separate trees.</div>
+</div>
+</section>
+
+<section class="block" id="after-iter1">
+<div class="eyebrow">16 &middot; iteration 1, completely</div>
+<h2>Updated scores &rarr; <u>softmax again</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">Row 1 started at \(F=[0,0,0]\). After iteration 1:</p>
+<div class="complete-equation">\[
+[F_A,F_B,F_C]=[0+0.277,\ 0-0.139,\ 0-0.212]=[0.277,-0.139,-0.212]
+\]</div>
+<p>Run softmax on the new scores:</p>
+<div class="tbl"><table><tr><th>Class</th><th>F (after round 1)</th><th>p (after round 1)</th><th>p (before, round 0)</th></tr>
+<tr><td>A</td><td>0.277</td><td class="hl"><b>0.440</b></td><td>0.333</td></tr>
+<tr><td>B</td><td>-0.139</td><td>0.290</td><td>0.333</td></tr>
+<tr><td>C</td><td>-0.212</td><td>0.270</td><td>0.333</td></tr>
+</table></div>
+<div class="key">The model has genuinely moved &mdash; from total ignorance (33.3% each) toward believing Row 1 is more likely class A (44.0%), which is correct. One full boosting round, three trees, done.</div>
+</div>
+</section>
+<section class="block" id="iter2">
+<div class="eyebrow">17 &middot; iterations 2 &amp; 3</div>
+<h2>Iteration 2, <u>fully repeated</u> &mdash; not summarised</h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">Because \(F\) changed for every row, every downstream quantity changes too: <b>new \(p\) &rarr; new \(g,h\) &rarr; three brand-new trees.</b> Full table, all 6 rows, all 3 classes:</p>
+<div class="tbl"><table><tr><th>Row</th><th>x</th><th>True</th><th>p<sub>A</sub></th><th>p<sub>B</sub></th><th>p<sub>C</sub></th></tr>
+<tr><td>1</td><td>1</td><td>A</td><td>0.440</td><td>0.290</td><td>0.270</td></tr>
+<tr><td>2</td><td>2</td><td>A</td><td>0.440</td><td>0.290</td><td>0.270</td></tr>
+<tr><td>3</td><td>5</td><td>B</td><td>0.296</td><td>0.407</td><td>0.296</td></tr>
+<tr><td>4</td><td>6</td><td>B</td><td>0.296</td><td>0.407</td><td>0.296</td></tr>
+<tr><td>5</td><td>9</td><td>C</td><td>0.250</td><td>0.343</td><td>0.407</td></tr>
+<tr><td>6</td><td>10</td><td>C</td><td>0.250</td><td>0.343</td><td>0.407</td></tr>
+</table></div>
+<p style="font-size:12.5px;color:var(--chalk-dim)">New gradients follow immediately (\(g=p-y\)): e.g. Row 1 now has \(g_A=0.440-1=-0.560\) &mdash; smaller in magnitude than round 1's \(-0.667\), because the model is already partly correct.</p>
+<p><b>New Hessians, Row 1, full arithmetic</b> (\(h=p\times(1-p)\), same rule as &sect;9, just with this round's probabilities):</p>
+<div class="tbl"><table><tr><th>Class</th><th>p</th><th>h = p &times; (1&minus;p)</th></tr>
+<tr><td>A</td><td>0.440</td><td>0.440 &times; 0.560 = <b>0.246</b></td></tr>
+<tr><td>B</td><td>0.290</td><td>0.290 &times; 0.710 = <b>0.206</b></td></tr>
+<tr><td>C</td><td>0.270</td><td>0.270 &times; 0.730 = <b>0.197</b></td></tr>
+</table></div>
+<div class="key">Notice the three \(h\) values are <b>no longer identical</b> (unlike round 1) &mdash; because the three probabilities have spread apart. Class A, now the model's most confident guess (\(p{=}0.440\), closest to certainty of the three), has the smallest curvature contribution isn't automatic here, but in general: as any \(p_k\) moves away from 0.5 toward 0 or 1, \(h_k=p_k(1-p_k)\) shrinks &mdash; the model trusts that class's current score more, so a further correction there matters less to the curvature.</div>
+</div>
+<div class="card">
+<h3>Three new trees, both versions</h3>
+<div class="tbl"><table><tr><th>Class</th><th>GBDT split</th><th>GBDT Gain</th><th>XGBoost split</th><th>XGBoost Gain</th><th>XGBoost w<sub>L</sub>, w<sub>R</sub></th></tr>
+<tr><td>A</td><td class="left">x&le;3.5</td><td>0.463</td><td class="left hl"><b>x&le;3.5</b></td><td class="hl"><b>0.753</b></td><td>+0.751, -0.610</td></tr>
+<tr><td>B</td><td class="left">x&le;7.5</td><td>0.163</td><td class="left hl"><b>x&le;7.5</b></td><td class="hl"><b>0.257</b></td><td>+0.319, -0.473</td></tr>
+<tr><td>C</td><td class="left">x&le;7.5</td><td>0.512</td><td class="left hl"><b>x&le;7.5</b></td><td class="hl"><b>0.828</b></td><td>-0.625, +0.800</td></tr>
+</table></div>
+<p style="font-size:12.5px;color:var(--chalk-dim)">Notice Tree B's split moved from \(x\le3.5\) (round 1) to \(x\le7.5\) (round 2) in <b>both</b> versions &mdash; a completely new tree, refit from scratch on this round's gradients, with no obligation to repeat last round's structure.</p>
+<div class="key">Continuing with XGBoost-style values: after applying \(\eta=0.3\), Row 1's scores become \([0.502,-0.043,-0.399]\), giving updated probabilities \([0.504,0.292,0.204]\) &mdash; class A's probability keeps climbing, round over round.</div>
+</div>
+</section>
+
+<section class="block" id="iter3">
+<div class="eyebrow">18 &middot; iterations 2 &amp; 3</div>
+<h2>Iteration 3, <u>fully repeated</u></h2>
+<div class="card">
+<p class="lead" style="margin-top:0;">Same loop, third time. New probabilities for Row 1: \([0.504,0.292,0.204]\); new gradients follow (\(g_A=0.504-1=-0.496\), smaller again).</p>
+<p><b>New Hessians, Row 1:</b> \(h_A=0.504\times0.496=0.250\); \(h_B=0.292\times0.708=0.207\); \(h_C=0.204\times0.796=0.163\) &mdash; each simply \(p\times(1-p)\) again, on this round's fresh probabilities.</p>
+<div class="tbl"><table><tr><th>Class</th><th>GBDT split</th><th>GBDT Gain</th><th>XGBoost split</th><th>XGBoost Gain</th><th>XGBoost w<sub>L</sub>, w<sub>R</sub></th></tr>
+<tr><td>A</td><td class="left">x&le;3.5</td><td>0.355</td><td class="left hl"><b>x&le;3.5</b></td><td class="hl"><b>0.581</b></td><td>+0.662, -0.544</td></tr>
+<tr><td>B</td><td class="left">x&le;3.5</td><td>0.111</td><td class="left hl"><b>x&le;3.5</b></td><td class="hl"><b>0.174</b></td><td>-0.413, +0.243</td></tr>
+<tr><td>C</td><td class="left">x&le;7.5</td><td>0.352</td><td class="left hl"><b>x&le;7.5</b></td><td class="hl"><b>0.578</b></td><td>-0.544, +0.659</td></tr>
+</table></div>
+<p>After applying \(\eta=0.3\) to the XGBoost-style leaves, Row 1's final scores after 3 full rounds (9 trees total): \([0.701,-0.167,-0.563]\).</p>
+<div class="tbl"><table><tr><th>Round</th><th>p<sub>A</sub> (row 1, true class A)</th><th>Avg. cross-entropy loss (all 6 rows)</th></tr>
+<tr><td>0 (init)</td><td>0.333</td><td>1.099 <span class="mini">(\(=\ln 3\))</span></td></tr>
+<tr><td>1</td><td>0.440</td><td>0.873</td></tr>
+<tr><td>2</td><td>0.504</td><td>0.703</td></tr>
+<tr class="hl"><td><b>3</b></td><td class="hl"><b>0.587</b></td><td class="hl"><b>0.579</b></td></tr>
+</table></div>
+<div class="key">Row 1's belief in the correct class climbs steadily: 33.3% &rarr; 44.0% &rarr; 50.4% &rarr; 58.7%. Average loss falls every round: 1.099 &rarr; 0.873 &rarr; 0.703 &rarr; 0.579. Nine trees total, and the pattern from &sect;4 holds exactly: 3 classes &times; 3 rounds = 9 trees. GBDT-style Gains are consistently smaller in magnitude across all three rounds (no Hessian weighting, no regularisation denominator) but select the identical winning splits every single round on this dataset &mdash; the same relationship observed back in &sect;12.</div>
+</div>
+</section>
+<section class="block" id="algorithm">
+<div class="eyebrow">19 &middot; iterations 2 &amp; 3</div>
+<h2>The complete algorithm</h2>
+<div class="card">
+<div class="step"><div class="num">1</div><div class="body"><b>Initialise:</b> \(F_{ik}^{(0)}=0\) for every row \(i\), every class \(k\) (or an implementation's chosen prior).</div></div>
+<div class="step"><div class="num">2</div><div class="body"><b>Softmax:</b> \(p_{ik}=\dfrac{e^{F_{ik}}}{\sum_j e^{F_{ij}}}\).</div></div>
+<div class="step"><div class="num">3</div><div class="body"><b>Gradients &amp; Hessians, per class:</b> \(g_{ik}=p_{ik}-y_{ik}\), \(h_{ik}=p_{ik}(1-p_{ik})\) (diagonal approximation, &sect;9).</div></div>
+<div class="step"><div class="num">4</div><div class="body"><b>For every class \(k\) separately:</b> build a regression tree on that class's \((g,h)\) column &mdash; the exact histogram/leaf-wise/Gain machinery from earlier chapters, unmodified.</div></div>
+<div class="step"><div class="num">5</div><div class="body"><b>Leaf values:</b> \(w_j^*=-G_j/(H_j+\lambda)\), per class, per leaf.</div></div>
+<div class="step"><div class="num">6</div><div class="body"><b>Update every class's raw score:</b>
+<div class="formula">\[
+F_{ik}^{(t)}=F_{ik}^{(t-1)}+\eta\, f_{k,t}(x_i),\qquad k\in\{A,B,C\}
+\]</div>
+</div></div>
+<div class="step"><div class="num">7</div><div class="body"><b>Repeat</b> from step 2, \(K\) trees at a time, until \(n\_estimators\) or early stopping.</div></div>
+</div>
+</section>
+
+<section class="block" id="coupling">
+<div class="eyebrow">20 &middot; the subtlety</div>
+<h2>Are the K trees independent? <u>No.</u></h2>
+<div class="card">
+<div class="ask"><b>Ask yourself:</b> Tree A, Tree B, and Tree C are trained separately, on separate gradient columns. Does that make them independent models?</div>
+<p class="lead"><b>No</b> &mdash; they're coupled through the one thing they all share: softmax's denominator.</p>
+<div class="formula">\[
+p_A=\frac{e^{F_A}}{e^{F_A}+e^{F_B}+e^{F_C}}
+\]</div>
+<div class="key">Changing \(F_B\) alone changes \(p_A\) &mdash; even though nothing about class A's raw score moved. Every class's probability depends on every class's raw score, all at once.</div>
+<div class="tree-diagram">Tree A changes F_A
+          &darr;
+        softmax
+          &darr;
+ALL class probabilities change (A, B, AND C)
+          &darr;
+gradients for ALL classes change, next round</div>
+<div class="misconception">This is why you cannot train the 3 trees in true isolation and expect the same result as joint boosting: Tree B's correction this round genuinely reshapes what Tree A's gradients will look like <b>next</b> round, purely through the shared softmax normalisation &mdash; even though Tree B never touches \(F_A\) directly.</div>
+</div>
+</section>
+<section class="block" id="test-time">
+<div class="eyebrow">21 &middot; test time</div>
+<h2>From raw scores to a class, <u>at inference</u></h2>
+<div class="card">
+<div class="tree-diagram">             Input x
+                &#9474;
+      &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9474;&#9472;&#9472;&#9472;&#9472;&#9472;&#9492;
+      &darr;         &darr;         &darr;
+ All A trees  All B trees  All C trees
+      &#9474;         &#9474;         &#9474;
+      &darr;         &darr;         &darr;
+   sum A       sum B       sum C
+      &#9474;         &#9474;         &#9474;
+      &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9500;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;
+                &darr;
+          Raw scores
+       [F_A, F_B, F_C]
+                &darr;
+             Softmax
+                &darr;
+       [p_A, p_B, p_C]
+                &darr;
+          argmax(p)
+                &darr;
+             Class</div>
+<div class="key">At prediction time, a row runs through <b>every tree ever trained for every class</b> &mdash; sum all of Class A's tree outputs into \(F_A\), all of Class B's into \(F_B\), all of Class C's into \(F_C\), then one final softmax, then pick the largest probability.</div>
+</div>
+<div class="card">
+<h3>Numeric example &mdash; Row 1, after all 3 training rounds</h3>
+<p style="font-size:13px;color:#cdd8de">Final raw scores from &sect;18: \(F=[0.701,-0.167,-0.563]\).</p>
+<div class="tbl"><table><tr><th>Class</th><th>F</th><th>e<sup>F</sup></th><th>p = e<sup>F</sup>/&sum;</th></tr>
+<tr><td>A</td><td>0.701</td><td>2.015</td><td class="hl"><b>0.587</b></td></tr>
+<tr><td>B</td><td>-0.167</td><td>0.846</td><td>0.247</td></tr>
+<tr><td>C</td><td>-0.563</td><td>0.570</td><td>0.166</td></tr>
+</table></div>
+<p style="font-size:12.5px;color:var(--chalk-dim)">Sum of \(e^F\) values: \(2.015+0.846+0.570=3.431\).</p>
+<div class="complete-equation">\[
+\boxed{\hat y=\arg\max_k p_k = A}
+\]</div>
+<div class="key">Correct &mdash; Row 1's true class was A, and after just 3 boosting rounds (9 trees) the model assigns it 58.7% probability, clearly the largest of the three.</div>
+</div>
+</section>
+
+<section class="block" id="big-picture">
+<div class="eyebrow">22 &middot; test time</div>
+<h2>The complete pipeline, <u>one picture</u></h2>
+<div class="card">
+<div class="tree-diagram">                    INPUT
+                      &#9474;
+                      &#9660;
+             &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+             &#9474; Boosting Round 1 &#9474;
+             &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;
+                 &#9474;    &#9474;    &#9474;
+                 &#9660;    &#9660;    &#9660;
+                A&#8321;   B&#8321;   C&#8321;
+                 &#9474;    &#9474;    &#9474;
+                 &#9492;&#9472;&#9472;&#9472;&#9472;&#9500;&#9472;&#9472;&#9472;&#9472;&#9496;
+                      &#9660;
+                 Update F
+                      &#9474;
+                      &#9660;
+                   Softmax
+                      &#9474;
+                      &#9660;
+                New probabilities
+                      &#9474;
+                      &#9660;
+             &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+             &#9474; Boosting Round 2 &#9474;
+             &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;
+                 &#9474;    &#9474;    &#9474;
+                 &#9660;    &#9660;    &#9660;
+                A&#8322;   B&#8322;   C&#8322;
+                 &#9474;    &#9474;    &#9474;
+                 &#9492;&#9472;&#9472;&#9472;&#9472;&#9500;&#9472;&#9472;&#9472;&#9472;&#9496;
+                      &#9660;
+                 Update F
+                      &#9474;
+                     &#8942;
+                 (round 3, ...)</div>
+</div>
+</section>
+<section class="block" id="compare">
+<div class="eyebrow">23 &middot; wrap-up</div>
+<h2>GBDT vs XGBoost vs LightGBM, <u>for multiclass</u></h2>
+<div class="card">
+<div class="tbl"><table>
+<tr><th></th><th>GBDT</th><th>XGBoost</th><th>LightGBM</th></tr>
+<tr><td class="left">Multiclass concept</td><td class="left">class-specific trees</td><td class="left">class-specific trees</td><td class="left">class-specific trees</td></tr>
+<tr><td class="left">Scores per row</td><td class="left">K scores</td><td class="left">K scores</td><td class="left">K scores</td></tr>
+<tr><td class="left">Probability</td><td class="left">softmax</td><td class="left">softmax</td><td class="left">softmax</td></tr>
+<tr><td class="left">Gradient</td><td class="left">class-specific, \(p_k-y_k\)</td><td class="left">class-specific, \(p_k-y_k\)</td><td class="left">class-specific, \(p_k-y_k\)</td></tr>
+<tr><td class="left">Hessian</td><td class="left">objective-specific</td><td class="left">diagonal 2nd-order</td><td class="left">diagonal 2nd-order</td></tr>
+<tr><td class="left">Tree growth per class</td><td class="left">implementation-dependent</td><td class="left">level-wise</td><td class="left">leaf-wise</td></tr>
+<tr><td class="left">Split optimisation</td><td class="left">loss-specific</td><td class="left">\(G,H\)-based Gain</td><td class="left">\(G,H\)-based Gain + histogram + GOSS + EFB</td></tr>
+<tr><td class="left">Trees per round (K=3)</td><td class="left">3</td><td class="left">3</td><td class="left">3</td></tr>
+</table></div>
+<div class="key">The multiclass <b>conceptual structure</b> &mdash; K scores, softmax, K trees per round, gradients \(p_k-y_k\) &mdash; is identical across all three libraries. What differs is exactly what you'd expect from the earlier chapters: how each class's individual tree is built (level-wise vs leaf-wise, exact vs histogram, GOSS/EFB or not).</div>
+</div>
+</section>
+
+<section class="block" id="distinction">
+<div class="eyebrow">24 &middot; wrap-up</div>
+<h2>K trees, <u>not one tree with K leaf values</u></h2>
+<div class="card">
+<div class="misconception"><b>A trap worth naming explicitly:</b> it's tempting to imagine multiclass boosting as "one tree, whose every leaf just happens to store 3 numbers instead of 1." That's a valid abstract mathematical picture in some research formulations &mdash; but it is <b>not</b> the practical mechanism used by the GBDT/XGBoost/LightGBM implementations in this chapter.</div>
+<p class="lead">The actual, practical picture, confirmed by every worked example above:</p>
+<div class="complete-equation">\[
+\boxed{K\text{ separate class-specific trees, every single boosting round}}
+\]</div>
+<div class="tree-diagram">Round 1 &rarr; Tree A + Tree B + Tree C
+Round 2 &rarr; Tree A + Tree B + Tree C
+Round 3 &rarr; Tree A + Tree B + Tree C</div>
+<div class="complete-equation">\[
+\boxed{3\text{ rounds}\times3\text{ classes}=9\text{ trees total}}
+\]</div>
+<div class="key">Each of those 9 trees has its own splits, its own leaves, its own leaf values &mdash; entirely separate structures, coupled only through the shared softmax at prediction and gradient-computation time (&sect;20). This directly explains why multiclass models are roughly \(K\) times larger and \(K\) times slower to train and to predict with, compared to an otherwise-identical binary model.</div>
+</div>
+</section>
+<section class="block" id="mental-model">
+<div class="eyebrow">25 &middot; wrap-up</div>
+<h2>Binary vs multiclass, <u>side by side</u></h2>
+<div class="card">
+<div class="grid2">
+<div class="card"><h3 style="color:var(--cyan)">Binary classification</h3>
+<div class="tree-diagram">one observation
+      &darr;
+one raw score
+      &darr;
+one probability
+      &darr;
+one tree correction</div></div>
+<div class="card"><h3 style="color:var(--pink)">Multiclass, K=3</h3>
+<div class="tree-diagram">one observation
+      &darr;
+&#9484;&#9472; F_A  F_B  F_C &#9472;&#9488;
+      &darr;
+    Softmax
+      &darr;
+&#9484;&#9472; p_A  p_B  p_C &#9472;&#9488;
+      &darr;
+&#9484;&#9472; g_A  g_B  g_C &#9472;&#9488;
+      &darr;
+&#9484;&#9500;&#9472; Tree A &#9500;&#9472; Tree B &#9500;&#9472; Tree C &#9472;&#9488;
+      &darr;
+Update three raw scores
+      &darr;
+Softmax again, repeat</div></div>
+</div>
+<div class="quote">In multiclass gradient boosting, the model maintains one raw score per class. At every boosting iteration, it builds one class-specific tree per class to correct those scores; softmax converts the updated scores into probabilities, and the class with the largest final probability is the prediction.</div>
+</div>
+</section>
+
+<section class="block" id="checklist">
+<div class="eyebrow">26 &middot; mastery checklist</div>
+<h2>Questions I must be able to <u>answer</u></h2>
+<div class="grid2">
+<div class="card"><h3>Fundamentals</h3><ul style="font-size:12.5px;color:#cdd8de;line-height:1.9;">
+<li>Why does one raw score become K raw scores?</li>
+<li>What does softmax compute, and how does it reduce to sigmoid at K=2?</li>
+<li>Why is the initial prediction \([1/K,\dots,1/K]\), and why is that the honest starting point?</li>
+</ul></div>
+<div class="card"><h3>The core jump</h3><ul style="font-size:12.5px;color:#cdd8de;line-height:1.9;">
+<li>Why does one boosting iteration require K trees, not one?</li>
+<li>Derive \(g_k=p_k-y_k\) from the softmax + cross-entropy loss, step by step.</li>
+<li>What's the diagonal-Hessian approximation, and what does it deliberately ignore?</li>
+</ul></div>
+<div class="card"><h3>Tree building</h3><ul style="font-size:12.5px;color:#cdd8de;line-height:1.9;">
+<li>Why can the best split for class A's tree differ completely from class B's?</li>
+<li>Why can two class-specific trees, in the same round, end up with different structures?</li>
+</ul></div>
+<div class="card"><h3>The subtlety</h3><ul style="font-size:12.5px;color:#cdd8de;line-height:1.9;">
+<li>Are the K trees trained independently? Why or why not?</li>
+<li>How does changing \(F_B\) affect \(p_A\), even though Tree B never touches \(F_A\)?</li>
+</ul></div>
+<div class="card"><h3>Practical</h3><ul style="font-size:12.5px;color:#cdd8de;line-height:1.9;">
+<li>How many total trees does a 3-class, 100-round model contain?</li>
+<li>How does prediction combine all K classes' trees into a final class?</li>
+<li>Why is "one tree with K leaf values" a tempting but practically inaccurate mental model?</li>
+</ul></div>
+</div>
+<div class="callout"><b>The full chain, one line:</b> K raw scores &rarr; softmax &rarr; K probabilities &rarr; cross-entropy loss &rarr; K gradients (\(p_k-y_k\)) &rarr; K Hessians (diagonal approx.) &rarr; K separate regression trees, same Gain/leaf-weight machinery as binary &rarr; K updates via &eta; &rarr; softmax again &rarr; repeat. Everything downstream of "K of everything" is exactly what you already know.</div>
+</section>
+
+</main></div></div><script>document.querySelectorAll("nav a").forEach(a=>a.addEventListener("click",()=>{document.querySelectorAll("nav a").forEach(x=>x.style.background="");a.style.background="#ffffff08";}));window.addEventListener("load",()=>{if(window.MathJax&&window.MathJax.typesetPromise)window.MathJax.typesetPromise();});</script></body></html>

@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Naive Bayes — Very Naive</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Patrick+Hand&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --board:#0c1014; --card:#151b21; --card-line:#222b32;
+    --chalk:#e9eef2; --chalk-dim:#9fb0bb;
+    --cyan:#5fd8e0; --cyan-dim:#2c5a5e;
+    --pink:#f17fb0; --pink-dim:#5a2f42;
+    --yellow:#f4cf5e; --green:#8fe3a6; --green-dim:#2f4f3a;
+    --purple:#b39ddb; --purple-dim:#4a3f6b;
+    --white-marker:#f5f5f0; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{ background:var(--board); color:var(--chalk); font-family:'Inter',sans-serif; line-height:1.55; -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width:1180px; margin:0 auto; padding:0 24px 120px; }
+  h1,h2,h3,.hand{ font-family:'Caveat',cursive; font-weight:700; }
+  .hero{ padding:56px 0 30px; text-align:center; }
+  .chip{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--cyan); border:1px solid var(--cyan-dim); background:rgba(95,216,224,0.06); padding:6px 14px; border-radius:999px; margin-bottom:16px; }
+  .hero h1{ font-size:clamp(28px,5.5vw,50px); color:var(--white-marker); margin:0 0 8px; }
+  .hero h1 span{color:var(--pink);}
+  .hero p{ font-family:'Patrick Hand',cursive; color:var(--chalk-dim); font-size:17px; max-width:780px; margin:0 auto; }
+  .layout{ display:grid; grid-template-columns:260px 1fr; gap:36px; align-items:start; }
+  nav.toc{ position:sticky; top:24px; background:var(--card); border:1px solid var(--card-line); border-radius:var(--radius); padding:18px 16px; font-family:'JetBrains Mono',monospace; font-size:11px; max-height:calc(100vh - 48px); overflow-y:auto; }
+  nav.toc .toc-title{ color:var(--chalk-dim); text-transform:uppercase; letter-spacing:1.2px; font-size:10px; margin-bottom:8px; margin-top:14px; }
+  nav.toc .toc-title:first-child{margin-top:0;}
+  nav.toc a{ display:block; color:var(--chalk-dim); text-decoration:none; padding:5px 8px; border-radius:8px; margin-bottom:1px; }
+  nav.toc a:hover{color:var(--chalk); background:rgba(255,255,255,0.04);}
+  main{min-width:0;}
+  section.block{ margin-bottom:50px; scroll-margin-top:24px; }
+  .section-eyebrow{ font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--pink); margin-bottom:6px; }
+  section.block h2{ font-size:30px; color:var(--white-marker); margin:0 0 12px; }
+  section.block h2 .underline{ text-decoration:underline; text-decoration-color:var(--cyan); text-decoration-thickness:3px; }
+  p.lead{ font-size:14.5px; color:#cdd8de; max-width:820px; }
+  .card{ background:var(--card); border:1px solid var(--card-line); border-radius:var(--radius); padding:20px 22px; margin:14px 0; }
+  .card h3{ font-family:'Inter',sans-serif; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.7px; color:var(--cyan); margin:0 0 10px; }
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  .grid-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;}
+  @media (max-width:900px){ .layout{grid-template-columns:1fr;} nav.toc{position:relative; top:0; margin-bottom:20px; max-height:none;} .grid-2,.grid-3{grid-template-columns:1fr;} }
+  table.data-table{ width:100%; border-collapse:collapse; font-family:'JetBrains Mono',monospace; font-size:12px; }
+  table.data-table th{ text-align:left; color:var(--chalk-dim); font-weight:500; padding:6px 9px; border-bottom:1px solid var(--card-line); text-transform:uppercase; font-size:9.5px; letter-spacing:0.4px; }
+  table.data-table td{ padding:6px 9px; border-bottom:1px solid rgba(255,255,255,0.04); }
+  table.data-table td.hl{color:var(--yellow); font-weight:700;}
+  table.data-table td.zero{color:var(--pink); font-weight:700; background:rgba(241,127,176,0.08);}
+  table.data-table td.good{color:var(--green); font-weight:700; background:rgba(143,227,166,0.08);}
+  table.data-table td.left{text-align:left;}
+  blockquote.story{ font-family:'Patrick Hand',cursive; font-size:16.5px; color:#dbe6ec; border-left:3px solid var(--yellow); padding:6px 18px; margin:14px 0; background:rgba(244,207,94,0.04); border-radius:0 10px 10px 0; }
+  .pipeline{ display:flex; align-items:center; gap:0; overflow-x:auto; padding:10px 0 18px; }
+  .pipe-step{ flex:0 0 auto; min-width:115px; background:var(--card); border:1px solid var(--card-line); border-radius:12px; padding:12px 14px; text-align:center; }
+  .pipe-step .n{ font-family:'JetBrains Mono',monospace; color:var(--cyan); font-size:10.5px; margin-bottom:5px; }
+  .pipe-step .t{font-weight:700; font-size:12px; color:var(--white-marker);}
+  .pipe-step .d{font-size:9.5px; color:var(--chalk-dim); margin-top:3px;}
+  .pipe-arrow{ flex:0 0 auto; width:20px; text-align:center; color:var(--pink); font-size:16px; }
+  .formula{ font-family:'JetBrains Mono',monospace; background:#0a0d10; border:1px solid var(--card-line); border-radius:10px; padding:14px 20px; margin:12px 0; font-size:14px; color:var(--white-marker); overflow-x:auto; }
+  .formula.center{text-align:center;}
+  .formula .k{color:var(--yellow);} .formula .r{color:var(--cyan);} .formula .l{color:var(--pink);}
+  .formula-note{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--chalk-dim); margin-top:6px; }
+  .callout{ background:rgba(143,227,166,0.08); border:1px solid var(--green-dim); border-radius:10px; padding:12px 16px; color:var(--green); font-size:13px; font-family:'JetBrains Mono',monospace; margin:12px 0; line-height:1.6; }
+  .callout.warn{ background:rgba(244,207,94,0.08); border-color:#5a4f2f; color:var(--yellow); }
+  .callout.bad{ background:rgba(241,127,176,0.08); border-color:var(--pink-dim); color:var(--pink); }
+  .callout.info{ background:rgba(95,216,224,0.08); border-color:var(--cyan-dim); color:var(--cyan); }
+  .callout.purple{ background:rgba(179,157,219,0.08); border-color:var(--purple-dim); color:var(--purple); }
+  .ask{ background:rgba(179,157,219,0.06); border-left:3px solid var(--purple); border-radius:0 10px 10px 0; padding:10px 16px; color:#d8d0ea; font-size:13px; margin:12px 0; font-family:'Inter',sans-serif; }
+  .ask b{color:var(--purple);}
+  .misconception{ background:rgba(241,127,176,0.06); border-left:3px solid var(--pink); border-radius:0 10px 10px 0; padding:10px 16px; color:#f0d6e0; font-size:13px; margin:12px 0; font-family:'Inter',sans-serif; }
+  .misconception b{color:var(--pink);}
+  .key-box{ background:rgba(143,227,166,0.06); border-left:3px solid var(--green); border-radius:0 10px 10px 0; padding:10px 16px; color:#d3ecdc; font-size:13px; margin:12px 0; font-family:'Inter',sans-serif; }
+  .key-box b{color:var(--green);}
+  table.data-table td.mono{font-family:'JetBrains Mono',monospace;}
+  p.note{font-size:12px; color:var(--chalk-dim); font-style:italic;}
+  .step-card{ background:rgba(0,0,0,0.22); border-radius:10px; padding:14px 18px; margin:10px 0; border:1px solid var(--card-line); }
+  .step-tag{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--board); background:var(--cyan); padding:2px 8px; border-radius:6px; margin-right:8px; font-weight:700; }
+  .step-tag.p{background:var(--purple);}
+  .step-tag.y{background:var(--yellow);}
+  .step-tag.g{background:var(--green);}
+  .analogy-row{ display:flex; gap:14px; margin-top:12px; flex-wrap:wrap; }
+  .analogy{ flex:1; min-width:150px; background:var(--card); border:1px solid var(--card-line); border-radius:10px; padding:14px 16px; text-align:center; }
+  .analogy h4{font-size:14px; margin:6px 0 4px; color:var(--white-marker);}
+  .analogy p{font-size:11.5px; color:var(--chalk-dim); margin:0;}
+  .svg-card{ background:#fff; border:1px solid var(--card-line); border-radius:12px; padding:12px; }
+  .svg-caption{ text-align:center; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:#555; margin-top:8px; }
+  .footnote-strip{ margin-top:60px; border-top:1px dashed var(--card-line); padding-top:22px; text-align:center; color:var(--chalk-dim); font-family:'JetBrains Mono',monospace; font-size:12px; }
+  .footnote-strip .hand{color:var(--cyan); font-size:22px; display:block; margin-bottom:6px;}
+  .cm-table{ border-collapse:collapse; margin:14px auto; font-family:'JetBrains Mono',monospace; font-size:12.5px; }
+  .cm-table td, .cm-table th{ border:1px solid var(--card-line); padding:12px 18px; text-align:center; }
+  .cm-table .tp,.cm-table .tn{background:rgba(143,227,166,0.15); color:var(--green); font-weight:700;}
+  .cm-table .fp,.cm-table .fn{background:rgba(241,127,176,0.15); color:var(--pink); font-weight:700;}
+  .cm-table .lbl{background:#0a0d10; color:var(--chalk-dim); font-weight:700; font-size:10.5px;}
+  .num-hl{ color:var(--yellow); font-weight:700; }
+  .num-cool{ color:var(--cyan); font-weight:700; }
+  pre.code-block{ font-family:'JetBrains Mono',monospace; font-size:12.5px; line-height:1.55; background:#0a0d10; border:1px solid var(--card-line); border-radius:10px; padding:16px 18px; margin:12px 0; overflow-x:auto; color:#d8e2e8; white-space:pre; }
+  pre.code-block .kw{color:var(--pink);} pre.code-block .fn{color:var(--cyan);} pre.code-block .cm{color:var(--chalk-dim); font-style:italic;} pre.code-block .st{color:var(--yellow);}
+  details.opt{ background:rgba(179,157,219,0.05); border:1px solid var(--purple-dim); border-radius:12px; margin:16px 0; padding:4px 18px; }
+  details.opt summary{ cursor:pointer; padding:12px 0; font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:0.5px; color:var(--purple); font-weight:700; text-transform:uppercase; }
+  details.opt[open] summary{color:var(--yellow);}
+  details.opt .inner{padding:2px 0 16px;}
+  .badge-impl{display:inline-block; background:rgba(244,207,94,0.1); border:1px solid #5a4f2f; color:var(--yellow); font-family:'JetBrains Mono',monospace; font-size:10px; padding:2px 9px; border-radius:6px; margin-left:6px;}
+  .svg-card svg text{font-family:monospace;}
+  .sum-wrap{ display:inline-block; position:relative; padding:10px 28px 20px 18px; vertical-align:middle; }
+  .sum-wrap .sigma{ font-size:26px; line-height:1; vertical-align:middle; }
+  .sum-wrap .sup{ position:absolute; top:2px; left:26px; font-size:11px; color:var(--cyan); }
+  .sum-wrap .sub{ position:absolute; bottom:0px; left:14px; font-size:11px; color:var(--cyan); white-space:nowrap; }
+</style><body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="chip">14-08-2026 &middot; Module: Supervised Learning &middot; Class 18</div>
+    <h1>Naive <span>Bayes</span></h1>
+    <div class="chip" style="background:none; border-color:var(--pink-dim); color:var(--pink); margin-top:0;">...yes, very naive.</div>
+  </div>
+
+  <div class="layout">
+    <nav class="toc" id="toc">
+      <div class="toc-title">Introduction</div>
+      <a href="#intro">Spam or Ham — the setup</a>
+      <a href="#input">What is the input?</a>
+      <div class="toc-title">Cleaning Text</div>
+      <a href="#tokenize">Step 1 — Tokenization</a>
+      <a href="#case">Step 2 — Upper case or lower case?</a>
+      <a href="#stopwords">Step 3 — Stopword removal</a>
+      <a href="#dataset">Our 10-email dataset, cleaned end to end</a>
+      <div class="toc-title">The Goal</div>
+      <a href="#goal">What are we actually predicting?</a>
+      <div class="toc-title">Bayes Theorem</div>
+      <a href="#cricket">India vs Virat — a table to build intuition</a>
+      <a href="#bayes-derive">Deriving Bayes theorem</a>
+      <a href="#bayes-meaning">What Bayes theorem actually means</a>
+      <div class="toc-title">Applying Bayes to Email</div>
+      <a href="#apply-bayes">P(y=1|email) and P(y=0|email)</a>
+      <a href="#drop-denom">Why we can drop the denominator</a>
+      <a href="#priors">Finding P(y=1) and P(y=0)</a>
+      <a href="#text-representation">What is "text", and how do we store it?</a>
+      <div class="toc-title">The Naive Assumption</div>
+      <a href="#naive-assumption">Conditional independence, with easy examples</a>
+      <a href="#compute-likelihood">Computing P(text|y=1) and P(text|y=0)</a>
+      <div class="toc-title">Training vs Test</div>
+      <a href="#training-recap">What exactly was "training," end to end?</a>
+      <a href="#test-time">Moving to test data</a>
+      <a href="#zero-problem">The Zero Problem</a>
+      <div class="toc-title">Laplace Smoothing</div>
+      <a href="#laplace">The formula, and why it makes sense</a>
+      <a href="#bias-variance">Bias-variance via alpha</a>
+      <a href="#recompute">Recomputing our prediction, smoothed</a>
+      <a href="#normalize">Sum &ne; 1 — normalizing to get the answer</a>
+      <div class="toc-title">Is This Regression?</div>
+      <a href="#not-regression">Why Naive Bayes is not regression</a>
+      <div class="toc-title">Other Feature Types</div>
+      <a href="#categorical">Categorical features</a>
+      <a href="#bernoulli-multinomial">Bernoulli vs Multinomial NB</a>
+      <a href="#gaussian">Numerical features → Gaussian NB</a>
+      <div class="toc-title">Wrap-up</div>
+      <a href="#summary">Summary &amp; cheat sheet</a>
+    </nav>
+
+    <main>
+      <section class="block" id="intro">
+        <div class="section-eyebrow">Introduction</div>
+        <h2>Spam or <span class="underline">Ham?</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Imagine you're a Data Scientist at Google, building the spam filter for Gmail. Every day, millions of emails arrive, and each one needs a decision: is this <b>spam</b> or <b>ham</b> (not spam)?</p>
+          <div class="grid-2">
+            <div class="card"><h3>Mail 1</h3><p style="font-size:13.5px;">"Congratulations! You have WON a FREE lottery prize, click now!!!"</p></div>
+            <div class="card"><h3>Mail 2</h3><p style="font-size:13.5px;">"Please review the project report before our meeting."</p></div>
+          </div>
+          <div class="callout info">Obviously, Mail 1 is spam. <b>Ask yourself: how did you know that, instantly, without thinking hard?</b> Certain words — "FREE," "WON," "click now" — are strong spam signals. A classifier that simply learns which words tend to appear in spam vs ham should already do a reasonable job.</div>
+          <div class="callout warn">Today's algorithm builds exactly that idea into real math — and it's called Naive Bayes. The name is a warning label built right in: it makes one deliberately <b>naive</b> (oversimplified) assumption to make the math tractable. We'll see exactly what that assumption is, and why it works anyway.</div>
+        </div>
+      </section>
+
+      <section class="block" id="input">
+        <h2>What Will Be the <span class="underline">Input?</span></h2>
+        <div class="card">
+          <div class="ask">Ask yourself: to classify an email as spam or ham, what does the model actually receive as input?</div>
+          <p class="lead">The input is <b>text</b> — the raw body of the email. Not a number, not a category from a fixed list. Just a sequence of words the sender typed.</p>
+          <div class="callout bad">Every model we've studied so far — Decision Trees, Random Forest, KNN, Logistic Regression — expects <b>numbers</b> as input. Text is not numbers. So the very first question has to be: <b>what do we do if our data is text?</b></div>
+        </div>
+      </section>
+      <section class="block" id="tokenize">
+        <div class="section-eyebrow">Cleaning Text</div>
+        <h2>Step 1 — <span class="underline">Tokenization</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Before a model can count words, it needs to know where one word ends and the next begins. Take: <i>"To be or not to be."</i></p>
+          <div class="formula center">"To be or not to be." &nbsp;&rarr;&nbsp; ["To", "be", "or", "not", "to", "be", "."]</div>
+          <div class="callout info">This is <b>tokenization</b> — breaking raw text into individual units (tokens), usually words and punctuation marks. It's the mandatory first step; nothing downstream works without it.</div>
+          <div class="ask">Ask yourself: in the tokens above, is the period <b>"."</b> useful for deciding spam vs ham? What about "!!!" or ","?</div>
+          <div class="callout warn">Generally, <b>no</b> — a period or comma carries almost no spam/ham signal by itself. (Some advanced setups do keep punctuation like "!!!" as a weak signal of urgency/spam — but for our purposes, we'll treat plain punctuation as noise and remove it, exactly like the stopword step coming up.)</div>
+        </div>
+      </section>
+
+      <section class="block" id="case">
+        <h2>Step 2 — <span class="underline">Upper Case or Lower Case?</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Compare: <i>"FREE money"</i> vs <i>"free money."</i></p>
+          <div class="ask">Ask yourself: should the model treat "FREE" and "free" as two <b>different</b> words, or the <b>same</b> word?</div>
+          <div class="callout bad">If we don't normalize case, "FREE" and "free" become two separate vocabulary entries — splitting one strong spam signal into two weaker ones, and undercounting how often that word really appears.</div>
+          <div class="callout good"><b>Fix: lowercase everything.</b> "FREE" &rarr; "free". Now every occurrence of that word — however it was typed — gets counted as the same word.</div>
+          <div class="misconception">Careful: for THIS course, we lowercase everything. But note there ARE settings where case carries real signal (e.g. "US" the country vs "us" the pronoun) — that's a deeper NLP nuance for a dedicated text-processing module, not needed for the Naive Bayes math today.</div>
+        </div>
+      </section>
+
+      <section class="block" id="stopwords">
+        <h2>Step 3 — <span class="underline">Stopword Removal</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Take: <i>"This is a river."</i></p>
+          <div class="ask">Ask yourself: does the word "is" help decide anything about spam vs ham? Does "a"? Does "the"?</div>
+          <div class="callout bad">No — words like "a," "the," "is," "to," "for" appear constantly in <b>every</b> kind of text, spam or ham. They carry almost no information about the class.</div>
+          <div class="callout good">These extremely common, low-information words are called <b>stopwords</b>, and we remove them. What's left behind is a shorter list of words that actually carry signal.</div>
+          <div class="formula center">tokenize &rarr; lowercase &rarr; remove punctuation &rarr; remove stopwords &nbsp;=&nbsp; <b>cleaned email</b></div>
+        </div>
+      </section>
+      <section class="block" id="dataset">
+        <h2>Our 10-Email Dataset, <span class="underline">Cleaned End to End</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">5 spam, 5 ham — real sentences, not abstract word lists. We'll clean two of them completely by hand, then show all 10 at once.</p>
+        </div>
+
+        <div class="card screenshot">
+          <h3>Walkthrough 1 — a spam email</h3>
+          <div class="formula center">"Congratulations! You have won a FREE lottery prize, click now!!!"</div>
+          <div class="step-card"><span class="step-tag">Tokenize</span> [Congratulations, !, You, have, won, a, FREE, lottery, prize, ,, click, now, !, !, !]</div>
+          <div class="step-card"><span class="step-tag y">Lowercase</span> [congratulations, !, you, have, won, a, free, lottery, prize, ,, click, now, !, !, !]</div>
+          <div class="step-card"><span class="step-tag p">Remove punctuation</span> [congratulations, you, have, won, a, free, lottery, prize, click, now]</div>
+          <div class="step-card"><span class="step-tag g">Remove stopwords</span> (drop "you," "have," "a") &rarr; <b>[congratulations, won, free, lottery, prize, click, now]</b></div>
+        </div>
+
+        <div class="card screenshot">
+          <h3>Walkthrough 2 — a ham email</h3>
+          <div class="formula center">"Please review the project report before our meeting."</div>
+          <div class="step-card"><span class="step-tag">Tokenize</span> [Please, review, the, project, report, before, our, meeting, .]</div>
+          <div class="step-card"><span class="step-tag y">Lowercase</span> [please, review, the, project, report, before, our, meeting, .]</div>
+          <div class="step-card"><span class="step-tag p">Remove punctuation</span> [please, review, the, project, report, before, our, meeting]</div>
+          <div class="step-card"><span class="step-tag g">Remove stopwords</span> (drop "the," "before," "our") &rarr; <b>[please, review, project, report, meeting]</b></div>
+        </div>
+
+        <div class="card screenshot">
+          <h3>All 10 emails, cleaned — our running example for the rest of class</h3>
+          <table class="data-table">
+            <tr><th>#</th><th>Raw email</th><th>Cleaned tokens</th><th>Class</th></tr>
+            <tr><td class="mono">1</td><td class="left" style="font-size:11.5px;">"Congratulations! You have won a FREE lottery prize, click now!!!"</td><td class="left mono">congratulations, won, free, lottery, prize, click, now</td><td class="mono zero">spam</td></tr>
+            <tr><td class="mono">2</td><td class="left" style="font-size:11.5px;">"URGENT: claim your FREE money offer today, limited time!!!"</td><td class="left mono">urgent, claim, free, money, offer, today, limited, time</td><td class="mono zero">spam</td></tr>
+            <tr><td class="mono">3</td><td class="left" style="font-size:11.5px;">"You have been selected to win a FREE vacation, click here now."</td><td class="left mono">selected, win, free, vacation, click, here, now</td><td class="mono zero">spam</td></tr>
+            <tr><td class="mono">4</td><td class="left" style="font-size:11.5px;">"Get rich quick! FREE money guaranteed, act now!!!"</td><td class="left mono">get, rich, quick, free, money, guaranteed, act, now</td><td class="mono zero">spam</td></tr>
+            <tr><td class="mono">5</td><td class="left" style="font-size:11.5px;">"WIN a FREE iPhone now, click the link immediately!!!"</td><td class="left mono">win, free, iphone, now, click, link, immediately</td><td class="mono zero">spam</td></tr>
+            <tr><td class="mono">6</td><td class="left" style="font-size:11.5px;">"Hi team, the meeting is scheduled for 5 pm today."</td><td class="left mono">hi, team, meeting, scheduled, 5, pm, today</td><td class="mono good">ham</td></tr>
+            <tr><td class="mono">7</td><td class="left" style="font-size:11.5px;">"Please review the project report before our meeting."</td><td class="left mono">please, review, project, report, meeting</td><td class="mono good">ham</td></tr>
+            <tr><td class="mono">8</td><td class="left" style="font-size:11.5px;">"Reminder: submit your timesheet by Friday, thanks."</td><td class="left mono">reminder, submit, timesheet, friday, thanks</td><td class="mono good">ham</td></tr>
+            <tr><td class="mono">9</td><td class="left" style="font-size:11.5px;">"The quarterly review meeting has been moved to next week."</td><td class="left mono">quarterly, review, meeting, moved, next, week</td><td class="mono good">ham</td></tr>
+            <tr><td class="mono">10</td><td class="left" style="font-size:11.5px;">"Can we schedule a call to discuss the project timeline?"</td><td class="left mono">schedule, call, discuss, project, timeline</td><td class="mono good">ham</td></tr>
+          </table>
+          <div class="callout info">This exact table — 10 cleaned emails, 5 spam + 5 ham — is what we'll use for <b>every</b> computation for the rest of this class. No more abstract examples; every number from here on is traceable back to this table.</div>
+        </div>
+      </section>
+      <section class="block" id="goal">
+        <div class="section-eyebrow">The Goal</div>
+        <h2>What Are We <span class="underline">Actually Predicting?</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Define spam=1, ham=0. Given a cleaned email, we want to compare exactly two numbers:</p>
+          <div class="formula center">P(y=1 | email) &nbsp;&nbsp;vs&nbsp;&nbsp; P(y=0 | email)</div>
+          <p>Whichever is bigger becomes our prediction. That's the whole decision rule. The only open question: <b>how do we actually calculate P(y=1 | email)?</b></p>
+          <div class="callout warn">This is a conditional probability, and we don't yet have a direct way to compute it from training data. There's a classical tool built exactly for reversing conditional probabilities: <b>Bayes' theorem.</b> Let's build it from scratch.</div>
+        </div>
+      </section>
+
+      <section class="block" id="cricket">
+        <div class="section-eyebrow">Bayes Theorem</div>
+        <h2>India vs Virat — <span class="underline">A Table to Build Intuition</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Forget email for a moment. Two events, from 100 historical India matches:</p>
+          <div class="formula center">Event A: India Won &nbsp;&nbsp;&nbsp;&nbsp; Event B: Virat Scored a Century</div>
+          <table class="data-table">
+            <tr><th></th><th>India Win</th><th>India Lose</th><th>Total</th></tr>
+            <tr><td class="left mono">Virat Scores Century</td><td class="mono hl">10</td><td class="mono">2</td><td class="mono">12</td></tr>
+            <tr><td class="left mono">Virat No Century</td><td class="mono">50</td><td class="mono">38</td><td class="mono">88</td></tr>
+            <tr><td class="left mono">Total</td><td class="mono">60</td><td class="mono">40</td><td class="mono good">100</td></tr>
+          </table>
+          <p style="font-size:13px; color:var(--chalk-dim);">Every probability below is a ratio read directly off this table — nothing assumed, everything counted.</p>
+          <table class="data-table">
+            <tr><th>Quantity</th><th>Read as</th><th>Value</th></tr>
+            <tr><td class="mono">P(A)</td><td class="left mono">60/100</td><td class="mono hl">0.60</td></tr>
+            <tr><td class="mono">P(B)</td><td class="left mono">12/100</td><td class="mono hl">0.12</td></tr>
+            <tr><td class="mono">P(A|B)</td><td class="left mono">10/12 (of the 12 century matches, India won 10)</td><td class="mono hl">0.833</td></tr>
+          </table>
+        </div>
+      </section>
+
+      <section class="block" id="bayes-derive">
+        <h2>Deriving <span class="underline">Bayes Theorem</span></h2>
+        <div class="card">
+          <div class="ask">Ask yourself: given that India won (A), what's the chance Virat scored a century that match — P(B|A)? Don't read it off the table yet; derive it.</div>
+          <div class="step-card"><span class="step-tag">STEP 1</span> Get the joint probability first: P(A&cap;B) = P(A|B)&middot;P(B) = (10/12)&times;(12/100) = <b>10/100 = 0.10</b>.</div>
+          <div class="step-card"><span class="step-tag p">STEP 2</span> Reverse it: P(B|A) = P(A&cap;B)/P(A) = 0.10/0.60 = <b>1/6 &asymp; 0.167</b>.</div>
+          <div class="step-card"><span class="step-tag g">STEP 3</span> Check against the table directly: cell(win,century)/row-total(win) = 10/60 = 0.167 &#10003; — matches exactly.</div>
+          <p class="lead">Generalize this exact swap. We had two ways to write the same joint probability:</p>
+          <div class="formula center">P(A&cap;B) = P(A|B)&middot;P(B) &nbsp;&nbsp;=&nbsp;&nbsp; P(B|A)&middot;P(A)</div>
+          <p>Set the right-hand sides equal to each other and rearrange for P(A|B):</p>
+          <div class="formula center"><span class="k">P(A|B) = P(B|A) &middot; P(A) / P(B)</span> &nbsp;&larr; Bayes' Theorem</div>
+        </div>
+      </section>
+      <section class="block" id="bayes-meaning">
+        <h2>What Bayes Theorem <span class="underline">Actually Means</span></h2>
+        <div class="card">
+          <table class="data-table">
+            <tr><th>Term</th><th>Name</th><th>In sentence form</th></tr>
+            <tr><td class="mono">P(A|B)</td><td class="left">Posterior</td><td class="left">"What I believe about A, <b>after</b> seeing evidence B."</td></tr>
+            <tr><td class="mono">P(B|A)</td><td class="left">Likelihood</td><td class="left">"If A were true, how compatible is evidence B with that?"</td></tr>
+            <tr><td class="mono">P(A)</td><td class="left">Prior</td><td class="left">"What I believed about A <b>before</b> seeing any evidence."</td></tr>
+            <tr><td class="mono">P(B)</td><td class="left">Evidence</td><td class="left">"How common is B overall, across every possibility?"</td></tr>
+          </table>
+          <div class="callout good"><b>One sentence to hold onto:</b> Bayes' theorem turns a <i>prior</i> belief into a <i>posterior</i> belief, using how well new evidence fits each hypothesis, adjusted for how common that evidence is in general.</div>
+          <div class="callout purple">Cricket example, in words: "Before knowing anything else, India wins 60% of matches (prior). Virat scoring a century is fairly rare evidence (12%). But when that evidence DOES show up, India's win rate jumps to 83.3% (posterior) — a century is strong evidence in India's favour."</div>
+        </div>
+      </section>
+      <section class="block" id="apply-bayes">
+        <div class="section-eyebrow">Applying Bayes to Email</div>
+        <h2>P(y=1|email) and <span class="underline">P(y=0|email)</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Apply Bayes' theorem directly, treating the class as our "A" and the email text as our "B":</p>
+          <div class="formula center">P(y=1|email) = P(email|y=1)&middot;P(y=1) / P(email)</div>
+          <div class="formula center">P(y=0|email) = P(email|y=0)&middot;P(y=0) / P(email)</div>
+          <table class="data-table">
+            <tr><th>Quantity</th><th>Meaning</th><th>Easy or hard to get?</th></tr>
+            <tr><td class="left mono">P(y=1)</td><td class="left">class prior</td><td class="left good">easy — just count</td></tr>
+            <tr><td class="left mono">P(email|y=1)</td><td class="left">likelihood</td><td class="left good">easy — count word occurrences in spam</td></tr>
+            <tr><td class="left mono">P(y=1|email)</td><td class="left">posterior — what we want</td><td class="left zero">hard to get directly</td></tr>
+          </table>
+        </div>
+      </section>
+
+      <section class="block" id="drop-denom">
+        <h2>Why We Can <span class="underline">Drop the Denominator</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Both expressions divide by the exact same thing: P(email). We only care which of the two is <b>bigger</b> — and dividing two numbers by the same positive constant never changes which one is bigger.</p>
+          <div class="callout info">Example: is 6 &gt; 4? Yes. Divide both by 2: is 3 &gt; 2? Still yes. The comparison survives — only the actual magnitude of both numbers shrank equally.</div>
+          <div class="formula center">P(y=1|email) &prop; P(email|y=1)&middot;P(y=1) &nbsp;&nbsp;&nbsp; P(y=0|email) &prop; P(email|y=0)&middot;P(y=0)</div>
+          <div class="callout good">We only need the right-hand sides now — no need to ever compute P(email) at all. This single simplification is what makes Naive Bayes fast.</div>
+        </div>
+      </section>
+
+      <section class="block" id="priors">
+        <h2>Finding <span class="underline">P(y=1) and P(y=0)</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Straight from our 10-email dataset: 5 spam, 5 ham.</p>
+          <div class="formula center">P(y=1) = 5/10 = <span class="k">0.5</span> &nbsp;&nbsp;&nbsp; P(y=0) = 5/10 = <span class="k">0.5</span></div>
+          <div class="callout info">These are called the <b>class priors</b> — the probability of each class before looking at any specific email's words. Trivially easy: count training rows per class, divide by total.</div>
+        </div>
+      </section>
+      <section class="block" id="text-representation">
+        <h2>What Is "Text", <span class="underline">and How Do We Store It?</span></h2>
+        <div class="card">
+          <div class="ask">Ask yourself: P(email|y=1) means "given spam, what's the probability of seeing this EXACT sequence of words?" Why is that a hard number to estimate directly?</div>
+          <p class="lead">A cleaned email is a <b>sequence of words</b>: text = w<sub>1</sub>, w<sub>2</sub>, ..., w<sub>d</sub>. To estimate P(text|y=1) directly, we'd need training spam emails containing this <i>exact</i> word combination — with even a modest vocabulary, almost no two emails share one. That probability collapses toward zero from sparsity alone.</p>
+          <div class="callout warn">We'll fix this shortly with the naive assumption. But first: how do we even <b>store</b> a whole vocabulary of words efficiently?</div>
+          <div class="callout info"><b>Answer: a count vectorizer.</b> Build one shared vocabulary across all training emails, then represent each email as a row of word counts — one column per vocabulary word, the count of how many times it appears in that email. Most entries are 0 (any single email only uses a handful of the whole vocabulary) — a sparse matrix.</div>
+        </div>
+      </section>
+
+      <section class="block" id="naive-assumption">
+        <div class="section-eyebrow">The Naive Assumption</div>
+        <h2>Conditional Independence, <span class="underline">With Easy Examples</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Instead of needing the exact word <i>combination</i>, assume each word's occurrence is independent of every other word's, <b>given the class</b>:</p>
+          <div class="formula center">P(w<sub>1</sub>,w<sub>2</sub>,...,w<sub>d</sub> | y) &asymp; P(w<sub>1</sub>|y)&middot;P(w<sub>2</sub>|y)&middot;...&middot;P(w<sub>d</sub>|y)</div>
+          <div class="callout good">Now we only ever need to count how often <b>each individual word</b> appears in spam vs ham — a far easier, far more data-efficient number to estimate than "how often does this whole combination appear."</div>
+        </div>
+        <div class="card">
+          <h3>Two easy examples, outside email entirely</h3>
+          <div class="grid-2">
+            <div class="card"><h3>Weather example</h3><p style="font-size:13px;">"Given that it's summer (the class), is it raining independent of whether it's windy?" Not perfectly true in reality (storms bring both) — but assuming so lets us estimate P(rain|summer) and P(wind|summer) separately, instead of needing exact joint weather records for "rain AND wind together, in summer."</p></div>
+            <div class="card"><h3>Grocery example</h3><p style="font-size:13px;">"Given that this shopper is buying for a party (the class), is buying chips independent of buying soda?" Not really — they often go together. But assuming independence still lets a store predict "party shopper" from chips and soda separately, without needing every historical combination.</p></div>
+          </div>
+          <div class="misconception"><b>Why the assumption is "naive":</b> words like "Nigerian" and "prince" are NOT actually independent — they tend to appear together in scam emails. The assumption is a deliberate simplification, not a claim that it's literally true. It's naive on purpose, to make the math tractable — and it works well enough in practice anyway.</div>
+          <div class="key-box"><b>Common interview trip-up:</b> the independence is <i>conditioned on the class</i> — it's the CONDITIONAL probability P(w<sub>1</sub>,w<sub>2</sub>|y) that factorizes, not the marginal (unconditional) probability. Two words can be globally correlated across all emails, yet still treated as independent once you already know the class.</div>
+        </div>
+      </section>
+      <section class="block" id="compute-likelihood">
+        <h2>Computing P(text|y=1) and <span class="underline">P(text|y=0)</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">For a single word w<sub>j</sub>: go through all spam training emails, count total spam word-occurrences (n<sub>1</sub>), and how many of those occurrences were w<sub>j</sub> (n<sub>j1</sub>):</p>
+          <div class="formula center">P(w<sub>j</sub>|y=1) = n<sub>j1</sub> / n<sub>1</sub></div>
+          <p style="font-size:12.5px; color:var(--chalk-dim);">This raw counting approach (does the word exist / how many times) is called <b>Bernoulli</b> / <b>Multinomial</b> Naive Bayes depending on whether we count presence or frequency — more on this distinction in &sect;Bernoulli-Multinomial below.</p>
+        </div>
+        <div class="card screenshot">
+          <h3>The full vocabulary table, counted from our 10 emails</h3>
+          <p class="note">V = 49 unique words &middot; n<sub>spam</sub> = 37 total word-occurrences &middot; n<sub>ham</sub> = 28 total word-occurrences</p>
+          <table class="data-table">
+            <tr><th>Word</th><th>Count in spam</th><th>Count in ham</th></tr>
+            <tr><td class="left mono">5</td><td class="mono">0</td><td class="mono">1</td></tr>
+            <tr><td class="left mono">act</td><td class="mono">1</td><td class="mono">0</td></tr>
+            <tr><td class="left mono">call</td><td class="mono">0</td><td class="mono">1</td></tr>
+            <tr><td class="left mono">claim</td><td class="mono">1</td><td class="mono">0</td></tr>
+            <tr><td class="left mono hl">click</td><td class="mono hl">3</td><td class="mono">0</td></tr>
+            <tr><td class="left mono">congratulations</td><td class="mono">1</td><td class="mono">0</td></tr>
+            <tr><td class="left mono">discuss</td><td class="mono">0</td><td class="mono">1</td></tr>
+            <tr><td class="left mono hl">free</td><td class="mono hl">5</td><td class="mono">0</td></tr>
+            <tr><td class="left mono">friday</td><td class="mono">0</td><td class="mono">1</td></tr>
+            <tr><td class="left mono">get</td><td class="mono">1</td><td class="mono">0</td></tr>
+            <tr><td class="left mono">guaranteed</td><td class="mono">1</td><td class="mono">0</td></tr>
+            <tr><td class="left mono">here</td><td class="mono">1</td><td class="mono">0</td></tr>
+            <tr><td class="left mono">hi</td><td class="mono">0</td><td class="mono">1</td></tr>
+            <tr><td class="left mono">immediately</td><td class="mono">1</td><td class="mono">0</td></tr>
+            <tr><td class="left mono">iphone</td><td class="mono">1</td><td class="mono">0</td></tr>
+            <tr><td class="left mono">limited</td><td class="mono">1</td><td class="mono">0</td></tr>
+            <tr><td class="left mono">link</td><td class="mono">1</td><td class="mono">0</td></tr>
+            <tr><td class="left mono">lottery</td><td class="mono">1</td><td class="mono">0</td></tr>
+            <tr><td class="left mono hl">meeting</td><td class="mono">0</td><td class="mono hl">3</td></tr>
+            <tr><td class="left mono">money</td><td class="mono">2</td><td class="mono">0</td></tr>
+            <tr><td class="left mono">moved</td><td class="mono">0</td><td class="mono">1</td></tr>
+            <tr><td class="left mono">next</td><td class="mono">0</td><td class="mono">1</td></tr>
+            <tr><td class="left mono hl">now</td><td class="mono hl">4</td><td class="mono">0</td></tr>
+            <tr><td class="left mono">offer</td><td class="mono">1</td><td class="mono">0</td></tr>
+            <tr><td class="left mono">please</td><td class="mono">0</td><td class="mono">1</td></tr>
+            <tr><td class="left mono">pm</td><td class="mono">0</td><td class="mono">1</td></tr>
+            <tr><td class="left mono">prize</td><td class="mono">1</td><td class="mono">0</td></tr>
+            <tr><td class="left mono">project</td><td class="mono">0</td><td class="mono">2</td></tr>
+            <tr><td class="left mono">quarterly</td><td class="mono">0</td><td class="mono">1</td></tr>
+            <tr><td class="left mono">quick</td><td class="mono">1</td><td class="mono">0</td></tr>
+            <tr><td class="left mono">reminder</td><td class="mono">0</td><td class="mono">1</td></tr>
+            <tr><td class="left mono">report</td><td class="mono">0</td><td class="mono">1</td></tr>
+            <tr><td class="left mono">review</td><td class="mono">0</td><td class="mono">2</td></tr>
+            <tr><td class="left mono">rich</td><td class="mono">1</td><td class="mono">0</td></tr>
+            <tr><td class="left mono">schedule</td><td class="mono">0</td><td class="mono">1</td></tr>
+            <tr><td class="left mono">scheduled</td><td class="mono">0</td><td class="mono">1</td></tr>
+            <tr><td class="left mono">selected</td><td class="mono">1</td><td class="mono">0</td></tr>
+            <tr><td class="left mono">submit</td><td class="mono">0</td><td class="mono">1</td></tr>
+            <tr><td class="left mono">team</td><td class="mono">0</td><td class="mono">1</td></tr>
+            <tr><td class="left mono">thanks</td><td class="mono">0</td><td class="mono">1</td></tr>
+            <tr><td class="left mono">time</td><td class="mono">1</td><td class="mono">0</td></tr>
+            <tr><td class="left mono">timeline</td><td class="mono">0</td><td class="mono">1</td></tr>
+            <tr><td class="left mono">timesheet</td><td class="mono">0</td><td class="mono">1</td></tr>
+            <tr><td class="left mono">today</td><td class="mono">1</td><td class="mono">1</td></tr>
+            <tr><td class="left mono">urgent</td><td class="mono">1</td><td class="mono">0</td></tr>
+            <tr><td class="left mono">vacation</td><td class="mono">1</td><td class="mono">0</td></tr>
+            <tr><td class="left mono">week</td><td class="mono">0</td><td class="mono">1</td></tr>
+            <tr><td class="left mono">win</td><td class="mono">2</td><td class="mono">0</td></tr>
+            <tr><td class="left mono">won</td><td class="mono">1</td><td class="mono">0</td></tr>
+          </table>
+          <div class="callout good">Look at "free": 5 occurrences in spam, <b>0</b> in ham — a near-perfect spam signal. "meeting": 0 in spam, 3 in ham — a near-perfect ham signal. This is exactly the pattern the model needs to separate the classes.</div>
+        </div>
+      </section>
+      <section class="block" id="training-recap">
+        <div class="section-eyebrow">Training vs Test</div>
+        <h2>What Exactly Was <span class="underline">"Training," End to End?</span></h2>
+        <div class="card">
+          <div class="ask">Ask yourself: where was the loss function? Where were the gradient updates, the iterations?</div>
+          <div class="callout good"><b>There weren't any.</b> Naive Bayes' "training" is not iterative optimization at all — it's a single pass of counting.</div>
+          <div class="pipeline">
+            <div class="pipe-step"><div class="n">01</div><div class="t">Clean each email</div><div class="d">tokenize, lowercase, punctuation, stopwords</div></div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-step"><div class="n">02</div><div class="t">Build vocabulary</div><div class="d">every unique word, across all emails</div></div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-step"><div class="n">03</div><div class="t">Count priors</div><div class="d">P(y=1), P(y=0)</div></div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-step"><div class="n">04</div><div class="t">Count likelihoods</div><div class="d">P(w<sub>j</sub>|y=1), P(w<sub>j</sub>|y=0) per word</div></div>
+          </div>
+          <div class="callout info">That's it. Training = building these count tables once. This is exactly why Naive Bayes is famous for being extremely fast — even over millions of emails, it's one linear pass through the data.</div>
+        </div>
+      </section>
+
+      <section class="block" id="test-time">
+        <h2>Moving to <span class="underline">Test Data</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">A brand-new email arrives, never seen during training. Clean it the same way, then plug its words into our stored priors and likelihoods.</p>
+          <div class="formula center">New email: "Win a FREE prize now, click here!"</div>
+          <div class="step-card"><span class="step-tag">Cleaned</span> [win, free, prize, now, click, here]</div>
+          <table class="data-table">
+            <tr><th>Word</th><th>P(word|spam)</th><th>P(word|ham)</th></tr>
+            <tr><td class="left mono">win</td><td class="mono">2/37 &asymp; 0.0541</td><td class="mono zero">0/28 = 0</td></tr>
+            <tr><td class="left mono">free</td><td class="mono">5/37 &asymp; 0.1351</td><td class="mono zero">0/28 = 0</td></tr>
+            <tr><td class="left mono">prize</td><td class="mono">1/37 &asymp; 0.0270</td><td class="mono zero">0/28 = 0</td></tr>
+            <tr><td class="left mono">now</td><td class="mono">4/37 &asymp; 0.1081</td><td class="mono zero">0/28 = 0</td></tr>
+            <tr><td class="left mono">click</td><td class="mono">3/37 &asymp; 0.0811</td><td class="mono zero">0/28 = 0</td></tr>
+            <tr><td class="left mono">here</td><td class="mono">1/37 &asymp; 0.0270</td><td class="mono zero">0/28 = 0</td></tr>
+          </table>
+          <div class="callout warn">Every one of these words happens to have appeared ZERO times in ham. This is a useful setup — it walks us straight into a genuine problem.</div>
+        </div>
+      </section>
+
+      <section class="block" id="zero-problem">
+        <h2>The <span class="underline">Zero Problem</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Try a slightly different new email:</p>
+          <div class="formula center">"Free cash bonus now" &rarr; cleaned: [free, cash, bonus, now]</div>
+          <div class="callout bad">"cash" and "bonus" never appeared <b>anywhere</b> in training — not in spam, not in ham. They're not in our vocabulary at all.</div>
+          <div class="step-card"><span class="step-tag">P(cash|spam)</span> = 0/37 = <b>0</b> &nbsp;&nbsp; <span class="step-tag p">P(cash|ham)</span> = 0/28 = <b>0</b></div>
+          <div class="formula center">score(spam) = P(y=1) &times; P(free|1) &times; <span style="color:var(--pink)">P(cash|1)</span> &times; P(bonus|1) &times; P(now|1) = ... &times; <span style="color:var(--pink)">0</span> &times; ... = <b>0</b></div>
+          <div class="formula center">score(ham) = P(y=0) &times; P(free|0) &times; <span style="color:var(--pink)">P(cash|0)</span> &times; P(bonus|0) &times; P(now|0) = ... &times; <span style="color:var(--pink)">0</span> &times; ... = <b>0</b></div>
+          <div class="callout bad"><b>This is the Zero Problem.</b> One single missing word forces the ENTIRE product to zero — for BOTH classes — even though "free" and "now" are still overwhelming spam signals on their own. A single multiplication by zero destroys every other word's evidence, no matter how strong.</div>
+        </div>
+      </section>
+      <section class="block" id="laplace">
+        <div class="section-eyebrow">Laplace Smoothing</div>
+        <h2>The Formula, and <span class="underline">Why It Makes Sense</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Fix: never let a count be exactly 0. Add a small constant &alpha; to every numerator:</p>
+          <div class="formula center">P(w<sub>j</sub>|y) = (n<sub>j</sub> + &alpha;) / (n + &alpha;&middot;V)</div>
+          <table class="data-table">
+            <tr><th>Symbol</th><th>Meaning</th></tr>
+            <tr><td class="mono">n<sub>j</sub></td><td class="left">raw count of word w<sub>j</sub> in this class</td></tr>
+            <tr><td class="mono">n</td><td class="left">total word occurrences in this class</td></tr>
+            <tr><td class="mono">V</td><td class="left">vocabulary size (all unique words seen anywhere)</td></tr>
+            <tr><td class="mono">&alpha;</td><td class="left">smoothing strength — a hyperparameter</td></tr>
+          </table>
+          <div class="ask">Ask yourself: why does the denominator need "+&alpha;&middot;V" — why not just "+&alpha;"?</div>
+          <div class="callout info">Smoothing conceptually adds &alpha; "pretend occurrences" of <b>every single word in the vocabulary</b> — not just the missing one. That's V separate top-ups, total added mass = &alpha;&middot;V. For probabilities to still sum to 1 across the whole vocabulary, the denominator must absorb that same total — hence +&alpha;&middot;V, not just +&alpha;.</div>
+          <div class="step-card"><span class="step-tag">Check it</span> With V=3 words having counts 5,3,2 (n=10), &alpha;=1: probabilities become 6/13, 4/13, 3/13 &rarr; sum = 13/13 = <b>1.0 &#10003;</b>. Using just "+&alpha;" (denominator=11) instead gives 6/11+4/11+3/11 = 1.18 — <b>not a valid probability distribution.</b></div>
+        </div>
+      </section>
+
+      <section class="block" id="bias-variance">
+        <h2>Bias-Variance <span class="underline">via Alpha</span></h2>
+        <div class="card">
+          <div class="grid-2">
+            <div class="card"><h3>&alpha; too large &rarr; underfitting</h3><p style="font-size:13px;">If &alpha; &gt;&gt; n, the constant dominates every likelihood, pushing them all toward the same flat value regardless of real word counts. The model loses its ability to tell words apart — <b>high bias.</b></p></div>
+            <div class="card"><h3>&alpha; too small &rarr; overfitting</h3><p style="font-size:13px;">As &alpha;&rarr;0, we approach the raw, unsmoothed frequency again — any unseen word combination collapses back toward the zero problem — <b>high variance.</b></p></div>
+          </div>
+          <div class="callout purple">&alpha;=1 (Laplace's original choice) is the standard default — a small, safe nudge, not an override. It's tuned via cross-validation like any other hyperparameter.</div>
+        </div>
+      </section>
+      <section class="block" id="recompute">
+        <h2>Recomputing Our Prediction, <span class="underline">Smoothed</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Same email — "free cash bonus now" — now with &alpha;=1, V=49, n<sub>spam</sub>=37, n<sub>ham</sub>=28:</p>
+          <table class="data-table">
+            <tr><th>Word</th><th>P(word|spam)</th><th>P(word|ham)</th></tr>
+            <tr><td class="left mono">free</td><td class="mono">(5+1)/(37+49) = 0.0698</td><td class="mono">(0+1)/(28+49) = 0.0130</td></tr>
+            <tr><td class="left mono">cash</td><td class="mono">(0+1)/(37+49) = 0.0116</td><td class="mono">(0+1)/(28+49) = 0.0130</td></tr>
+            <tr><td class="left mono">bonus</td><td class="mono">(0+1)/(37+49) = 0.0116</td><td class="mono">(0+1)/(28+49) = 0.0130</td></tr>
+            <tr><td class="left mono">now</td><td class="mono">(4+1)/(37+49) = 0.0581</td><td class="mono">(0+1)/(28+49) = 0.0130</td></tr>
+          </table>
+          <div class="step-card"><span class="step-tag">score(spam)</span> 0.5 &times; 0.0698 &times; 0.0116 &times; 0.0116 &times; 0.0581 = <b>2.74 &times; 10<sup>-7</sup></b></div>
+          <div class="step-card"><span class="step-tag p">score(ham)</span> 0.5 &times; 0.0130 &times; 0.0130 &times; 0.0130 &times; 0.0130 = <b>1.42 &times; 10<sup>-8</sup></b></div>
+          <div class="callout good">Both scores are non-zero now — smoothing did exactly its job. Neither collapsed to zero, so the model can actually compare them.</div>
+        </div>
+      </section>
+
+      <section class="block" id="normalize">
+        <h2>Sum &ne; 1 — <span class="underline">Normalizing to Get the Answer</span></h2>
+        <div class="card">
+          <div class="ask">Ask yourself: do score(spam) and score(ham) add up to 1? Should they?</div>
+          <div class="formula center">2.74&times;10<sup>-7</sup> + 1.42&times;10<sup>-8</sup> = 2.88&times;10<sup>-7</sup> &nbsp;&larr; NOT 1</div>
+          <div class="callout bad"><b>No, they don't sum to 1 — and they were never supposed to.</b> Remember &sect;drop-denom: we deliberately dropped P(email), the normalizing denominator, because we only needed to <i>compare</i> the two scores. What's left are un-normalized <i>proportional</i> scores, not true probabilities.</div>
+          <div class="callout good"><b>Fix: normalize.</b> Divide each score by their sum, so they properly add up to 1:</div>
+          <div class="formula center">P(spam|X) = score(spam) / [score(spam)+score(ham)] = 2.74e-7 / 2.88e-7 = <span class="k">0.951</span></div>
+          <div class="formula center">P(ham|X) = score(ham) / [score(spam)+score(ham)] = 1.42e-8 / 2.88e-7 = <span class="k">0.049</span></div>
+          <div class="callout purple">0.951 + 0.049 = 1.0 &#10003; — <b>now</b> we have real probabilities. Since 0.951 &gt; 0.049, the model predicts <b>spam</b> — correctly, despite two words ("cash," "bonus") never having been seen in training at all.</div>
+        </div>
+      </section>
+      <section class="block" id="not-regression">
+        <div class="section-eyebrow">Is This Regression?</div>
+        <h2>Why Naive Bayes Is <span class="underline">Not Regression</span></h2>
+        <div class="card">
+          <div class="ask">Ask yourself: could we use this exact same machinery to predict a continuous number — like a house price?</div>
+          <div class="callout bad"><b>No.</b> Every step we built — priors P(y), likelihoods P(word|y), Bayes' theorem, normalization — is built around comparing a small, fixed set of discrete classes (spam vs ham; or class A vs B vs C). There's no continuous target anywhere in this machinery.</div>
+          <div class="callout info">Naive Bayes is a <b>probabilistic classifier</b>. Its output is always "which class is most likely," expressed as a probability distribution over a fixed set of classes — never a continuous number like "&#8377;52,00,000."</div>
+        </div>
+      </section>
+      <section class="block" id="categorical">
+        <div class="section-eyebrow">Other Feature Types</div>
+        <h2><span class="underline">Categorical Features</span></h2>
+        <div class="card">
+          <div class="ask">Ask yourself: everything so far has been text. What if a feature is categorical instead — like "browser type"?</div>
+          <p class="lead">Same exact skeleton — prior &times; likelihood, per feature — just count categories instead of words. Example: predict bot vs human from browser + device.</p>
+          <table class="data-table">
+            <tr><th>#</th><th>Browser</th><th>Device</th><th>Class</th></tr>
+            <tr><td class="mono">1</td><td class="mono">Chrome</td><td class="mono">Mobile</td><td class="mono good">human</td></tr>
+            <tr><td class="mono">2</td><td class="mono">Chrome</td><td class="mono">Mobile</td><td class="mono good">human</td></tr>
+            <tr><td class="mono">3</td><td class="mono">Safari</td><td class="mono">Desktop</td><td class="mono good">human</td></tr>
+            <tr><td class="mono">4</td><td class="mono">Edge</td><td class="mono">Desktop</td><td class="mono zero">bot</td></tr>
+            <tr><td class="mono">5</td><td class="mono">Chrome</td><td class="mono">Desktop</td><td class="mono zero">bot</td></tr>
+            <tr><td class="mono">6</td><td class="mono">Safari</td><td class="mono">Mobile</td><td class="mono zero">bot</td></tr>
+          </table>
+          <div class="formula center">P(category|class) = (count(category,class) + &alpha;) / (n<sub>class</sub> + K&middot;&alpha;)</div>
+          <p style="font-size:12.5px; color:var(--chalk-dim);">K = number of distinct values THIS feature can take (browser: K=3; device: K=2) — each feature smoothed against its own category count, not a shared vocabulary.</p>
+          <div class="step-card"><span class="step-tag">Test: Chrome + Desktop</span> P(Chrome|bot)=(1+1)/(3+3)=0.333, P(Desktop|bot)=(2+1)/(3+2)=0.6 &rarr; score(bot)=0.5&times;0.333&times;0.6=<b>0.100</b></div>
+          <div class="step-card"><span class="step-tag p">Test: Chrome + Desktop</span> P(Chrome|human)=(2+1)/(3+3)=0.5, P(Desktop|human)=(1+1)/(3+2)=0.4 &rarr; score(human)=0.5&times;0.5&times;0.4=<b>0.100</b></div>
+          <div class="callout warn">A genuine, mathematically correct <b>tie</b> — Chrome leans human, Desktop leans bot, and the two effects cancel exactly. This is a real strength of the probabilistic framing: it doesn't force confidence when evidence is genuinely balanced.</div>
+        </div>
+      </section>
+
+      <section class="block" id="bernoulli-multinomial">
+        <h2>Bernoulli vs <span class="underline">Multinomial NB</span></h2>
+        <div class="card">
+          <p class="lead" style="margin-top:0;">Two ways to represent a word in an email — presence, or count. The choice changes the likelihood formula.</p>
+          <div class="formula center">Email: "free free money"</div>
+          <table class="data-table">
+            <tr><th>Representation</th><th>"free" value</th><th>What's stored</th></tr>
+            <tr><td class="left">Bernoulli</td><td class="mono">1</td><td class="left">did "free" appear at all? (yes/no only — repeats ignored)</td></tr>
+            <tr><td class="left">Multinomial</td><td class="mono">2</td><td class="left">how many TIMES did "free" appear?</td></tr>
+          </table>
+          <div class="grid-2">
+            <div class="card"><h3>Bernoulli NB</h3><p style="font-size:13px;">P(w<sub>j</sub>|y) is estimated as "fraction of class-y <b>documents</b> that contain w<sub>j</sub> at all" — repeats in one email don't count extra.</p></div>
+            <div class="card"><h3>Multinomial NB</h3><p style="font-size:13px;">P(w<sub>j</sub>|y) is estimated as "fraction of class-y <b>word-occurrences</b> that were w<sub>j</sub>" — a word appearing 5 times contributes 5&times; the count. This is what we used throughout today's class.</p></div>
+          </div>
+          <div class="callout info">Multinomial captures more information (frequency matters), at slightly more computation. Bernoulli is simpler and can work well for very short texts where repetition rarely happens anyway.</div>
+        </div>
+      </section>
+      <section class="block" id="gaussian">
+        <h2>Numerical Features &rarr; <span class="underline">Gaussian NB</span></h2>
+        <div class="card">
+          <div class="ask">Ask yourself: what if a feature is a plain number — like "account age in days" or "hours studied"? Counting doesn't make sense for continuous values.</div>
+          <p class="lead">Instead of counting, assume each numerical feature follows a Gaussian (Normal) distribution <b>within each class</b> — a bell curve, described by just two numbers: mean (&mu;) and variance (&sigma;&sup2;).</p>
+          <div class="formula center">X<sub>j</sub> | class ~ Normal(&mu;, &sigma;&sup2;)</div>
+          <div class="callout good">This is genuinely the "default" Naive Bayes in most people's minds outside of text — <code>GaussianNB</code> in scikit-learn.</div>
+        </div>
+
+        <details class="opt">
+          <summary>Optional deep dive — full derivation and test-point computation</summary>
+          <div class="inner">
+            <div class="card">
+              <h3>Training: just compute &mu; and &sigma;&sup2;, per class</h3>
+              <p class="lead" style="margin-top:0;">Feature: "hours studied." Passed: [6, 7, 8]. Failed: [1, 2, 3].</p>
+              <div class="step-card"><span class="step-tag">&mu;</span> &mu;<sub>pass</sub> = (6+7+8)/3 = <b>7.0</b> &nbsp;&nbsp; &mu;<sub>fail</sub> = (1+2+3)/3 = <b>2.0</b></div>
+              <div class="step-card"><span class="step-tag p">&sigma;&sup2;</span> &sigma;&sup2;<sub>pass</sub> = [(6-7)&sup2;+(7-7)&sup2;+(8-7)&sup2;]/3 = <b>0.667</b> &nbsp;&nbsp; &sigma;&sup2;<sub>fail</sub> = <b>0.667</b> (same computation)</div>
+              <div class="callout info">That's the ENTIRE training step — two numbers per class. Compare to text, which needed a whole word-count table; here we only ever need (&mu;,&sigma;&sup2;), no matter how many training rows there were.</div>
+            </div>
+
+            <div class="card">
+              <h3>Test time: a new student, 6.5 hours studied</h3>
+              <div class="formula center">p(x|class) = <span style="font-size:20px;">1</span>&frasl;<span style="font-size:13px;">&radic;(2&pi;&sigma;&sup2;)</span> &times; exp( &minus;(x&minus;&mu;)&sup2; &frasl; (2&sigma;&sup2;) )</div>
+              <div class="step-card"><span class="step-tag">STEP 1</span> Plug x=6.5 into the "pass" curve (&mu;=7.0, &sigma;&sup2;=0.667): p(6.5|pass) = <b>0.4051</b></div>
+              <div class="step-card"><span class="step-tag p">STEP 2</span> Plug x=6.5 into the "fail" curve (&mu;=2.0, &sigma;&sup2;=0.667): p(6.5|fail) = <b>0.000000124</b> (6.5 is 5.5 standard deviations from &mu;=2 — essentially impossible under that class)</div>
+              <div class="step-card"><span class="step-tag g">STEP 3</span> Multiply by priors (0.5 each) and normalize: <b>P(pass|x=6.5) &asymp; 0.9999997, P(fail|x=6.5) &asymp; 0.0000003</b></div>
+              <div class="callout good">Notice: 6.5 was NEVER seen in training, yet the Gaussian curve still produces a fully sensible, non-zero-but-tiny probability for the unlikely class — the continuous-feature equivalent of what Laplace smoothing did for word counts.</div>
+            </div>
+
+            <div class="card">
+              <h3>Multiple numerical features — the naive assumption again</h3>
+              <p class="lead" style="margin-top:0;">Add "attendance %." Evaluate each feature's density on its OWN curve, independently, then multiply — exactly the same naive assumption as multiplying word probabilities:</p>
+              <div class="formula center">joint(class) = density(hours|class) &times; density(attendance|class)</div>
+              <div class="callout warn">Every numerical feature gets its own (&mu;,&sigma;&sup2;) per class, evaluated completely independently of every other feature — that IS the naive assumption, applied to continuous numbers instead of discrete words.</div>
+            </div>
+          </div>
+        </details>
+      </section>
+      <section class="block" id="summary">
+        <div class="section-eyebrow">Wrap-up</div>
+        <h2>Summary <span class="underline">&amp; Cheat Sheet</span></h2>
+        <div class="card">
+          <table class="data-table">
+            <tr><th>Topic</th><th>One-line takeaway</th></tr>
+            <tr><td class="left">Input</td><td class="left">Text — tokenize, lowercase, remove punctuation and stopwords first</td></tr>
+            <tr><td class="left">The goal</td><td class="left">Compare P(y=1|text) vs P(y=0|text); bigger one wins</td></tr>
+            <tr><td class="left">Bayes theorem</td><td class="left">P(A|B) = P(B|A)&middot;P(A)/P(B) — reverses a hard-to-estimate probability into easy ones</td></tr>
+            <tr><td class="left">Dropping the denominator</td><td class="left">Both classes share P(text) — safe to drop when only comparing</td></tr>
+            <tr><td class="left">Priors P(y)</td><td class="left">Just count class frequency in training data</td></tr>
+            <tr><td class="left">Naive assumption</td><td class="left">Words are conditionally independent, GIVEN the class</td></tr>
+            <tr><td class="left">Likelihoods P(w|y)</td><td class="left">Count word occurrences per class, normalize</td></tr>
+            <tr><td class="left">Training</td><td class="left">One pass of counting — no iterations, no gradients</td></tr>
+            <tr><td class="left">Zero problem</td><td class="left">One unseen word &rarr; entire product collapses to 0, for BOTH classes</td></tr>
+            <tr><td class="left">Laplace smoothing</td><td class="left">(n<sub>j</sub>+&alpha;)/(n+&alpha;V) — &alpha; padding every word requires &alpha;V in the denominator</td></tr>
+            <tr><td class="left">&alpha; tuning</td><td class="left">Too large &rarr; underfit; too small &rarr; overfit (back toward the zero problem)</td></tr>
+            <tr><td class="left">Normalizing</td><td class="left">Scores don't sum to 1 on their own — divide by their sum to get real probabilities</td></tr>
+            <tr><td class="left">Regression?</td><td class="left">No — Naive Bayes is a probabilistic classifier over discrete classes only</td></tr>
+            <tr><td class="left">Categorical features</td><td class="left">Same skeleton, count categories instead of words, per-feature K</td></tr>
+            <tr><td class="left">Bernoulli vs Multinomial</td><td class="left">Presence/absence vs frequency count of each word</td></tr>
+            <tr><td class="left">Gaussian NB</td><td class="left">Numerical features — assume a bell curve (&mu;,&sigma;&sup2;) per class per feature</td></tr>
+          </table>
+        </div>
+
+        <div class="card screenshot" style="text-align:center; background:linear-gradient(135deg, rgba(179,157,219,0.08), rgba(241,127,176,0.06)); border-color:var(--purple-dim);">
+          <div class="chip" style="border-color:var(--purple-dim); color:var(--purple); background:rgba(179,157,219,0.08);">Module Complete</div>
+          <h2 style="margin:10px 0 4px;">This Is the End of <span class="underline">ML: Supervised Learning</span></h2>
+          <p class="lead" style="max-width:680px; margin:0 auto 18px; text-align:center;">From asking what supervised learning even is — regression vs classification, the problem statement itself — through Linear Regression, Logistic Regression, KNN, Decision Trees, Random Forest, boosting, classification metrics, and today, a classifier built entirely out of counting and probability. Every algorithm in this module solved the same problem — "given X, predict y" — with a genuinely different idea of how to get there.</p>
+          <blockquote class="story" style="text-align:left; max-width:680px; margin:0 auto;">Thank you for sticking with every derivation, every "ask yourself," every table worked out by hand instead of skipped over. That's the hard way to learn this material — and it's the way that actually sticks. Supervised Learning, as a module, is done. What you've built here — the instinct to ask <i>why</i> a formula looks the way it does before accepting it — carries forward into everything next.</blockquote>
+          <p class="hand" style="font-size:22px; color:var(--pink); margin-top:16px;">See you in the next module. &#10024;</p>
+        </div>
+      </section>
+
+      <div class="footnote-strip">
+        <span class="hand">&mdash; end of module &mdash;</span>
+        Naive Bayes &middot; ML: Supervised Learning &middot; 14 August 2026
+      </div>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,438 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Supervised Learning — Algorithm Cheat Sheets</title><style>
+@page { size: A4; margin: 10mm; }
+* { box-sizing:border-box; }
+body { margin:0; font-family: Inter, Arial, sans-serif; background:#0b1020; color:#e8edf7; }
+.page { width:210mm; min-height:277mm; margin:0 auto; padding:10mm 11mm 8mm; page-break-after:always; position:relative; overflow:hidden; }
+.page:last-child { page-break-after:auto; }
+.top { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #33405e; padding-bottom:7px; margin-bottom:9px; }
+.kicker { font-size:11px; letter-spacing:1.7px; text-transform:uppercase; color:#8fa6d6; font-weight:800; }
+.num { font-size:12px; color:#91a0bd; font-weight:700; }
+h1 { margin:0 0 3px; font-size:29px; line-height:1.05; letter-spacing:-.7px; }
+.tag { color:#a9b8d5; font-size:12.5px; margin-bottom:9px; }
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+.box { border:1px solid #303c59; background:#11182a; border-radius:9px; padding:8px 9px; }
+.box h2 { font-size:12px; text-transform:uppercase; letter-spacing:.8px; margin:0 0 5px; color:#b9c8e6; }
+.box p, .box div { font-size:10.5px; line-height:1.38; margin:0; }
+.full { grid-column:1 / -1; }
+.flow { font-family:ui-monospace, SFMono-Regular, Consolas, monospace; background:#0a0f1c; border:1px dashed #405070; padding:7px; border-radius:7px; font-size:10px; line-height:1.35; }
+ul { margin:4px 0 0 17px; padding:0; }
+li { margin:2px 0; font-size:10.2px; line-height:1.32; }
+.good { border-left:4px solid #6ed6a0; }
+.bad { border-left:4px solid #e58b8b; }
+.key { border-left:4px solid #d8b66b; }
+table { width:100%; border-collapse:collapse; font-size:9.7px; }
+th,td { border:1px solid #33405e; padding:4px 5px; vertical-align:top; }
+th { background:#19233a; text-align:left; color:#c8d5ee; }
+.footer { position:absolute; bottom:5mm; left:11mm; right:11mm; font-size:8.5px; color:#71809e; display:flex; justify-content:space-between; }
+.mini { font-size:9.4px !important; }
+</style></head><body>
+<section class="page">
+<div class="top"><div class="kicker">ML Coding · Supervised Learning · Revision Cheat Sheet</div><div class="num">01 / 09</div></div>
+<h1>Linear Regression</h1><div class="tag">Predict a continuous target by learning a weighted sum of features.</div>
+<div class="grid">
+<div class="box full key"><h2>01 · Computation — remember this</h2><div><b>Core:</b> ŷ = β₀ + β₁x₁ + … + βₚxₚ<br>
+<b>Training:</b> choose β to minimize Σ(yᵢ−ŷᵢ)² (OLS). Closed-form exists conceptually: β=(XᵀX)⁻¹Xᵀy when invertible; practical solvers may use numerical optimization.<br>
+<b>Prediction:</b> multiply each feature by its learned coefficient, add intercept.<br>
+<b>Remember:</b> linear model = <em>linear in parameters</em>; features can be transformed/polynomial while coefficients remain linear.</div></div>
+<div class="box full"><h2>02 · Algorithm in one flow</h2>
+<div class="flow">Best when the signal is approximately additive/linear or interpretability matters. Start here as a baseline before complex models.<br><br>DATA → PREPROCESS (if needed) → TRAIN / FIT → VALIDATE → TUNE → TEST → DEPLOY / MONITOR</div></div>
+<div class="box"><h2>03 · Hyperparameters & effect</h2><div>• <b>alpha / regularization strength</b> (Ridge/Lasso): ↑ alpha → smaller coefficients → more bias, less variance.<br>
+• <b>fit_intercept</b>: whether to learn β₀.<br>
+• Ridge: L2 shrinks coefficients; Lasso: L1 can drive coefficients to zero.<br>
+• Polynomial degree is a model-complexity knob: ↑ degree → lower bias, higher variance.</div></div>
+<div class="box"><h2>04 · Bias ↔ Variance</h2><div>High bias if relationship is nonlinear; variance is usually lower than flexible models. More features/degree can increase variance. Regularization trades variance for bias.</div></div>
+<div class="box good"><h2>05 · When to consider</h2><div>• Strong baseline; roughly linear relationship.<br>• Need interpretability/coefficient direction.<br>• Many features and need regularization.<br>• High-dimensional sparse data → regularized linear models are often strong.<br><b>Think twice:</b> strongly nonlinear interactions without useful feature engineering.<br><b>Not ideal:</b> severe nonlinear structure that trees/boosting can capture directly.</div></div>
+<div class="box bad"><h2>06 · When NOT to reach for it</h2>
+<ul><li>Don't choose by algorithm popularity; match the data geometry, scale, latency, interpretability and error cost.</li>
+<li>Always compare against a simple baseline with the metric that reflects the real objective.</li>
+</ul></div>
+<div class="box full"><h2>07 · Outliers / data issues</h2><div>• Input outliers: OLS can move coefficients substantially because squared residuals heavily penalize large errors.<br>
+• Target outliers: especially influential; can pull the fitted line toward them.<br>
+• Consider robust regression, transformations, clipping/winsorization, or investigate data quality.<br>
+• Scaling is not required for plain OLS mathematically, but is useful for regularized models and numerical stability.</div></div>
+<div class="box"><h2>08 · Classification / multiclass</h2><div>Regression only. No native multiclass extension needed.</div></div>
+<div class="box key"><h2>09 · Interview decision cue</h2><div>Best when the signal is approximately additive/linear or interpretability matters. Start here as a baseline before complex models.</div></div>
+</div>
+<div class="footer"><span>Supervised Learning — one-page revision</span><span>Linear Regression</span></div>
+</section>
+
+<section class="page">
+<div class="top"><div class="kicker">ML Coding · Supervised Learning · Revision Cheat Sheet</div><div class="num">02 / 09</div></div>
+<h1>Logistic Regression</h1><div class="tag">A linear classifier that converts a linear score into class probability.</div>
+<div class="grid">
+<div class="box full key"><h2>01 · Computation — remember this</h2><div><b>Binary:</b> z = β₀ + βᵀx; p(y=1|x)=σ(z)=1/(1+e⁻ᶻ).<br>
+<b>Training:</b> minimize log loss (cross-entropy), usually with numerical optimization.<br>
+<b>Prediction:</b> probability → threshold (often 0.5, but choose threshold for business cost/recall/precision).<br>
+<b>Decision boundary:</b> β₀+βᵀx=0 at p=0.5.<br>
+<b>Regularization:</b> penalizes large coefficients and improves generalization.</div></div>
+<div class="box full"><h2>02 · Algorithm in one flow</h2>
+<div class="flow">Best when the boundary is approximately linear, features are many/sparse, or calibrated-ish probabilities and interpretability matter. Don't force it onto strongly nonlinear feature interactions.<br><br>DATA → PREPROCESS (if needed) → TRAIN / FIT → VALIDATE → TUNE → TEST → DEPLOY / MONITOR</div></div>
+<div class="box"><h2>03 · Hyperparameters & effect</h2><div>• <b>C</b> in sklearn: inverse regularization strength. ↑ C → weaker regularization → lower bias, potentially higher variance.<br>
+• penalty: L1/L2 (solver-dependent).<br>
+• solver: affects optimization and supported penalties.<br>
+• class_weight='balanced': useful for class imbalance.<br>
+• threshold: changes precision/recall without retraining.</div></div>
+<div class="box"><h2>04 · Bias ↔ Variance</h2><div>Usually higher bias and lower variance than trees/boosting. Regularization ↑ → bias ↑, variance ↓.</div></div>
+<div class="box good"><h2>05 · When to consider</h2><div>• Strong baseline for linearly separable-ish problems.<br>• Excellent when probability estimates + interpretability matter.<br>• Sparse/high-dimensional text-like features can work very well.<br><b>Not ideal:</b> highly nonlinear boundaries unless features/interactions are engineered.<br><b>Consider before trees:</b> when you need simple, stable, explainable behavior.</div></div>
+<div class="box bad"><h2>06 · When NOT to reach for it</h2>
+<ul><li>Don't choose by algorithm popularity; match the data geometry, scale, latency, interpretability and error cost.</li>
+<li>Always compare against a simple baseline with the metric that reflects the real objective.</li>
+</ul></div>
+<div class="box full"><h2>07 · Outliers / data issues</h2><div>• Input outliers: can affect coefficients, especially influential points far from the boundary.<br>
+• Target outliers are not the regression concept here; mislabeled observations can distort the boundary.<br>
+• Scaling is often important, especially with regularization and optimization.<br>
+• Severe imbalance: use class weights, suitable threshold, PR-AUC/recall/precision, and careful validation.</div></div>
+<div class="box"><h2>08 · Classification / multiclass</h2><div>• Binary: direct sigmoid model.<br>• Multiclass: <b>OvR</b> trains one classifier per class, or <b>multinomial/softmax</b> jointly models all classes (solver-dependent).</div></div>
+<div class="box key"><h2>09 · Interview decision cue</h2><div>Best when the boundary is approximately linear, features are many/sparse, or calibrated-ish probabilities and interpretability matter. Don't force it onto strongly nonlinear feature interactions.</div></div>
+</div>
+<div class="footer"><span>Supervised Learning — one-page revision</span><span>Logistic Regression</span></div>
+</section>
+
+<section class="page">
+<div class="top"><div class="kicker">ML Coding · Supervised Learning · Revision Cheat Sheet</div><div class="num">03 / 09</div></div>
+<h1>K-Nearest Neighbors (KNN)</h1><div class="tag">Predict from the labels/values of the most similar training examples.</div>
+<div class="grid">
+<div class="box full key"><h2>01 · Computation — remember this</h2><div><b>Training:</b> essentially store the training data (lazy learner).<br>
+<b>Prediction:</b> 1) compute distance from query to training points → 2) choose k nearest → 3) classification = majority/vote (often distance-weighted); regression = mean/weighted mean.<br>
+<b>Distance:</b> Euclidean is common; choice of metric defines “similarity.”<br>
+<b>Critical:</b> scaling changes distances, so feature scaling is usually essential.</div></div>
+<div class="box full"><h2>02 · Algorithm in one flow</h2>
+<div class="flow">Consider for small/medium data, meaningful local neighborhoods, and nonlinear patterns. Avoid when dimensionality is high or inference latency/memory is a concern.<br><br>DATA → PREPROCESS (if needed) → TRAIN / FIT → VALIDATE → TUNE → TEST → DEPLOY / MONITOR</div></div>
+<div class="box"><h2>03 · Hyperparameters & effect</h2><div>• <b>n_neighbors (k)</b>: ↑ k → smoother boundary, bias ↑, variance ↓. ↓ k → flexible, bias ↓, variance ↑.<br>
+• <b>weights</b>: uniform vs distance.<br>
+• <b>metric</b>: Euclidean/Manhattan/etc.<br>
+• <b>p</b>: distance parameter for Minkowski metrics.<br>
+• leaf_size affects tree-backed neighbor search efficiency, not the prediction rule itself.</div></div>
+<div class="box"><h2>04 · Bias ↔ Variance</h2><div>k is the main bias–variance knob. Small k → low bias/high variance. Large k → high bias/low variance.</div></div>
+<div class="box good"><h2>05 · When to consider</h2><div>• Useful when local similarity is meaningful and dataset is not huge.<br>• Can model nonlinear boundaries without explicit fitting.<br><b>Not ideal:</b> very high-dimensional data (curse of dimensionality), huge training sets with expensive inference, or poorly scaled/mixed feature spaces.<br><b>Think carefully:</b> irrelevant features can destroy distance quality.</div></div>
+<div class="box bad"><h2>06 · When NOT to reach for it</h2>
+<ul><li>Don't choose by algorithm popularity; match the data geometry, scale, latency, interpretability and error cost.</li>
+<li>Always compare against a simple baseline with the metric that reflects the real objective.</li>
+</ul></div>
+<div class="box full"><h2>07 · Outliers / data issues</h2><div>• Input outliers: may become isolated; with small k they can affect nearby predictions. Distance is highly sensitive to extreme feature values.<br>
+• Target outliers: in regression, an extreme y can strongly affect the local average; distance weighting can reduce influence if it is not extremely close.<br>
+• Scaling is one of the most important preprocessing steps.<br>
+• Missing/categorical variables require an appropriate representation/distance.</div></div>
+<div class="box"><h2>08 · Classification / multiclass</h2><div>• Classification naturally supports multiclass via majority vote among all classes.<br>• Regression predicts a local average, not a class probability unless separately estimated.</div></div>
+<div class="box key"><h2>09 · Interview decision cue</h2><div>Consider for small/medium data, meaningful local neighborhoods, and nonlinear patterns. Avoid when dimensionality is high or inference latency/memory is a concern.</div></div>
+</div>
+<div class="footer"><span>Supervised Learning — one-page revision</span><span>K-Nearest Neighbors (KNN)</span></div>
+</section>
+
+<section class="page">
+<div class="top"><div class="kicker">ML Coding · Supervised Learning · Revision Cheat Sheet</div><div class="num">04 / 09</div></div>
+<h1>Decision Tree</h1><div class="tag">Recursively split the feature space into regions where targets become more homogeneous.</div>
+<div class="grid">
+<div class="box full key"><h2>01 · Computation — remember this</h2><div><b>Training:</b> at a node → try candidate feature/threshold splits → calculate impurity/loss reduction → choose best split → recurse on children → stop by constraints.<br>
+<b>Classification:</b> Gini/entropy-type impurity; leaf predicts class/probability.<br>
+<b>Regression:</b> squared-error/MSE-type reduction; leaf predicts a constant (typically mean y in the leaf).<br>
+<b>Prediction:</b> follow one path from root to leaf → use leaf prediction.</div></div>
+<div class="box full"><h2>02 · Algorithm in one flow</h2>
+<div class="flow">Think tree when relationships are nonlinear, interactions matter, feature scales differ, or you want little preprocessing. Regularize or ensemble it rather than using a fully grown tree by default.<br><br>DATA → PREPROCESS (if needed) → TRAIN / FIT → VALIDATE → TUNE → TEST → DEPLOY / MONITOR</div></div>
+<div class="box"><h2>03 · Hyperparameters & effect</h2><div>• <b>max_depth</b>: ↑ → complexity ↑, bias ↓, variance ↑.<br>
+• <b>min_samples_split / min_samples_leaf</b>: ↑ → simpler tree, bias ↑, variance ↓.<br>
+• <b>max_features</b>: fewer features per split → more randomness, usually variance ↓ but bias may ↑.<br>
+• <b>criterion</b>: split objective.<br>
+• pruning/ccp_alpha: stronger pruning → simpler tree.</div></div>
+<div class="box"><h2>04 · Bias ↔ Variance</h2><div>Deep/unrestricted tree → low bias, high variance. Shallow/pruned tree → higher bias, lower variance.</div></div>
+<div class="box good"><h2>05 · When to consider</h2><div>• Great for nonlinearities, thresholds, interactions, mixed feature scales; no scaling required.<br>• Easy rule-like explanations.<br><b>Not ideal:</b> a single unrestricted tree is unstable/high variance and often weaker than ensembles.<br><b>Use:</b> interpretable baseline or base learner for ensembles.</div></div>
+<div class="box bad"><h2>06 · When NOT to reach for it</h2>
+<ul><li>Don't choose by algorithm popularity; match the data geometry, scale, latency, interpretability and error cost.</li>
+<li>Always compare against a simple baseline with the metric that reflects the real objective.</li>
+</ul></div>
+<div class="box full"><h2>07 · Outliers / data issues</h2><div>• Input outliers: often less sensitive than distance/linear methods because splits depend on ordering/thresholds; extreme values can still create tiny leaves or affect split choices.<br>
+• Target outliers: regression leaf means can be pulled strongly; squared-error splits are sensitive to extreme y.<br>
+• Classification label noise can create small pure leaves and overfit.<br>
+• Scaling generally unnecessary.</div></div>
+<div class="box"><h2>08 · Classification / multiclass</h2><div>Native multiclass classification: a split separates groups; leaf stores class distribution/probabilities. No OvR required.</div></div>
+<div class="box key"><h2>09 · Interview decision cue</h2><div>Think tree when relationships are nonlinear, interactions matter, feature scales differ, or you want little preprocessing. Regularize or ensemble it rather than using a fully grown tree by default.</div></div>
+</div>
+<div class="footer"><span>Supervised Learning — one-page revision</span><span>Decision Tree</span></div>
+</section>
+
+<section class="page">
+<div class="top"><div class="kicker">ML Coding · Supervised Learning · Revision Cheat Sheet</div><div class="num">05 / 09</div></div>
+<h1>Random Forest / Bagging</h1><div class="tag">Reduce the variance of decision trees by averaging many randomized trees.</div>
+<div class="grid">
+<div class="box full key"><h2>01 · Computation — remember this</h2><div><b>Bagging:</b> draw bootstrap samples → train separate base trees independently → aggregate.<br>
+<b>Random Forest:</b> additionally randomizes the subset of features considered at each split.<br>
+<b>Prediction:</b> classification = vote/average class probabilities; regression = average tree predictions.<br>
+<b>Why it works:</b> averaging less-correlated noisy trees reduces variance.</div></div>
+<div class="box full"><h2>02 · Algorithm in one flow</h2>
+<div class="flow">Consider first for strong, low-maintenance tabular performance, mixed feature scales, nonlinear interactions, and noisy datasets. Consider boosting instead when squeezing out extra accuracy is the priority.<br><br>DATA → PREPROCESS (if needed) → TRAIN / FIT → VALIDATE → TUNE → TEST → DEPLOY / MONITOR</div></div>
+<div class="box"><h2>03 · Hyperparameters & effect</h2><div>• <b>n_estimators</b>: ↑ usually stabilizes predictions; compute ↑, variance ↓ until diminishing returns.<br>
+• <b>max_depth</b>: deeper trees → lower bias/higher individual-tree variance.<br>
+• <b>max_features</b>: smaller → more tree diversity, often variance ↓ but bias can ↑.<br>
+• <b>min_samples_leaf/split</b>: ↑ → regularization.<br>
+• <b>bootstrap</b>, <b>max_samples</b>: control resampling.<br>
+• class_weight: useful for imbalance.</div></div>
+<div class="box"><h2>04 · Bias ↔ Variance</h2><div>Trees have high variance; bagging/RF mainly attacks variance through averaging and decorrelation. Bias is usually not reduced as aggressively as boosting.</div></div>
+<div class="box good"><h2>05 · When to consider</h2><div>• Excellent tabular baseline; nonlinearities/interactions with little feature engineering.<br>• Robust, parallelizable, less tuning-sensitive than boosting.<br><b>Not ideal:</b> when maximum predictive performance is needed on structured/tabular data and boosting can be tuned; very large forests can be memory-heavy.<br><b>Strong choice:</b> noisy data where variance reduction is valuable.</div></div>
+<div class="box bad"><h2>06 · When NOT to reach for it</h2>
+<ul><li>Don't choose by algorithm popularity; match the data geometry, scale, latency, interpretability and error cost.</li>
+<li>Always compare against a simple baseline with the metric that reflects the real objective.</li>
+</ul></div>
+<div class="box full"><h2>07 · Outliers / data issues</h2><div>• Input outliers: generally more robust than linear/KNN because splits use thresholds; extreme values can still create unusual branches.<br>
+• Target outliers: regression averaging can be influenced, though many trees dilute individual effects; squared-error trees remain sensitive.<br>
+• Scaling not needed.<br>
+• OOB score can estimate generalization when bootstrap sampling is enabled.</div></div>
+<div class="box"><h2>08 · Classification / multiclass</h2><div>Native multiclass: each tree predicts among all classes; aggregate votes/probabilities across trees.</div></div>
+<div class="box key"><h2>09 · Interview decision cue</h2><div>Consider first for strong, low-maintenance tabular performance, mixed feature scales, nonlinear interactions, and noisy datasets. Consider boosting instead when squeezing out extra accuracy is the priority.</div></div>
+</div>
+<div class="footer"><span>Supervised Learning — one-page revision</span><span>Random Forest / Bagging</span></div>
+</section>
+
+<section class="page">
+<div class="top"><div class="kicker">ML Coding · Supervised Learning · Revision Cheat Sheet</div><div class="num">06 / 09</div></div>
+<h1>Gradient Boosting Decision Trees (GBDT)</h1><div class="tag">Build trees sequentially, with each new tree correcting the current model’s errors via the loss gradient.</div>
+<div class="grid">
+<div class="box full key"><h2>01 · Computation — remember this</h2><div><b>Start:</b> F₀(x) = initial prediction.<br>
+<b>For each round m:</b> 1) compute pseudo-residual rᵢ = −∂L(yᵢ,F(xᵢ))/∂F at current F → 2) fit a small regression tree to r → 3) add a shrunken tree update: Fₘ=Fₘ₋₁+η·treeₘ(x).<br>
+<b>Key distinction:</b> classical GBDT is fundamentally <b>first-order gradient boosting</b>; tree fitting uses regression-style targets/criteria depending on implementation.<br>
+<b>Prediction:</b> sum the initial model + all tree contributions.</div></div>
+<div class="box full"><h2>02 · Algorithm in one flow</h2>
+<div class="flow">Think GBDT when you want strong tabular performance with controlled complexity. Tune depth, learning rate, and number of trees together. Don't confuse the classical first-order derivation with XGBoost's second-order formulation.<br><br>DATA → PREPROCESS (if needed) → TRAIN / FIT → VALIDATE → TUNE → TEST → DEPLOY / MONITOR</div></div>
+<div class="box"><h2>03 · Hyperparameters & effect</h2><div>• <b>n_estimators</b>: ↑ more stages; can reduce bias but overfit if uncontrolled.<br>
+• <b>learning_rate</b>: ↓ makes each tree weaker; usually pair with more trees.<br>
+• <b>max_depth / max_leaf_nodes</b>: ↑ tree complexity → bias ↓, variance ↑.<br>
+• <b>subsample</b>: <1 introduces stochasticity, often reduces variance.<br>
+• <b>min_samples_leaf</b>, regularization/pruning: control tree complexity.</div></div>
+<div class="box"><h2>04 · Bias ↔ Variance</h2><div>Boosting primarily reduces bias by sequential correction, but too many/deep trees can increase variance. Learning rate ↓ + more trees often gives a smoother fit.</div></div>
+<div class="box good"><h2>05 · When to consider</h2><div>• Excellent for nonlinear tabular data and interactions.<br>• Strong when accuracy matters and data is structured/tabular.<br><b>Not ideal:</b> very high-dimensional sparse data where linear models may be simpler; or when training simplicity/parallelism is paramount.<br><b>Watch:</b> sequential training is harder to parallelize than RF.</div></div>
+<div class="box bad"><h2>06 · When NOT to reach for it</h2>
+<ul><li>Don't choose by algorithm popularity; match the data geometry, scale, latency, interpretability and error cost.</li>
+<li>Always compare against a simple baseline with the metric that reflects the real objective.</li>
+</ul></div>
+<div class="box full"><h2>07 · Outliers / data issues</h2><div>• Input outliers: trees are less distance-sensitive, but extreme feature values can affect split locations.<br>
+• Target outliers: loss-dependent; squared-error boosting is sensitive to extreme residuals. Robust losses can help.<br>
+• Label noise can be repeatedly chased by boosting → overfitting risk.<br>
+• Scaling generally unnecessary.</div></div>
+<div class="box"><h2>08 · Classification / multiclass</h2><div>• Binary classification commonly uses a differentiable classification loss and additive tree scores converted to probabilities.<br>
+• Multiclass uses a multiclass loss with class-specific scores/updates; implementation details vary.</div></div>
+<div class="box key"><h2>09 · Interview decision cue</h2><div>Think GBDT when you want strong tabular performance with controlled complexity. Tune depth, learning rate, and number of trees together. Don't confuse the classical first-order derivation with XGBoost's second-order formulation.</div></div>
+</div>
+<div class="footer"><span>Supervised Learning — one-page revision</span><span>Gradient Boosting Decision Trees (GBDT)</span></div>
+</section>
+
+<section class="page">
+<div class="top"><div class="kicker">ML Coding · Supervised Learning · Revision Cheat Sheet</div><div class="num">07 / 09</div></div>
+<h1>XGBoost</h1><div class="tag">A highly regularized, optimized gradient-boosted tree system using first- and second-order loss information.</div>
+<div class="grid">
+<div class="box full key"><h2>01 · Computation — remember this</h2><div><b>At each boosting round:</b> compute gradient gᵢ and Hessian hᵢ of the loss → evaluate candidate splits using aggregated G/H statistics → choose splits with positive gain → compute leaf weight using regularized objective, conceptually w* = −G/(H+λ) → add tree with learning rate.<br>
+<b>Second-order:</b> Taylor expansion uses both gradient and curvature (Hessian).<br>
+<b>Regularization:</b> explicit L1/L2-style controls + tree complexity penalty help prevent overfitting.</div></div>
+<div class="box full"><h2>02 · Algorithm in one flow</h2>
+<div class="flow">Consider when tabular predictive performance is a priority and you can tune carefully. Avoid unnecessary complexity when logistic/linear/tree baseline already meets requirements.<br><br>DATA → PREPROCESS (if needed) → TRAIN / FIT → VALIDATE → TUNE → TEST → DEPLOY / MONITOR</div></div>
+<div class="box"><h2>03 · Hyperparameters & effect</h2><div>• <b>learning_rate</b>, <b>n_estimators</b>: slower learning + more trees often smoother.<br>
+• <b>max_depth</b>: ↑ → more complex, bias ↓/variance ↑.<br>
+• <b>min_child_weight</b>: ↑ → harder to create leaves, regularizes.<br>
+• <b>subsample</b>, <b>colsample_bytree</b>: stochasticity → often variance ↓.<br>
+• <b>reg_lambda / reg_alpha</b>: stronger regularization.<br>
+• <b>gamma</b>: minimum split gain; ↑ → fewer splits.</div></div>
+<div class="box"><h2>04 · Bias ↔ Variance</h2><div>Boosting reduces bias through sequential corrections; depth/trees too high can raise variance. Subsampling/column sampling/regularization counter variance.</div></div>
+<div class="box good"><h2>05 · When to consider</h2><div>• Strong default for challenging tabular problems.<br>• Excellent when nonlinearities/interactions and performance matter.<br>• Rich regularization and practical controls.<br><b>Not ideal:</b> if a simple linear model is sufficient, or if interpretability/latency constraints favor simpler models.<br><b>Use:</b> when you want a highly tunable boosted-tree system.</div></div>
+<div class="box bad"><h2>06 · When NOT to reach for it</h2>
+<ul><li>Don't choose by algorithm popularity; match the data geometry, scale, latency, interpretability and error cost.</li>
+<li>Always compare against a simple baseline with the metric that reflects the real objective.</li>
+</ul></div>
+<div class="box full"><h2>07 · Outliers / data issues</h2><div>• Input outliers: usually less sensitive than KNN/linear models because trees split by thresholds; extreme values can still affect split candidates.<br>
+• Target outliers: loss-dependent; squared-error objective can chase extreme residuals. Robust/custom objectives may help.<br>
+• Scaling generally unnecessary.<br>
+• Missing values can be handled natively depending on configuration/version.</div></div>
+<div class="box"><h2>08 · Classification / multiclass</h2><div>Supports multiclass objectives directly; internally learns class-related score updates rather than requiring manual OvR.</div></div>
+<div class="box key"><h2>09 · Interview decision cue</h2><div>Consider when tabular predictive performance is a priority and you can tune carefully. Avoid unnecessary complexity when logistic/linear/tree baseline already meets requirements.</div></div>
+</div>
+<div class="footer"><span>Supervised Learning — one-page revision</span><span>XGBoost</span></div>
+</section>
+
+<section class="page">
+<div class="top"><div class="kicker">ML Coding · Supervised Learning · Revision Cheat Sheet</div><div class="num">08 / 09</div></div>
+<h1>LightGBM</h1><div class="tag">A fast gradient-boosted tree framework optimized for large tabular datasets using histogram-based learning and leaf-wise growth.</div>
+<div class="grid">
+<div class="box full key"><h2>01 · Computation — remember this</h2><div><b>Histogram:</b> continuous feature values are bucketed into bins → split search operates on bin statistics instead of every unique value.<br>
+<b>Leaf-wise growth:</b> among candidate leaves, split the leaf with the largest loss reduction rather than growing all leaves level-by-level.<br>
+<b>Gradient boosting:</b> sequentially adds trees/leaf expansions to reduce loss.<br>
+<b>Large-data optimizations:</b> histogram methods + techniques such as GOSS/EFB can improve speed/memory in suitable settings.</div></div>
+<div class="box full"><h2>02 · Algorithm in one flow</h2>
+<div class="flow">Think LightGBM for large tabular data, speed, many features, and strong nonlinear performance. Be cautious on small/noisy data and aggressively regularize leaf-wise models.<br><br>DATA → PREPROCESS (if needed) → TRAIN / FIT → VALIDATE → TUNE → TEST → DEPLOY / MONITOR</div></div>
+<div class="box"><h2>03 · Hyperparameters & effect</h2><div>• <b>num_leaves</b>: key complexity knob; ↑ → lower bias, higher variance.<br>
+• <b>max_depth</b>: cap tree depth.<br>
+• <b>learning_rate</b>, <b>n_estimators</b>: trade speed/fit.<br>
+• <b>min_child_samples</b>: ↑ regularization.<br>
+• <b>feature_fraction</b>, <b>bagging_fraction</b>: sampling/regularization.<br>
+• <b>lambda_l1/l2</b>: regularization.<br>
+• <b>max_bin</b>: histogram resolution vs memory/speed.</div></div>
+<div class="box"><h2>04 · Bias ↔ Variance</h2><div>Leaf-wise growth can reduce bias faster than level-wise growth but can overfit more easily. Regularize leaf count, minimum data per leaf, depth, sampling, and L1/L2.</div></div>
+<div class="box good"><h2>05 · When to consider</h2><div>• Excellent for large/complex tabular datasets and fast training.<br>• Often very strong with many rows/features.<br><b>Not ideal:</b> tiny datasets where simpler models are enough, or when leaf-wise growth is left uncontrolled and overfits.<br><b>Critical:</b> tune num_leaves with min_child_samples/max_depth.</div></div>
+<div class="box bad"><h2>06 · When NOT to reach for it</h2>
+<ul><li>Don't choose by algorithm popularity; match the data geometry, scale, latency, interpretability and error cost.</li>
+<li>Always compare against a simple baseline with the metric that reflects the real objective.</li>
+</ul></div>
+<div class="box full"><h2>07 · Outliers / data issues</h2><div>• Input outliers: tree-based thresholding makes it relatively robust; extreme values can still affect binning/splits depending on distribution.<br>
+• Target outliers: objective-dependent; squared-error can chase extreme y/residuals.<br>
+• Scaling generally unnecessary.<br>
+• Histogram binning is a major computational optimization.</div></div>
+<div class="box"><h2>08 · Classification / multiclass</h2><div>Direct multiclass objectives are supported; model learns class-specific outputs under the chosen multiclass loss.</div></div>
+<div class="box key"><h2>09 · Interview decision cue</h2><div>Think LightGBM for large tabular data, speed, many features, and strong nonlinear performance. Be cautious on small/noisy data and aggressively regularize leaf-wise models.</div></div>
+</div>
+<div class="footer"><span>Supervised Learning — one-page revision</span><span>LightGBM</span></div>
+</section>
+
+<section class="page">
+<div class="top"><div class="kicker">ML Coding · Supervised Learning · Revision Cheat Sheet</div><div class="num">09 / 09</div></div>
+<h1>Naive Bayes</h1><div class="tag">A probabilistic classifier that combines Bayes' rule with a conditional-independence assumption.</div>
+<div class="grid">
+<div class="box full key"><h2>01 · Computation — remember this</h2><div><b>Bayes:</b> P(y|x) ∝ P(y)·P(x|y).<br>
+<b>Naive assumption:</b> P(x₁,…,xₚ|y)=∏ⱼP(xⱼ|y).<br>
+<b>Training:</b> estimate class priors and feature likelihood parameters from training data.<br>
+<b>Prediction:</b> calculate posterior score for each class → choose highest posterior.<br>
+Common variants: Gaussian NB (continuous), Multinomial NB (counts), Bernoulli NB (binary features).</div></div>
+<div class="box full"><h2>02 · Algorithm in one flow</h2>
+<div class="flow">Consider for text/count/binary features, fast baselines, small datasets, and situations where the independence assumption is tolerable. Avoid if feature dependencies are central to the problem.<br><br>DATA → PREPROCESS (if needed) → TRAIN / FIT → VALIDATE → TUNE → TEST → DEPLOY / MONITOR</div></div>
+<div class="box"><h2>03 · Hyperparameters & effect</h2><div>• Variant choice is often more important than a numeric hyperparameter.<br>
+• <b>var_smoothing</b> in GaussianNB: stabilizes tiny variances; ↑ adds more smoothing.<br>
+• <b>alpha</b> in Multinomial/Bernoulli variants: additive smoothing; ↑ more smoothing, less sensitivity to rare counts.<br>
+• priors/class_prior can encode prior probabilities.</div></div>
+<div class="box"><h2>04 · Bias ↔ Variance</h2><div>Usually high bias because of the strong independence assumption, but low variance and low data requirements. Smoothing can reduce variance from rare features at the cost of bias.</div></div>
+<div class="box good"><h2>05 · When to consider</h2><div>• Very fast; excellent baseline for text/count features and small datasets.<br>• Works surprisingly well despite the independence assumption when ranking classes matters more than perfectly modeling dependence.<br><b>Not ideal:</b> strongly dependent features where probability calibration/structure matters heavily.<br><b>Consider:</b> when speed and high-dimensional sparse features dominate.</div></div>
+<div class="box bad"><h2>06 · When NOT to reach for it</h2>
+<ul><li>Don't choose by algorithm popularity; match the data geometry, scale, latency, interpretability and error cost.</li>
+<li>Always compare against a simple baseline with the metric that reflects the real objective.</li>
+</ul></div>
+<div class="box full"><h2>07 · Outliers / data issues</h2><div>• Input outliers: effect depends heavily on variant. GaussianNB can be affected by extreme continuous values because mean/variance estimates shift.<br>
+• Target outliers: classification labels that are wrong can distort priors/likelihood estimates.<br>
+• Scaling is generally not required for the probability model itself, but feature preprocessing still matters for the chosen variant.</div></div>
+<div class="box"><h2>08 · Classification / multiclass</h2><div>Naturally multiclass: estimate priors/likelihoods for each class and select the largest posterior.</div></div>
+<div class="box key"><h2>09 · Interview decision cue</h2><div>Consider for text/count/binary features, fast baselines, small datasets, and situations where the independence assumption is tolerable. Avoid if feature dependencies are central to the problem.</div></div>
+</div>
+<div class="footer"><span>Supervised Learning — one-page revision</span><span>Naive Bayes</span></div>
+</section>
+
+<section class="page">
+<div class="top"><div class="kicker">ML Coding · Supervised Learning · Revision Cheat Sheet</div><div class="num">10 / 13</div></div>
+<h1>Model Selection — What should I think first?</h1><div class="tag">Choose based on data + objective, not because one algorithm is universally “best”.</div>
+<div class="grid">
+<div class="box full key"><h2>Fast decision tree</h2><div class="flow">
+Need regression? → Linear baseline → Tree ensemble if nonlinear/interactions → Boosting if performance priority<br>
+Need classification? → Logistic baseline → Tree ensemble if nonlinear/interactions → Boosting if performance priority<br>
+Huge sparse/count text? → Logistic / Naive Bayes are strong first checks<br>
+Small data + meaningful local similarity? → KNN can work<br>
+Need very little preprocessing / mixed scales? → Trees / RF / boosting<br>
+Need interpretability? → Linear/logistic or constrained tree<br>
+Need fast training + easy parallelism? → RF often easier than sequential boosting<br>
+Large tabular + speed? → LightGBM is a strong candidate
+</div></div>
+<div class="box"><h2>Linear / Logistic</h2><ul>
+<li>Relationship/boundary roughly linear</li><li>Interpretability and stable baseline matter</li><li>High-dimensional sparse features</li><li>Regularization controls variance</li></ul></div>
+<div class="box"><h2>KNN</h2><ul><li>Neighborhood similarity is meaningful</li><li>Small/medium dataset</li><li>Scaling + distance are trustworthy</li><li>Avoid high dimensionality / huge inference load</li></ul></div>
+<div class="box"><h2>Tree / RF</h2><ul><li>Nonlinearity + interactions</li><li>Minimal scaling/preprocessing</li><li>RF = robust variance reduction</li><li>Good tabular baseline</li></ul></div>
+<div class="box"><h2>GBDT / XGBoost / LightGBM</h2><ul><li>Tabular performance is priority</li><li>Nonlinearities + interactions</li><li>Tune complexity + learning rate + number of trees</li><li>Boosting can chase noise if overpowered</li></ul></div>
+<div class="box full"><h2>Must ask before choosing</h2><table>
+<tr><th>Question</th><th>Why it matters</th></tr>
+<tr><td>How many rows/features?</td><td>Determines whether KNN, complex boosting, sparse linear models, etc. are practical.</td></tr>
+<tr><td>Linear or nonlinear signal?</td><td>Linear/logistic may suffice; trees/boosting capture thresholds/interactions.</td></tr>
+<tr><td>Are features sparse/count-based?</td><td>Logistic/NB may be especially strong.</td></tr>
+<tr><td>Class imbalance?</td><td>Accuracy may mislead; use class weights/resampling + PR-oriented metrics/thresholding.</td></tr>
+<tr><td>Latency / interpretability?</td><td>Complex ensembles may be less suitable even if their validation score is higher.</td></tr>
+<tr><td>What is the cost of FP vs FN?</td><td>Sets threshold and metric priorities; don't blindly use 0.5.</td></tr>
+</table></div>
+</div>
+<div class="footer"><span>Supervised Learning — one-page revision</span><span>Model selection</span></div>
+</section>
+
+<section class="page">
+<div class="top"><div class="kicker">ML Coding · Supervised Learning · Revision Cheat Sheet</div><div class="num">11 / 13</div></div>
+<h1>Evaluation Metrics — Classification</h1><div class="tag">Metric follows the error you actually care about.</div>
+<div class="grid">
+<div class="box full key"><h2>Confusion matrix → the foundation</h2>
+<table><tr><th></th><th>Pred +</th><th>Pred −</th></tr>
+<tr><th>Actual +</th><td>TP</td><td>FN</td></tr><tr><th>Actual −</th><td>FP</td><td>TN</td></tr></table>
+<div class="mini"><b>Precision = TP/(TP+FP)</b> → among predicted positives, how many are correct.<br>
+<b>Recall / TPR = TP/(TP+FN)</b> → among actual positives, how many found.<br>
+<b>Specificity / TNR = TN/(TN+FP)</b> → among actual negatives, how many correctly rejected.<br>
+<b>FPR = FP/(FP+TN)</b>, <b>FNR = FN/(FN+TP)</b>.</div></div>
+<div class="box"><h2>Accuracy</h2><div>Correct / all. Good when classes are reasonably balanced and FP/FN costs are similar. <b>Danger:</b> misleading under severe imbalance.</div></div>
+<div class="box"><h2>F1</h2><div>2PR/(P+R). Good when precision and recall both matter. Fβ weights recall more when β&gt;1 and precision more when β&lt;1.</div></div>
+<div class="box"><h2>ROC-AUC</h2><div>Ranks positives above negatives across thresholds using TPR vs FPR. Useful broad discrimination metric; can look overly optimistic under extreme imbalance.</div></div>
+<div class="box"><h2>PR-AUC</h2><div>Precision–recall tradeoff. Particularly informative when the positive class is rare and finding positives is the focus.</div></div>
+<div class="box"><h2>Macro vs Weighted vs Micro</h2><ul><li><b>Macro:</b> average metric per class → each class equal weight.</li><li><b>Weighted:</b> weighted by class support → majority classes dominate more.</li><li><b>Micro:</b> aggregate TP/FP/FN globally → frequent classes dominate.</li></ul></div>
+<div class="box full good"><h2>What should I report?</h2>
+<table><tr><th>Scenario</th><th>Think first</th></tr>
+<tr><td>Balanced + equal costs</td><td>Accuracy + confusion matrix; add F1 if useful.</td></tr>
+<tr><td>Rare fraud / positive detection</td><td>PR-AUC + precision/recall at an operating threshold; confusion matrix.</td></tr>
+<tr><td>Missing a positive is costly</td><td>Recall/TPR; choose threshold accordingly; report precision too.</td></tr>
+<tr><td>False alarms are costly</td><td>Precision / specificity; tune threshold.</td></tr>
+<tr><td>Multiclass with minority classes important</td><td>Macro F1 + per-class metrics + confusion matrix.</td></tr>
+<tr><td>Need threshold-independent ranking</td><td>ROC-AUC or PR-AUC depending on prevalence/problem.</td></tr>
+</table></div>
+</div>
+<div class="footer"><span>Supervised Learning — one-page revision</span><span>Classification metrics</span></div>
+</section>
+
+<section class="page">
+<div class="top"><div class="kicker">ML Coding · Supervised Learning · Revision Cheat Sheet</div><div class="num">12 / 13</div></div>
+<h1>Evaluation Metrics — Regression + Validation</h1><div class="tag">Choose the metric that matches the business meaning of error.</div>
+<div class="grid">
+<div class="box"><h2>MAE</h2><div>mean |y−ŷ|. Same units as target. Robust-ish to outliers compared with RMSE. Easy to explain: “average absolute error”.</div></div>
+<div class="box"><h2>RMSE</h2><div>√mean((y−ŷ)²). Same units as target. Penalizes large errors more strongly. Good when big misses are especially costly.</div></div>
+<div class="box"><h2>R²</h2><div>1 − SSE/SST. Relative variance-explanation measure. Useful alongside MAE/RMSE, but not a direct business error unit. Can be negative on poor test predictions.</div></div>
+<div class="box full key"><h2>Metric choice</h2><table><tr><th>If you care about…</th><th>Prefer / emphasize</th></tr>
+<tr><td>Typical absolute error</td><td>MAE</td></tr><tr><td>Large mistakes disproportionately costly</td><td>RMSE</td></tr><tr><td>Relative fit / variance explained</td><td>R² + an error metric</td></tr><tr><td>Outlier-resistant summary</td><td>MAE (but investigate why outliers exist)</td></tr></table></div>
+<div class="box full"><h2>Validation workflow — don't contaminate the answer</h2><div class="flow">
+Split data correctly → TRAIN only preprocessing/model fitting → CV on training data → tune hyperparameters → lock final pipeline → evaluate once on untouched TEST → report uncertainty / subgroup performance where appropriate.
+</div><ul>
+<li>Fit scaler/encoder/imputer/SMOTE <b>inside the training fold</b>, not before CV.</li>
+<li>Use Pipeline + ColumnTransformer to keep preprocessing attached to the model.</li>
+<li>For time-dependent data, use a time-aware split rather than random CV when random splitting leaks future information.</li>
+<li>Choose the metric before tuning so the search objective matches the real goal.</li>
+</ul></div>
+<div class="box"><h2>Overfitting signal</h2><div>Train score excellent + validation/test much worse → variance/overfit. Try simpler model, stronger regularization, more data, less depth, fewer leaves, fewer trees, or better validation.</div></div>
+<div class="box"><h2>Underfitting signal</h2><div>Train and validation both poor → bias/underfit. Increase useful complexity, improve features, reduce excessive regularization, or use a more expressive model.</div></div>
+</div>
+<div class="footer"><span>Supervised Learning — one-page revision</span><span>Regression + validation</span></div>
+</section>
+
+<section class="page">
+<div class="top"><div class="kicker">ML Coding · Supervised Learning · Revision Cheat Sheet</div><div class="num">13 / 13</div></div>
+<h1>Class Imbalance + Final Interview Recall</h1><div class="tag">The fastest mental checklist before you train or discuss a classifier.</div>
+<div class="grid">
+<div class="box full key"><h2>Class imbalance — what changes?</h2>
+<ul>
+<li><b>Accuracy can become meaningless:</b> predicting the majority class can look excellent.</li>
+<li>Inspect confusion matrix, per-class precision/recall, macro F1, and PR-AUC where positive rarity matters.</li>
+<li><b>Training:</b> class weights, appropriate resampling, or specialized objectives can change the learning emphasis.</li>
+<li><b>SMOTE:</b> create synthetic minority samples <b>only within training folds</b>; never oversample before the train/validation split.</li>
+<li><b>Threshold:</b> model probability ≠ final business decision. Select threshold using validation data and FP/FN costs.</li>
+</ul></div>
+<div class="box"><h2>Outlier mental model</h2><ul>
+<li>Linear / logistic: potentially influential.</li>
+<li>KNN: distance-sensitive; very sensitive to feature extremes.</li>
+<li>Trees: generally less sensitive in X-space; target outliers still matter for squared-error regression.</li>
+<li>Boosting: can chase noisy/extreme residuals.</li>
+<li>NB: variant-dependent; Gaussian estimates can shift.</li>
+</ul></div>
+<div class="box"><h2>Scaling mental model</h2><ul>
+<li><b>Usually needed:</b> KNN, logistic/linear with regularization/optimization, many distance/gradient-based methods.</li>
+<li><b>Usually unnecessary:</b> DT, RF, GBDT, XGBoost, LightGBM, Naive Bayes probability model.</li>
+<li>Always fit transforms on training data only.</li>
+</ul></div>
+<div class="box full"><h2>9 algorithms — one-line memory hooks</h2>
+<table>
+<tr><th>Algorithm</th><th>Memory hook</th><th>Main knob</th></tr>
+<tr><td>Linear Regression</td><td>Fit coefficients to minimize squared error</td><td>Regularization / degree</td></tr>
+<tr><td>Logistic Regression</td><td>Linear score → sigmoid probability</td><td>C / penalty / threshold</td></tr>
+<tr><td>KNN</td><td>Nearby examples vote / average</td><td>k</td></tr>
+<tr><td>Decision Tree</td><td>Best split → recurse → leaf prediction</td><td>depth / min leaf</td></tr>
+<tr><td>Random Forest</td><td>Many randomized trees → average/vote</td><td>features per split / depth</td></tr>
+<tr><td>GBDT</td><td>Each tree follows the negative gradient</td><td>learning rate × trees × depth</td></tr>
+<tr><td>XGBoost</td><td>Gradient + Hessian + regularized split/leaf objective</td><td>depth / child weight / regularization</td></tr>
+<tr><td>LightGBM</td><td>Histogram + leaf-wise boosting</td><td>num_leaves / min child</td></tr>
+<tr><td>Naive Bayes</td><td>Bayes + conditional independence</td><td>variant + smoothing</td></tr>
+</table></div>
+<div class="box full good"><h2>Final 12 questions to ask yourself</h2>
+<div class="mini"><b>1.</b> Regression or classification? &nbsp; <b>2.</b> What is the cost of FP vs FN? &nbsp; <b>3.</b> Balanced or imbalanced? &nbsp; <b>4.</b> Linear or nonlinear? &nbsp; <b>5.</b> How many rows/features? &nbsp; <b>6.</b> Sparse/count data? &nbsp; <b>7.</b> Outliers/noise? &nbsp; <b>8.</b> Need scaling? &nbsp; <b>9.</b> Interpretability/latency constraints? &nbsp; <b>10.</b> Which metric actually matches the objective? &nbsp; <b>11.</b> Is CV/leakage controlled? &nbsp; <b>12.</b> Did a simple baseline lose to the complex model for a meaningful reason?</div>
+</div>
+</div>
+<div class="footer"><span>Supervised Learning — one-page revision</span><span>Final recall</span></div>
+</section>
+</body></html>
