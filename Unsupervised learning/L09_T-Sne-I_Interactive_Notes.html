@@ -1,0 +1,1292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 09 — t-SNE I: From Neighbors to Probabilities | Unsupervised ML</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,ital@9..144,400;9..144,500;9..144,600;9..144,700;9..144,600italic&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'$',right:'$',display:false},{left:'\\(',right:'\\)',display:false}]});"></script>
+<style>
+:root{
+  --ink-0:#0a0c10; --ink-1:#12151b; --ink-2:#181c24;
+  --hair:#242a34; --hair-soft:#1a1e26;
+  --paper:#eef0ee; --paper-dim:#9aa3ad; --paper-faint:#6b7480;
+  --gold:#d9ab5c; --gold-dim:#4d3d22;
+  --teal:#5fbfae; --teal-dim:#1f4239;
+  --coral:#e2836c; --coral-dim:#4a2c22;
+  --slate-blue:#7f9adf; --slate-blue-dim:#252f4a;
+  --moss:#93c084; --moss-dim:#293c26;
+  --radius:12px;
+  --display:"Fraunces",Georgia,serif;
+  --sans:"Inter",-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0; background:var(--ink-0); color:var(--paper);
+  font-family:var(--sans); font-size:16px; line-height:1.6;
+  position:relative; overflow-x:hidden;
+}
+body::before{
+  content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background-image:radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size:22px 22px;
+  -webkit-mask-image:radial-gradient(circle at 30% 10%, rgba(0,0,0,0.9), transparent 70%);
+  mask-image:radial-gradient(circle at 30% 10%, rgba(0,0,0,0.9), transparent 70%);
+}
+body::after{
+  content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(600px 400px at 8% 0%, rgba(217,171,92,0.10), transparent 60%),
+    radial-gradient(700px 500px at 100% 30%, rgba(95,191,174,0.08), transparent 60%);
+}
+.wrap{max-width:1180px; margin:0 auto; padding:0 28px; position:relative; z-index:1;}
+a{color:var(--gold);}
+h1,h2,h3{font-family:var(--display); font-weight:600; margin:0;}
+em{font-style:italic; color:var(--gold);}
+.mono{font-family:var(--mono);}
+
+.hero{padding:76px 0 40px; display:grid; grid-template-columns:1.15fr 0.85fr; gap:40px; align-items:center; border-bottom:1px solid var(--hair);}
+.kicker{font-family:var(--mono); font-size:.78rem; letter-spacing:.12em; text-transform:uppercase; color:var(--teal); margin-bottom:16px;}
+.hero h1{font-size:2.7rem; line-height:1.12; color:var(--paper);}
+.hero p.sub{font-size:1.08rem; color:var(--paper-dim); max-width:46ch; margin-top:18px;}
+.meta{margin-top:26px; display:flex; flex-direction:column; gap:6px; font-family:var(--mono); font-size:.85rem; color:var(--paper-dim);}
+.meta b{color:var(--paper); font-weight:500;}
+.prereqs{display:flex; flex-wrap:wrap; gap:8px; margin-top:20px;}
+.pill{font-family:var(--mono); font-size:.76rem; padding:5px 12px; border-radius:20px; border:1px solid var(--hair); color:var(--paper-dim); background:var(--ink-1);}
+.hero-art{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:18px;}
+.hero-art .cap{font-family:var(--mono); font-size:.74rem; color:var(--paper-faint); text-align:center; margin-top:10px;}
+
+.layout{display:grid; grid-template-columns:250px 1fr; gap:48px; padding:44px 0 100px; align-items:start;}
+nav.toc{position:sticky; top:20px; font-size:.86rem; max-height:calc(100vh - 40px); overflow-y:auto; padding-right:8px;}
+nav.toc .tt{font-family:var(--mono); text-transform:uppercase; letter-spacing:.1em; font-size:.7rem; color:var(--paper-faint); margin:20px 0 8px;}
+nav.toc .tt:first-child{margin-top:0;}
+nav.toc a{display:block; padding:5px 0; color:var(--paper-dim); text-decoration:none; border-left:2px solid transparent; padding-left:10px; margin-left:-2px; transition:color .15s, border-color .15s;}
+nav.toc a:hover{color:var(--paper);}
+nav.toc a.active{color:var(--gold); border-left-color:var(--gold);}
+
+main{min-width:0;}
+section.block{margin-bottom:60px; scroll-margin-top:20px;}
+.eyebrow{font-family:var(--mono); font-size:.76rem; letter-spacing:.08em; text-transform:uppercase; color:var(--coral); margin-bottom:10px;}
+section.block h2{font-size:1.7rem; color:var(--paper); margin-bottom:6px;}
+section.block h2 i{font-style:italic; color:var(--gold); font-weight:500;}
+p.lead{color:var(--paper-dim); font-size:1.02rem; max-width:70ch; margin-top:10px;}
+
+.card{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:20px 22px; margin:16px 0;}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+.grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;}
+.grid4{display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:14px;}
+.co-card{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:18px; display:flex; flex-direction:column;}
+.co-card .name{font-family:var(--display); font-weight:600; color:var(--gold); margin-bottom:6px;}
+.co-card p{margin:0; color:var(--paper-dim); font-size:.94rem; flex:1;}
+.co-card .why{margin-top:10px; padding-top:10px; border-top:1px solid var(--hair); font-size:.86rem; color:var(--teal);}
+
+.callout{background:var(--ink-1); border-left:3px solid var(--slate-blue); border-radius:0 var(--radius) var(--radius) 0; padding:14px 18px; margin:18px 0; font-size:.95rem;}
+.callout b{color:var(--paper);}
+.callout.warn{border-left-color:var(--coral);}
+.callout.info{border-left-color:var(--slate-blue);}
+.callout.good{border-left-color:var(--moss);}
+.callout .lbl{font-family:var(--mono); font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; color:var(--paper-faint); margin-bottom:6px; display:block;}
+
+.formula{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:16px 24px 22px; margin:18px 0; text-align:center;}
+.formula.left{text-align:left;}
+.formula .tag{display:block; width:max-content; max-width:100%; text-align:left; background:var(--ink-2); border:1px solid var(--hair); font-family:var(--mono); font-size:.68rem; padding:2px 9px; border-radius:10px; color:var(--gold); margin:0 0 12px;}
+.formula .eq{overflow-x:auto; padding-bottom:2px;}
+.step{display:flex; gap:14px; margin:14px 0; align-items:flex-start;}
+.step .num{flex:0 0 30px; height:30px; border-radius:50%; background:var(--gold-dim); color:var(--gold); font-family:var(--mono); font-weight:600; font-size:.85rem; display:flex; align-items:center; justify-content:center;}
+.step .body{flex:1; padding-top:3px;}
+.step .body p{margin:4px 0 0;}
+
+.tbl{overflow-x:auto; margin:18px 0;}
+.tbl table{width:100%; border-collapse:collapse; font-size:.9rem;}
+.tbl th,.tbl td{padding:9px 12px; border-bottom:1px solid var(--hair); text-align:left;}
+.tbl th{font-family:var(--mono); font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:var(--paper-faint);}
+.nocase{text-transform:none;}
+.tbl td.hl{color:var(--gold); font-family:var(--mono);}
+.tbl td.good{color:var(--moss);}
+.tbl td.bad{color:var(--coral);}
+.tbl td.teal{color:var(--teal);}
+.tbl td.c1{background:rgba(217,171,92,0.06);}
+.tbl td.c2{background:rgba(95,191,174,0.06);}
+.tbl td.c3{background:rgba(226,131,108,0.06);}
+.tbl td.mono, .tbl th.mono{font-family:var(--mono);}
+
+.code{background:var(--ink-2); border:1px solid var(--hair); border-radius:var(--radius); padding:16px 18px; font-family:var(--mono); font-size:.84rem; overflow-x:auto; margin:16px 0; line-height:1.7;}
+.code .c{color:var(--paper-faint); font-style:italic;}
+.code .k{color:var(--slate-blue);}
+.code .n{color:var(--gold);}
+.code .s{color:var(--teal);}
+
+.quote{font-family:var(--display); font-style:italic; font-size:1.15rem; color:var(--paper); border-left:3px solid var(--gold); padding:6px 22px; margin:20px 0;}
+.quote .who{display:block; font-family:var(--mono); font-style:normal; font-size:.78rem; color:var(--paper-faint); margin-top:8px;}
+
+.vs{display:grid; grid-template-columns:1fr auto 1fr; gap:0; align-items:stretch; margin:18px 0;}
+.vs .side{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:16px 18px;}
+.vs .side.left{border-top-right-radius:0; border-bottom-right-radius:0;}
+.vs .side.right{border-top-left-radius:0; border-bottom-left-radius:0;}
+.vs .mid{display:flex; align-items:center; justify-content:center; padding:0 16px; font-family:var(--mono); color:var(--paper-faint); font-size:.8rem;}
+.vs .side .t{font-family:var(--mono); text-transform:uppercase; font-size:.7rem; letter-spacing:.08em; color:var(--paper-faint); margin-bottom:8px;}
+
+.diagram{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:18px; margin:18px 0; text-align:center;}
+.diagram svg,.diagram img{max-width:100%;}
+.diagram .cap{font-family:var(--mono); font-size:.78rem; color:var(--paper-faint); margin-top:10px;}
+
+.badge{display:inline-block; font-family:var(--mono); font-size:.72rem; padding:2px 9px; border-radius:10px; margin-right:6px;}
+.b-c1{background:var(--gold-dim); color:var(--gold);}
+.b-c2{background:var(--teal-dim); color:var(--teal);}
+.b-c3{background:var(--coral-dim); color:var(--coral);}
+
+details.deriv{background:var(--ink-1); border:1px solid var(--hair-soft); border-left:3px solid var(--gold); border-radius:var(--radius); padding:14px 18px; margin:18px 0;}
+details.deriv summary{font-family:var(--sans); font-weight:700; color:var(--gold); cursor:pointer; list-style:none;}
+details.deriv summary::-webkit-details-marker{display:none;}
+details.deriv summary::marker{color:var(--gold);}
+details.deriv summary::before{content:"▸ "; font-family:var(--mono);}
+details.deriv[open] summary::before{content:"▾ ";}
+details.deriv .inner{margin-top:14px; padding-top:14px; border-top:1px solid var(--hair-soft);}
+
+.kpi-row{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:20px 0;}
+.kpi{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:16px; text-align:center;}
+.kpi .num{font-family:var(--display); font-size:1.9rem; color:var(--gold);}
+.kpi .lbl{font-family:var(--mono); font-size:.72rem; color:var(--paper-faint); margin-top:4px; text-transform:uppercase; letter-spacing:.05em;}
+
+.timeline{position:relative; margin:24px 0 24px 10px; padding-left:26px;}
+.timeline::before{content:""; position:absolute; left:5px; top:6px; bottom:6px; width:2px; background:var(--hair);}
+.timeline .titem{position:relative; margin-bottom:20px;}
+.timeline .titem::before{content:""; position:absolute; left:-26px; top:4px; width:11px; height:11px; border-radius:50%; background:var(--gold); border:2px solid var(--ink-0);}
+.timeline .titem .tsec{font-family:var(--mono); font-size:.7rem; color:var(--paper-faint); text-transform:uppercase; letter-spacing:.05em;}
+.timeline .titem .ttext{margin-top:2px; font-size:.94rem;}
+.timeline .titem.hl::before{background:var(--teal);}
+.timeline .titem.next::before{background:var(--paper-faint);}
+.mental-model{background:var(--ink-1); border:1px solid var(--gold-dim); border-radius:var(--radius); padding:20px 24px; margin:24px 0;}
+.mental-model .card-title{font-family:var(--mono); text-transform:uppercase; font-size:.72rem; letter-spacing:.08em; color:var(--gold); margin-bottom:10px;}
+
+.pagefoot{display:flex; justify-content:space-between; padding:30px 0 60px; border-top:1px solid var(--hair); margin-top:20px; font-family:var(--mono); font-size:.85rem;}
+.pagefoot a{color:var(--paper-dim); text-decoration:none;}
+.pagefoot a:hover{color:var(--gold);}
+.relbox{color:var(--paper-faint);}
+.divider{border-top:1px solid var(--hair); margin:40px 0;}
+
+.scopetag{display:inline-block; font-family:var(--mono); font-size:.68rem; padding:3px 10px; border-radius:20px; margin-left:8px; vertical-align:middle;}
+.scope-today{background:var(--moss-dim); color:var(--moss); border:1px solid var(--moss-dim);}
+.scope-next{background:var(--ink-2); color:var(--paper-faint); border:1px solid var(--hair);}
+
+@media(max-width:920px){
+  .hero{grid-template-columns:1fr;}
+  .layout{grid-template-columns:1fr;}
+  nav.toc{position:relative; top:0; max-height:none;}
+  .grid2,.grid3,.grid4{grid-template-columns:1fr;}
+  .vs{grid-template-columns:1fr;}
+  .vs .mid{display:none;}
+  .kpi-row{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<section class="hero">
+  <div>
+    <div class="kicker">ML Coding · Unsupervised Learning · Class 09 (cont'd)</div>
+    <h1>t-SNE I <em>— from neighbors to probabilities</em></h1>
+    <p class="sub">PCA gave us new axes ranked by variance. Today we build a completely different kind of map — one whose only promise is that points which were neighbors in high dimensions stay neighbors in 2D. We'll turn "close" into distance, distance into a Gaussian similarity, and similarity into a per-point probability distribution — ending at the single idea that makes the whole thing work: perplexity.</p>
+    <div class="meta">
+      <div>Date: <b>11 September 2026</b></div>
+      <div>Module: <b>Unsupervised Learning</b></div>
+      <div>Builds on: <b>Class 08–09 — PCA I &amp; II</b></div>
+      <div>Today's scope: <b>Distance → Similarity → Probability → Perplexity</b> <span class="mono" style="color:var(--paper-faint)">(Q, KL divergence, gradient descent → next class)</span></div>
+    </div>
+    <div class="prereqs">
+      <span class="pill">Gaussian / normal curve</span>
+      <span class="pill">log₂, entropy (intuition)</span>
+      <span class="pill">Euclidean distance</span>
+      <span class="pill">PCA's variance objective</span>
+    </div>
+  </div>
+  <div class="hero-art">
+    <svg viewBox="0 0 320 260" width="100%" height="260">
+      <text x="20" y="28" fill="#6b7480" font-family="IBM Plex Mono" font-size="10">HIGH-D SPACE</text>
+      <circle cx="60" cy="90" r="5" fill="#7f9adf"/><circle cx="78" cy="78" r="5" fill="#7f9adf"/><circle cx="70" cy="105" r="5" fill="#7f9adf"/>
+      <circle cx="230" cy="70" r="5" fill="#e2836c"/><circle cx="248" cy="85" r="5" fill="#e2836c"/><circle cx="240" cy="55" r="5" fill="#e2836c"/>
+      <circle cx="130" cy="180" r="5" fill="#93c084"/><circle cx="150" cy="195" r="5" fill="#93c084"/><circle cx="140" cy="165" r="5" fill="#93c084"/>
+      <path d="M 90 90 Q 160 40 220 70" stroke="#6b7480" stroke-width="1" fill="none" stroke-dasharray="3 3"/>
+      <text x="140" y="45" fill="#6b7480" font-family="IBM Plex Mono" font-size="9">"who's close to whom?"</text>
+      <line x1="20" y1="230" x2="300" y2="230" stroke="#242a34" stroke-width="1.5"/>
+      <text x="20" y="248" fill="#6b7480" font-family="IBM Plex Mono" font-size="10">2D MAP →</text>
+      <circle cx="245" cy="210" r="5" fill="#d9ab5c"/>
+      <text x="252" y="214" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="10">t-SNE</text>
+    </svg>
+    <div class="cap">Three tight groups in high-D — the only thing t-SNE promises to protect is that each group stays a tight, separate group after the drop to 2D.</div>
+  </div>
+</section>
+</div>
+
+<div class="wrap">
+<div class="layout">
+<nav class="toc">
+  <div class="tt">Motivation</div>
+  <a href="#s0-recap">00 · Where PCA left us</a>
+  <a href="#s1-why">01 · Why do we need t-SNE?</a>
+  <a href="#s2-meet">02 · Meet t-SNE</a>
+
+  <div class="tt">The central question</div>
+  <a href="#s3-question">03 · PCA's question vs t-SNE's question</a>
+  <a href="#s4-demo">04 · Real demo — PCA vs t-SNE, same data</a>
+  <a href="#s5-tworuns">05 · Two different t-SNE runs, same neighbors</a>
+
+  <div class="tt">The full picture</div>
+  <a href="#s6-pipeline">06 · The full pipeline, start to finish</a>
+
+  <div class="tt">Turning "close" into math</div>
+  <a href="#s7-dist-sim">07 · Distance → similarity</a>
+  <a href="#s8-not-inverse">08 · Why not 1/distance? Enter the Gaussian</a>
+  <a href="#s9-gauss-formula">09 · The Gaussian similarity formula</a>
+  <a href="#s10-why-gauss">10 · Why Gaussian, specifically?</a>
+
+  <div class="tt">One <span class="nocase">σ</span> per point</div>
+  <a href="#s11-sigma">11 · σ — each point's own "nearby"</a>
+  <a href="#s12-prob">12 · From similarity to probability</a>
+  <a href="#s13-density">13 · Dense vs sparse neighborhoods</a>
+
+  <div class="tt">Perplexity</div>
+  <a href="#s14-entropy">14 · Picking σᵢ — entropy, then perplexity</a>
+  <a href="#s15-perp-meaning">15 · Perplexity in plain English</a>
+  <a href="#s16-internals">16 · Optional — how σᵢ is actually found</a>
+
+  <div class="tt">End to end</div>
+  <a href="#s17-worked">17 · Optional — full worked example</a>
+  <a href="#s18-keyidea">18 · The key idea: fix perplexity, not σ</a>
+
+  <div class="tt">Wrap-up</div>
+  <a href="#s19-next">19 · Where we stop today</a>
+  <a href="#s20-chain">20 · Everything, one picture</a>
+</nav>
+<main>
+
+<section class="block" id="s0-recap">
+<div class="eyebrow">00 · one-paragraph bridge</div>
+<h2>Where PCA left us</h2>
+<p class="lead">Classes 08–09 built PCA end to end: standardize, project, maximize variance, land on eigenvectors ranked by how much spread each one captures. It's fast, exact, and reversible.</p>
+
+<div class="callout warn">
+<span class="lbl">The limitation we ended on</span>
+PCA optimizes exactly one thing — <b>global variance</b>. It has no notion of "who is near whom." Two points that were each other's closest neighbors in high-D can land far apart after a PCA projection, and two points that were never close can land on top of each other — simply because PCA was never asked to care about that in the first place. When the goal is specifically <em>visualization</em> — trusting the 2D picture to show you which points genuinely belong together — that gap matters a lot.
+</div>
+
+<p>That gap is exactly where today's class begins.</p>
+
+</section>
+
+<section class="block" id="s1-why">
+<div class="eyebrow">01 · motivation</div>
+<h2>Why do we need t-SNE?</h2>
+<p class="lead">Same starting point as PCA — data with too many dimensions to look at — but a different promise about what survives the trip down.</p>
+
+<p>Suppose you have 10,000 customers, each described by 100 features — spending habits, browsing behavior, demographics, and so on:</p>
+
+<div class="formula">
+<div class="tag">the setup</div>
+<div class="eq">$$X \in \mathbb{R}^{100} \qquad\qquad 10{,}000 \text{ points} \qquad\qquad 100D \rightarrow 2D$$</div>
+</div>
+
+<p>You want to <em>see</em> this data — spot natural groupings, sanity-check a clustering result, present it to a room of non-technical stakeholders. But nobody can look at a 100-dimensional scatter plot. So, exactly like Class 08's opening move, you want to compress to 2D. PCA can do this compression. So here's the obvious question:</p>
+
+<div class="quote">Why don't we just use PCA?
+<span class="who">— the question this entire class answers</span>
+</div>
+
+<div class="callout info">
+<span class="lbl">The concrete use case to hold in your head</span>
+Say your 10,000 customers form 3 natural behavioral groups. You want a 2D picture where — above everything else — <b>points from the same group land near each other, and points from different groups land apart.</b> Not "the two axes with the most spread" (that's PCA's promise). Specifically: <em>if two customers were neighbors in the original 100D space, keep them neighbors on the page.</em> That single requirement is the whole point of this class.
+</div>
+
+</section>
+
+<section class="block" id="s2-meet">
+<div class="eyebrow">02 · say hello to the name</div>
+<h2>Meet t-SNE</h2>
+<p class="lead">Before any math: what does the name even stand for?</p>
+
+<div class="formula">
+<div class="tag">full expansion — don't memorize yet</div>
+<div class="eq">$$\textbf{t-SNE} = \textbf{t}\text{-distributed } \textbf{S}\text{tochastic } \textbf{N}\text{eighbor } \textbf{E}\text{mbedding}$$</div>
+</div>
+
+<div class="tbl">
+<table>
+<tr><th>Piece</th><th>Rough meaning</th><th>When it'll make sense</th></tr>
+<tr><td class="hl">Neighbor</td><td>The entire objective is about who is near whom</td><td class="good">Today</td></tr>
+<tr><td class="hl">Stochastic</td><td>Probabilities are involved, and the optimization has randomness in it (different runs, different pictures)</td><td class="good">Today (Section 05) &amp; next class (gradient descent)</td></tr>
+<tr><td class="hl">Embedding</td><td>We're representing the data in a new, lower-dimensional space</td><td class="good">Today</td></tr>
+<tr><td class="bad">t-distributed</td><td>A specific heavy-tailed probability curve (Student's t) used on the 2D side</td><td class="bad">Next class</td></tr>
+</table>
+</div>
+
+<div class="callout good"><span class="lbl">A promise for later</span>By the end of today, "Stochastic Neighbor Embedding" will be fully justified by what you've built yourself. The "t-distributed" part needs one more ingredient (the low-dimensional similarity Q, next class) — flagged here so the name isn't a mystery, not because you need it yet.</div>
+
+</section>
+
+<section class="block" id="s3-question">
+<div class="eyebrow">03 · the real fork in the road</div>
+<h2>PCA's question vs. t-SNE's question</h2>
+<p class="lead">Every property that follows — good and bad, for both methods — traces back to this one difference.</p>
+
+<div class="vs">
+<div class="side left">
+<div class="t">PCA asks</div>
+<i>"Which direction captures the maximum variance?"</i>
+<div style="margin-top:14px; font-family:var(--mono); font-size:.85rem; color:var(--paper-dim);">Variance → Optimization → Eigenvectors → Principal Components</div>
+</div>
+<div class="mid">vs</div>
+<div class="side right">
+<div class="t">t-SNE asks</div>
+<i>"If two points are neighbors in the original high-dimensional space, can I keep them neighbors on my 2D map?"</i>
+<div style="margin-top:14px; font-family:var(--mono); font-size:.85rem; color:var(--paper-dim);">Neighbors → Similarity → Probability → Preserve relationships → 2D map</div>
+</div>
+</div>
+
+<div class="callout warn">
+<span class="lbl">The single distinction that explains everything today</span>
+There is <b>no variance being maximized anywhere in t-SNE.</b> No eigenvectors, no covariance matrix, no <span class="mono">w&#7488;&Sigma;w</span>. The entire worry is: for every point, who are its neighbors, and did the 2D map keep them close? That's it. Once this lands, every formula in this class is just this sentence being made precise.
+</div>
+
+</section>
+
+<section class="block" id="s4-demo">
+<div class="eyebrow">04 · proof, not just a claim</div>
+<h2>Real demo — the same data, PCA vs. t-SNE</h2>
+<p class="lead">Two genuinely separated groups, embedded in 5 real dimensions, run through both methods. Every number below is an actual computation — nothing hand-picked to look nice.</p>
+
+<p>Setup, in plain terms: 36 points total, 18 per true group, living in <b>5 dimensions</b>. Only <b>one</b> of those 5 dimensions actually carries the group signal, and even there the gap is small; the other <b>4</b> dimensions are pure noise, and that noise happens to be wider than the real signal. In other words: the true structure exists, but it's the fainter thing in the room.</p>
+
+<div class="tbl">
+<table>
+<tr><th>Dimension</th><th>Carries the group signal?</th><th>Scale of the numbers there</th></tr>
+<tr><td class="mono">dim 0</td><td class="good">Yes — the one true separating dimension</td><td class="mono">group averages 1.5 apart · each group spreads ±0.4 around its own average</td></tr>
+<tr><td class="mono">dims 1–4</td><td class="bad">No — pure random noise, identical for both groups</td><td class="mono">spread ±1.8 — wider than the real 1.5 gap</td></tr>
+</table>
+</div>
+
+<div class="callout warn">Because the noise dimensions (spread 1.8) are actually wider than the true signal (gap 1.5), it's easy for a method to get distracted and "explain" the noise instead of the real structure — that's exactly the trap PCA falls into below.</div>
+
+<p>Even so, the structure isn't destroyed — just buried: measure the true distance between every pair of points using <em>all 5 dimensions together</em>, and <b>94% of points</b> still find a same-group point as their single closest neighbor. The real structure is there and findable. The only question is which method actually finds it.</p>
+
+<div class="grid2">
+<div class="diagram">
+<svg viewBox="0 0 300 300" width="100%" height="290">
+<rect x="10" y="10" width="280" height="280" fill="none" stroke="#242a34" stroke-width="1"/>
+<!-- A_PCA_A slate -->
+<circle cx="120.5" cy="129.6" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="30.5" cy="124.2" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="131.5" cy="252.2" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="97.5" cy="224.5" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="280.0" cy="158.5" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="91.6" cy="180.2" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="69.5" cy="156.4" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="74.1" cy="65.8" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="212.3" cy="151.7" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="200.1" cy="280.0" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="170.0" cy="38.6" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="49.6" cy="145.6" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="83.4" cy="231.1" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="132.9" cy="37.4" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="74.4" cy="138.5" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="153.2" cy="79.9" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="107.8" cy="170.7" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="101.1" cy="254.4" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<!-- A_PCA_B coral -->
+<circle cx="29.4" cy="205.8" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="231.2" cy="62.9" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="111.9" cy="71.2" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="97.1" cy="152.4" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="27.3" cy="61.7" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="45.6" cy="66.3" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="190.4" cy="97.0" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="73.4" cy="102.2" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="156.2" cy="123.4" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="140.6" cy="119.7" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="181.7" cy="133.6" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="147.8" cy="149.9" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="136.9" cy="175.4" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="119.5" cy="98.3" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="99.0" cy="71.1" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="146.4" cy="20.0" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="108.8" cy="81.6" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="20.0" cy="118.7" r="4.2" fill="#e2836c" opacity="0.9"/>
+</svg>
+<div class="cap"><b>PCA (2D)</b> — blue and coral (the two true groups) are hopelessly tangled together.</div>
+</div>
+<div class="diagram">
+<svg viewBox="0 0 300 300" width="100%" height="290">
+<rect x="10" y="10" width="280" height="280" fill="none" stroke="#242a34" stroke-width="1"/>
+<!-- A_TSNE_A slate -->
+<circle cx="258.3" cy="111.9" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="268.6" cy="69.9" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="174.1" cy="49.0" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="197.4" cy="35.4" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="84.7" cy="20.0" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="218.8" cy="74.2" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="247.3" cy="83.9" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="242.9" cy="217.1" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="71.4" cy="64.2" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="157.0" cy="22.5" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="230.7" cy="249.7" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="234.7" cy="177.5" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="194.0" cy="91.9" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="263.7" cy="212.7" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="223.2" cy="157.8" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="280.0" cy="125.2" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="227.4" cy="102.6" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="177.5" cy="74.2" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<!-- A_TSNE_B coral -->
+<circle cx="143.2" cy="189.5" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="49.8" cy="82.7" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="65.2" cy="214.7" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="107.4" cy="175.2" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="129.3" cy="280.0" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="112.9" cy="249.1" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="20.0" cy="148.0" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="99.4" cy="214.4" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="42.9" cy="155.9" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="75.8" cy="148.8" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="85.6" cy="118.2" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="51.9" cy="128.6" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="105.1" cy="145.1" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="65.7" cy="181.5" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="81.4" cy="237.6" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="32.6" cy="208.0" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="59.1" cy="247.7" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="131.7" cy="224.3" r="4.2" fill="#e2836c" opacity="0.9"/>
+</svg>
+<div class="cap"><b>t-SNE (2D)</b> — the same two groups pull apart into their own regions.</div>
+</div>
+</div>
+
+<div class="tbl">
+<table>
+<tr><th>Metric</th><th>PCA</th><th>t-SNE</th><th>What it means</th></tr>
+<tr><td>Top-2 explained variance</td><td class="mono">26.2% + 24.2%</td><td class="mono" style="color:var(--paper-faint)">n/a — no variance objective</td><td>PCA's top direction barely edges out the rest — nothing dominates</td></tr>
+<tr><td>PC1's weight on the true separating dimension</td><td class="mono bad">0.025 (out of 1.0)</td><td class="mono" style="color:var(--paper-faint)">n/a</td><td>PCA's #1 axis almost completely <b>ignores</b> the dimension that actually separates the groups</td></tr>
+<tr><td>Group separation score <span class="mono" style="color:var(--paper-faint)">(centroid gap ÷ within-group spread)</span></td><td class="mono bad">0.64</td><td class="mono good">2.29</td><td>t-SNE's picture separates the two groups <b>~3.6× more cleanly</b> than PCA's</td></tr>
+</table>
+</div>
+
+<div class="callout info">
+<span class="lbl">Optional — how 0.64 and 2.29 are actually computed</span>
+Two numbers, both read straight off the 2D plot above:
+<div class="formula" style="margin:14px 0 8px;">
+<div class="eq">$$\text{separation score} = \dfrac{\|\text{centroid}_{\text{blue}} - \text{centroid}_{\text{coral}}\|}{\text{average distance of each point to its own group's centroid}}$$</div>
+</div>
+A group's <b>centroid</b> is just the average position of its own points on the plot. The <b>numerator</b> is how far apart the two centroids sit — the "gap." The <b>denominator</b> is how far, on average, a point wanders from its own group's centroid — the "spread." A big score means the two groups are far apart <em>relative to</em> how tightly packed they are.
+<div class="tbl" style="margin-top:12px;">
+<table>
+<tr><th></th><th>Centroid gap</th><th>Within-group spread</th><th>Score = gap ÷ spread</th></tr>
+<tr><td>PCA plot</td><td class="mono">1.46</td><td class="mono">2.28</td><td class="mono bad">1.46 / 2.28 ≈ 0.64</td></tr>
+<tr><td>t-SNE plot</td><td class="mono">21.22</td><td class="mono">9.27</td><td class="mono good">21.22 / 9.27 ≈ 2.29</td></tr>
+</table>
+</div>
+On the PCA plot the gap (1.46) and the spread (2.28) are close in size — the groups are about as far apart as they are wide, which is why they look tangled. On the t-SNE plot the gap (21.22) is more than <b>2×</b> the spread (9.27) — the groups sit clearly apart relative to their own size.
+</div>
+
+<div class="callout good"><span class="lbl">Why this happened</span>The true separating signal was real but small compared to the noise in other dimensions. PCA's #1 rule is "maximize variance" — so it happily built its top axis almost entirely out of noise, because noise had more spread than signal. t-SNE never asked "which direction has the most spread." It asked "who is near whom," and same-group points really were each other's neighbors in the original 5D space — so that's exactly what survived onto the page.</div>
+
+</section>
+
+<section class="block" id="s5-tworuns">
+<div class="eyebrow">05 · a subtlety worth seeing early</div>
+<h2>Two different t-SNE runs, same neighbors</h2>
+<p class="lead">Run t-SNE twice on the identical dataset with two different random starting points. The two pictures will not look alike — and that's expected, not a bug. Math for exactly why comes over the next several sections.</p>
+
+<p>Dataset: 42 points, 3 well-separated groups, 8 real dimensions this time (mimicking "100 features," just smaller so we can compute it by hand later). Same data, two runs:</p>
+
+<div class="grid2">
+<div class="diagram">
+<svg viewBox="0 0 300 300" width="100%" height="290">
+<rect x="10" y="10" width="280" height="280" fill="none" stroke="#242a34" stroke-width="1"/>
+<circle cx="130.3" cy="270.1" r="4.2" fill="#7f9adf" opacity="0.9"/><circle cx="115.0" cy="263.9" r="4.2" fill="#7f9adf" opacity="0.9"/><circle cx="118.9" cy="271.4" r="4.2" fill="#7f9adf" opacity="0.9"/><circle cx="116.0" cy="268.2" r="4.2" fill="#7f9adf" opacity="0.9"/><circle cx="126.8" cy="273.8" r="4.2" fill="#7f9adf" opacity="0.9"/><circle cx="121.9" cy="261.6" r="4.2" fill="#7f9adf" opacity="0.9"/><circle cx="129.8" cy="263.4" r="4.2" fill="#7f9adf" opacity="0.9"/><circle cx="124.5" cy="252.6" r="4.2" fill="#7f9adf" opacity="0.9"/><circle cx="136.7" cy="255.6" r="4.2" fill="#7f9adf" opacity="0.9"/><circle cx="119.9" cy="263.0" r="4.2" fill="#7f9adf" opacity="0.9"/><circle cx="127.5" cy="260.4" r="4.2" fill="#7f9adf" opacity="0.9"/><circle cx="135.4" cy="258.2" r="4.2" fill="#7f9adf" opacity="0.9"/><circle cx="115.5" cy="252.8" r="4.2" fill="#7f9adf" opacity="0.9"/><circle cx="121.2" cy="280.0" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="39.8" cy="25.3" r="4.2" fill="#e2836c" opacity="0.9"/><circle cx="42.8" cy="33.5" r="4.2" fill="#e2836c" opacity="0.9"/><circle cx="34.2" cy="32.1" r="4.2" fill="#e2836c" opacity="0.9"/><circle cx="36.3" cy="51.0" r="4.2" fill="#e2836c" opacity="0.9"/><circle cx="36.8" cy="34.0" r="4.2" fill="#e2836c" opacity="0.9"/><circle cx="42.3" cy="38.3" r="4.2" fill="#e2836c" opacity="0.9"/><circle cx="36.6" cy="20.0" r="4.2" fill="#e2836c" opacity="0.9"/><circle cx="32.6" cy="40.1" r="4.2" fill="#e2836c" opacity="0.9"/><circle cx="29.2" cy="45.9" r="4.2" fill="#e2836c" opacity="0.9"/><circle cx="20.0" cy="36.5" r="4.2" fill="#e2836c" opacity="0.9"/><circle cx="28.5" cy="36.3" r="4.2" fill="#e2836c" opacity="0.9"/><circle cx="23.8" cy="30.2" r="4.2" fill="#e2836c" opacity="0.9"/><circle cx="34.0" cy="23.0" r="4.2" fill="#e2836c" opacity="0.9"/><circle cx="25.2" cy="35.3" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="274.2" cy="59.6" r="4.2" fill="#93c084" opacity="0.9"/><circle cx="264.9" cy="40.7" r="4.2" fill="#93c084" opacity="0.9"/><circle cx="252.8" cy="48.5" r="4.2" fill="#93c084" opacity="0.9"/><circle cx="260.5" cy="60.2" r="4.2" fill="#93c084" opacity="0.9"/><circle cx="268.6" cy="46.0" r="4.2" fill="#93c084" opacity="0.9"/><circle cx="267.0" cy="49.7" r="4.2" fill="#93c084" opacity="0.9"/><circle cx="272.2" cy="37.3" r="4.2" fill="#93c084" opacity="0.9"/><circle cx="275.1" cy="49.9" r="4.2" fill="#93c084" opacity="0.9"/><circle cx="257.1" cy="51.2" r="4.2" fill="#93c084" opacity="0.9"/><circle cx="257.2" cy="53.3" r="4.2" fill="#93c084" opacity="0.9"/><circle cx="280.0" cy="46.1" r="4.2" fill="#93c084" opacity="0.9"/><circle cx="270.3" cy="44.0" r="4.2" fill="#93c084" opacity="0.9"/><circle cx="267.1" cy="57.4" r="4.2" fill="#93c084" opacity="0.9"/><circle cx="275.3" cy="54.2" r="4.2" fill="#93c084" opacity="0.9"/>
+</svg>
+<div class="cap"><b>Run 1</b> (seed 1) — blue top, coral bottom-left, green bottom-right.</div>
+</div>
+<div class="diagram">
+<svg viewBox="0 0 300 300" width="100%" height="290">
+<rect x="10" y="10" width="280" height="280" fill="none" stroke="#242a34" stroke-width="1"/>
+<circle cx="274.9" cy="26.5" r="4.2" fill="#7f9adf" opacity="0.9"/><circle cx="255.8" cy="31.2" r="4.2" fill="#7f9adf" opacity="0.9"/><circle cx="257.0" cy="24.5" r="4.2" fill="#7f9adf" opacity="0.9"/><circle cx="255.2" cy="26.9" r="4.2" fill="#7f9adf" opacity="0.9"/><circle cx="267.2" cy="37.5" r="4.2" fill="#7f9adf" opacity="0.9"/><circle cx="263.6" cy="26.0" r="4.2" fill="#7f9adf" opacity="0.9"/><circle cx="273.0" cy="30.3" r="4.2" fill="#7f9adf" opacity="0.9"/><circle cx="268.4" cy="20.0" r="4.2" fill="#7f9adf" opacity="0.9"/><circle cx="280.0" cy="39.5" r="4.2" fill="#7f9adf" opacity="0.9"/><circle cx="261.8" cy="29.5" r="4.2" fill="#7f9adf" opacity="0.9"/><circle cx="269.8" cy="31.3" r="4.2" fill="#7f9adf" opacity="0.9"/><circle cx="279.1" cy="36.7" r="4.2" fill="#7f9adf" opacity="0.9"/><circle cx="256.1" cy="39.4" r="4.2" fill="#7f9adf" opacity="0.9"/><circle cx="264.4" cy="44.6" r="4.2" fill="#7f9adf" opacity="0.9"/>
+<circle cx="178.4" cy="252.6" r="4.2" fill="#e2836c" opacity="0.9"/><circle cx="170.6" cy="252.3" r="4.2" fill="#e2836c" opacity="0.9"/><circle cx="177.0" cy="261.9" r="4.2" fill="#e2836c" opacity="0.9"/><circle cx="179.1" cy="280.0" r="4.2" fill="#e2836c" opacity="0.9"/><circle cx="173.7" cy="259.3" r="4.2" fill="#e2836c" opacity="0.9"/><circle cx="167.7" cy="254.2" r="4.2" fill="#e2836c" opacity="0.9"/><circle cx="184.4" cy="254.6" r="4.2" fill="#e2836c" opacity="0.9"/><circle cx="176.6" cy="270.2" r="4.2" fill="#e2836c" opacity="0.9"/><circle cx="182.4" cy="270.6" r="4.2" fill="#e2836c" opacity="0.9"/><circle cx="161.7" cy="268.9" r="4.2" fill="#e2836c" opacity="0.9"/><circle cx="171.1" cy="266.6" r="4.2" fill="#e2836c" opacity="0.9"/><circle cx="168.5" cy="275.0" r="4.2" fill="#e2836c" opacity="0.9"/><circle cx="183.6" cy="258.9" r="4.2" fill="#e2836c" opacity="0.9"/><circle cx="167.7" cy="268.9" r="4.2" fill="#e2836c" opacity="0.9"/>
+<circle cx="33.6" cy="109.7" r="4.2" fill="#93c084" opacity="0.9"/><circle cx="26.5" cy="99.8" r="4.2" fill="#93c084" opacity="0.9"/><circle cx="41.3" cy="76.6" r="4.2" fill="#93c084" opacity="0.9"/><circle cx="29.5" cy="80.7" r="4.2" fill="#93c084" opacity="0.9"/><circle cx="33.1" cy="95.1" r="4.2" fill="#93c084" opacity="0.9"/><circle cx="29.1" cy="93.8" r="4.2" fill="#93c084" opacity="0.9"/><circle cx="41.6" cy="99.4" r="4.2" fill="#93c084" opacity="0.9"/><circle cx="32.8" cy="102.1" r="4.2" fill="#93c084" opacity="0.9"/><circle cx="38.2" cy="81.6" r="4.2" fill="#93c084" opacity="0.9"/><circle cx="36.3" cy="81.0" r="4.2" fill="#93c084" opacity="0.9"/><circle cx="20.0" cy="93.2" r="4.2" fill="#93c084" opacity="0.9"/><circle cx="36.4" cy="94.4" r="4.2" fill="#93c084" opacity="0.9"/><circle cx="26.0" cy="88.9" r="4.2" fill="#93c084" opacity="0.9"/><circle cx="35.4" cy="105.5" r="4.2" fill="#93c084" opacity="0.9"/>
+</svg>
+<div class="cap"><b>Run 2</b> (seed 77) — blue top-right, coral bottom-right, green bottom-left. <em>Rotated / mirrored relative to Run 1.</em></div>
+</div>
+</div>
+
+<div class="callout warn"><span class="lbl">Different picture, same story</span>Notice the overall orientation, rotation, and which corner each group lands in are <b>completely different</b> between the two runs. But in <em>both</em> runs: the 14 blue points are packed tightly together, the 14 coral points are packed tightly together, the 14 green points are packed tightly together, and all three groups sit clearly apart from each other. Nobody's local neighborhood changed — only the "camera angle" did.</div>
+
+<p>This isn't just visual impression — it's measurable. For a handful of sample points, compare their true nearest neighbors (in the real 8D space) against their nearest neighbors in each 2D run:</p>
+
+<div class="tbl">
+<table>
+<tr><th>Point</th><th>True top-3 neighbors (8D)</th><th>Run 1 top-3 neighbors</th><th>Run 2 top-3 neighbors</th></tr>
+<tr><td class="mono">#0</td><td class="mono">6, 2, 4</td><td class="mono good">4, 6, 10 (match 2/3)</td><td class="mono teal">6, 10, 7 (match 1/3)</td></tr>
+<tr><td class="mono">#14</td><td class="mono">18, 20, 15</td><td class="mono good">20, 26, 15 (match 2/3)</td><td class="mono good">20, 15, 18 (match 3/3)</td></tr>
+<tr><td class="mono">#28</td><td class="mono">41, 33, 35</td><td class="mono good">41, 35, 40 (match 2/3)</td><td class="mono good">41, 35, 29 (match 2/3)</td></tr>
+<tr><td class="hl"><b>Average over all 42 points</b></td><td></td><td class="mono hl"><b>73.8% neighbor match</b></td><td class="mono hl"><b>73.0% neighbor match</b></td></tr>
+</table>
+</div>
+
+<div class="callout good"><span class="lbl">The takeaway, stated precisely</span>Both runs independently preserve <b>~74% of each point's true 3-nearest-neighbor set</b> — nearly identical fidelity, despite producing visually different pictures. (For contrast: plain PCA on this same dataset preserves only <b>39.7%</b> of that same neighbor structure.) Whoever was close in high-D is close again in 2D — <em>that's</em> the invariant. The layout around it is free to rotate.</div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">Why is t-SNE's layout allowed to rotate freely, when PCA's isn't?</h3>
+
+<p>PCA's two axes are not arbitrary — they're literally <b>directions inside the original 5D/8D space</b>: PC1 is "the one specific combination of the real input features with the most variance," computed once, deterministically, from the covariance matrix. Run PCA again on the exact same data and you get back the <em>same</em> axes (at most flipped in sign — mirrored, never freely rotated). So a PCA plot's orientation actually carries meaning: "further along the x-axis" always corresponds to the same fixed blend of your original features.</p>
+
+<p>t-SNE has no such anchor. Its entire objective (built up fully starting next class) only asks one question: do the <em>relative</em> distances between points on the 2D map match their <em>relative</em> closeness in high-D? Nothing in that question cares which direction is called "up," or where the origin sits. Pick up the finished 2D layout and rotate it, mirror it, or slide it — every pairwise distance on the page stays exactly the same, so the objective literally cannot tell the two versions apart. t-SNE starts from random noise and gradient-descends into whichever equally-valid orientation it happens to land in — which is why two different random seeds gave two visibly different (but equally correct) pictures above.</p>
+
+<div class="grid2">
+<div class="diagram">
+<svg viewBox="0 0 220 190" width="100%" height="180">
+<polygon points="90,130 194,104 116,46.8" fill="none" stroke="#7f9adf" stroke-width="2"/>
+<circle cx="90" cy="130" r="4" fill="#7f9adf"/><circle cx="194" cy="104" r="4" fill="#7f9adf"/><circle cx="116" cy="46.8" r="4" fill="#7f9adf"/>
+<text x="142" y="123" fill="#e2e5e0" font-family="IBM Plex Mono" font-size="10">4.12</text>
+<text x="160" y="72" fill="#e2e5e0" font-family="IBM Plex Mono" font-size="10">3.72</text>
+<text x="92" y="90" fill="#e2e5e0" font-family="IBM Plex Mono" font-size="10">3.35</text>
+</svg>
+<div class="cap">Orientation A — three points, three pairwise distances.</div>
+</div>
+<div class="diagram">
+<svg viewBox="0 0 220 190" width="100%" height="180">
+<polygon points="110,100 190.9,29.7 193.1,126.4" fill="none" stroke="#5fbfae" stroke-width="2"/>
+<circle cx="110" cy="100" r="4" fill="#5fbfae"/><circle cx="190.9" cy="29.7" r="4" fill="#5fbfae"/><circle cx="193.1" cy="126.4" r="4" fill="#5fbfae"/>
+<text x="140" y="58" fill="#e2e5e0" font-family="IBM Plex Mono" font-size="10">4.12</text>
+<text x="196" y="82" fill="#e2e5e0" font-family="IBM Plex Mono" font-size="10">3.72</text>
+<text x="128" y="118" fill="#e2e5e0" font-family="IBM Plex Mono" font-size="10">3.35</text>
+</svg>
+<div class="cap">Orientation B — same three points, rotated ~125° and mirrored. Same three pairwise distances (4.12, 3.72, 3.35).</div>
+</div>
+</div>
+
+<div class="callout info"><span class="lbl">The practical consequence</span>To an objective that only reads pairwise distances, these two triangles are identical — only their orientation on the page differs. Never read meaning into t-SNE's absolute axes, angles, or "up/down" — only into which points cluster together and how far apart clusters sit. PCA's axes, by contrast, really do correspond to fixed directions in your original features.</div>
+
+</section>
+
+<section class="block" id="s6-pipeline">
+<div class="eyebrow">06 · orientation before the details</div>
+<h2>The full pipeline, start to finish</h2>
+<p class="lead">Here is everything t-SNE computes, top to bottom. We are not deriving all of it today — this is the map so you always know where today's math sits inside the whole journey.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 620 360" width="100%" height="360">
+<defs><marker id="pf-arr" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#6b7480"/></marker></defs>
+<!-- left column: today -->
+<rect x="20" y="15" width="270" height="330" rx="10" fill="none" stroke="#93c084" stroke-width="1.3" stroke-dasharray="4 3"/>
+<text x="32" y="35" fill="#93c084" font-family="IBM Plex Mono" font-size="11" font-weight="600">TODAY — building P</text>
+<g font-family="IBM Plex Mono" font-size="11.5" fill="#eef0ee">
+<rect x="45" y="50" width="220" height="30" rx="6" fill="#181c24" stroke="#242a34"/><text x="155" y="70" text-anchor="middle">High-dimensional data (X)</text>
+<line x1="155" y1="80" x2="155" y2="100" stroke="#6b7480" marker-end="url(#pf-arr)"/>
+<rect x="45" y="102" width="220" height="30" rx="6" fill="#181c24" stroke="#242a34"/><text x="155" y="122" text-anchor="middle">Distances</text>
+<line x1="155" y1="132" x2="155" y2="152" stroke="#6b7480" marker-end="url(#pf-arr)"/>
+<rect x="45" y="154" width="220" height="30" rx="6" fill="#181c24" stroke="#242a34"/><text x="155" y="174" text-anchor="middle">Gaussian similarities</text>
+<line x1="155" y1="184" x2="155" y2="204" stroke="#6b7480" marker-end="url(#pf-arr)"/>
+<rect x="45" y="206" width="220" height="30" rx="6" fill="#181c24" stroke="#242a34"/><text x="155" y="226" text-anchor="middle">Probabilities (per point, via σᵢ)</text>
+<line x1="155" y1="236" x2="155" y2="256" stroke="#6b7480" marker-end="url(#pf-arr)"/>
+<rect x="45" y="258" width="220" height="30" rx="6" fill="#1f4239" stroke="#5fbfae"/><text x="155" y="278" text-anchor="middle" fill="#5fbfae" font-weight="600">P — high-D relationships</text>
+<line x1="155" y1="288" x2="155" y2="308" stroke="#6b7480" marker-end="url(#pf-arr)"/>
+<rect x="45" y="310" width="220" height="28" rx="6" fill="#181c24" stroke="#242a34"/><text x="155" y="329" text-anchor="middle" font-size="10.5">σᵢ chosen via perplexity</text>
+</g>
+<!-- right column: next class -->
+<rect x="320" y="15" width="280" height="330" rx="10" fill="none" stroke="#242a34" stroke-width="1.3"/>
+<text x="332" y="35" fill="#6b7480" font-family="IBM Plex Mono" font-size="11" font-weight="600">NEXT CLASS — building Q, then optimizing</text>
+<g font-family="IBM Plex Mono" font-size="11" fill="#9aa3ad">
+<rect x="345" y="50" width="240" height="28" rx="6" fill="#12151b" stroke="#242a34"/><text x="465" y="68" text-anchor="middle">Random 2D points</text>
+<line x1="465" y1="78" x2="465" y2="96" stroke="#3a4150" marker-end="url(#pf-arr)"/>
+<rect x="345" y="98" width="240" height="28" rx="6" fill="#12151b" stroke="#242a34"/><text x="465" y="116" text-anchor="middle">Low-D (t-distributed) similarities</text>
+<line x1="465" y1="126" x2="465" y2="144" stroke="#3a4150" marker-end="url(#pf-arr)"/>
+<rect x="345" y="146" width="240" height="28" rx="6" fill="#12151b" stroke="#242a34"/><text x="465" y="164" text-anchor="middle">Q — low-D relationships</text>
+<line x1="465" y1="174" x2="465" y2="192" stroke="#3a4150" marker-end="url(#pf-arr)"/>
+<rect x="345" y="194" width="240" height="28" rx="6" fill="#12151b" stroke="#242a34"/><text x="465" y="212" text-anchor="middle">Compare P vs Q — KL divergence</text>
+<line x1="465" y1="222" x2="465" y2="240" stroke="#3a4150" marker-end="url(#pf-arr)"/>
+<rect x="345" y="242" width="240" height="28" rx="6" fill="#12151b" stroke="#242a34"/><text x="465" y="260" text-anchor="middle">Gradient descent → move points</text>
+<line x1="465" y1="270" x2="465" y2="288" stroke="#3a4150" marker-end="url(#pf-arr)"/>
+<rect x="345" y="290" width="240" height="28" rx="6" fill="#12151b" stroke="#242a34"/><text x="465" y="308" text-anchor="middle">Repeat …</text>
+<line x1="465" y1="318" x2="465" y2="330" stroke="#3a4150" marker-end="url(#pf-arr)"/>
+<text x="465" y="342" text-anchor="middle" fill="#d9ab5c" font-weight="600">Final 2D map</text>
+</g>
+<line x1="265" y1="272" x2="345" y2="160" stroke="#5fbfae" stroke-width="1.3" stroke-dasharray="4 3" marker-end="url(#pf-arr)"/>
+<text x="270" y="200" fill="#5fbfae" font-family="IBM Plex Mono" font-size="9.5">P feeds the comparison</text>
+</svg>
+<div class="cap">Left (green dashed box): everything we build today — ending at P, a full probability distribution per point. Right (grey box): next class — build the low-D counterpart Q, compare the two, and let gradient descent nudge the 2D points until they agree.</div>
+</div>
+
+<div class="formula">
+<div class="tag">the short version, in symbols</div>
+<div class="eq">$$\underbrace{\text{Distance} \to \text{Similarity} \to \text{Probability} \to P}_{\text{today}} \qquad\qquad \underbrace{P \to Q \to KL \to \text{Gradient Descent} \to \text{Move points}}_{\text{next class}}$$</div>
+</div>
+
+</section>
+
+<section class="block" id="s7-dist-sim">
+<div class="eyebrow">07 · the translation problem</div>
+<h2>Turning "close" into math</h2>
+<p class="lead">A computer cannot act on the sentence "B is pretty close to A." It needs a number.</p>
+
+<p>We already have a number that captures closeness: <b>Euclidean distance</b> — the exact same "straight-line distance" formula from 2D or 3D geometry, it just also works in higher dimensions. So the very first move is trivial — for our worked running example (a point <span class="mono">A</span>, with 5 other points <span class="mono">B, C, D, E, F</span> around it, in some high-dimensional space), just measure how far each one is:</p>
+
+<div class="formula">
+<div class="tag">Euclidean distance — yes, this is the same formula as always</div>
+<div class="eq">$$d(A,B) = \|x_A - x_B\| = \sqrt{\sum_{k=1}^{n} (x_{A,k}-x_{B,k})^2}$$</div>
+</div>
+
+<div class="tbl">
+<table>
+<tr><th>Piece</th><th>What it means</th></tr>
+<tr><td class="mono">x<sub>A</sub>, x<sub>B</sub></td><td>the full coordinate vectors of points A and B — one number per dimension (n dimensions total, e.g. n = 5 or n = 100)</td></tr>
+<tr><td class="mono">x<sub>A,k</sub> − x<sub>B,k</sub></td><td>how far apart A and B are along just <em>one</em> dimension k</td></tr>
+<tr><td class="mono">Σ(...)²</td><td>square each per-dimension gap (so negatives don't cancel) and add them all up, across all n dimensions</td></tr>
+<tr><td class="mono">√(...)</td><td>undo the squaring, back to an actual distance</td></tr>
+</table>
+</div>
+
+<p>In 2D this is the exact formula you already know — <span class="mono">√((x₁−x₂)² + (y₁−y₂)²)</span> — just with 2 terms instead of n. Nothing new is being invented here; t-SNE only needs this one familiar number as its starting point.</p>
+
+<p>But raw distance has an awkward property for what comes next: it points the <em>wrong way</em>. "Close" should mean a <b>big</b> number (strong relationship); distance gives small numbers for close points. We want the opposite convention — so the real goal is:</p>
+
+<div class="formula">
+<div class="tag">the actual goal for this section</div>
+<div class="eq">$$\text{Distance} \;\longrightarrow\; \text{Similarity}$$</div>
+</div>
+
+<div class="tbl">
+<table>
+<tr><th>Distance</th><th>Desired similarity</th></tr>
+<tr><td>Very small</td><td class="good">Very high</td></tr>
+<tr><td>Small</td><td class="good">High</td></tr>
+<tr><td>Medium</td><td class="teal">Moderate</td></tr>
+<tr><td>Large</td><td class="bad">Low</td></tr>
+<tr><td>Very large</td><td class="bad">Almost 0</td></tr>
+</table>
+</div>
+
+</section>
+
+<section class="block" id="s8-not-inverse">
+<div class="eyebrow">08 · the tempting shortcut</div>
+<h2>Why not just 1/distance?</h2>
+<p class="lead">The simplest function with that "flips small↔big" shape is <span class="mono">1/d</span>. It's worth trying — and worth seeing exactly why t-SNE doesn't stop there.</p>
+
+<div class="tbl">
+<table>
+<tr><th>Point</th><th>Distance from A</th><th>1/distance</th></tr>
+<tr><td>B</td><td class="mono">0.616</td><td class="mono">1.62</td></tr>
+<tr><td>C</td><td class="mono">0.678</td><td class="mono">1.48</td></tr>
+<tr><td>D</td><td class="mono">13.856</td><td class="mono">0.072</td></tr>
+</table>
+</div>
+
+<p>It does technically work: closer &rarr; bigger number, farther &rarr; smaller number. But it has real problems as a foundation to build a whole algorithm on:</p>
+
+<div class="grid3">
+<div class="co-card"><div class="name">Blows up at d=0</div><p>Two points at (nearly) the same location send <span class="mono">1/d</span> toward infinity — an unbounded, badly-behaved value right where we most need stability.</p></div>
+<div class="co-card"><div class="name">No natural probability</div><p>t-SNE ultimately wants these numbers to become a normalized <em>probability distribution</em>. <span class="mono">1/d</span> has no natural connection to any probability model — we'd be bolting one on.</p></div>
+<div class="co-card"><div class="name">No control over "how local"</div><p>Crucially, <span class="mono">1/d</span> gives every point the same shape of decay. We're about to need each point to have its <em>own</em>, adjustable notion of "nearby" — Section 11 is the whole reason this matters.</p></div>
+</div>
+
+<div class="callout info"><span class="lbl">What we actually want</span>A smooth, well-behaved function that turns distance into something that already looks and behaves like a building block of a probability — bounded, peaked at 0, smoothly decaying, and with a built-in "width" knob. That description is, almost word for word, the <b>Gaussian (normal) curve</b>.</div>
+
+</section>
+
+<section class="block" id="s9-gauss-formula">
+<div class="eyebrow">09 · the actual function</div>
+<h2>The Gaussian similarity formula, piece by piece</h2>
+<p class="lead">One formula, unpacked term by term until nothing is mysterious.</p>
+
+<div class="formula">
+<div class="tag">t-SNE's similarity function</div>
+<div class="eq">$$\text{similarity}(i,j) = \exp\!\left(-\dfrac{d(i,j)^2}{2\sigma_i^2}\right) = e^{-\frac{\|x_i - x_j\|^2}{2\sigma_i^2}}$$</div>
+</div>
+
+<div class="tbl">
+<table>
+<tr><th>Symbol</th><th>What it is</th></tr>
+<tr><td class="mono">d(i,j)</td><td>Euclidean distance between points i and j — same distance as always</td></tr>
+<tr><td class="mono">σᵢ</td><td>a "width" belonging to point i — how far its notion of "nearby" reaches (built up fully in Section 11)</td></tr>
+<tr><td class="mono">exp(...) = e^(...)</td><td>the exponential function — always positive, and it shrinks fast as its input goes more negative</td></tr>
+</table>
+</div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">Check 1 — what happens at distance 0?</h3>
+
+<div class="tbl">
+<table>
+<tr><th>Step</th><th>Do this</th><th>Result</th></tr>
+<tr><td>1</td><td>Set d = 0 (two identical points)</td><td>$e^{-0^2/2\sigma^2}$</td></tr>
+<tr><td>2</td><td>Simplify the exponent</td><td>$e^0$</td></tr>
+<tr><td>3</td><td>Any number to the power 0 is 1</td><td>$\boxed{\text{similarity} = 1}$</td></tr>
+</table>
+</div>
+<div class="callout good">Maximum possible similarity, exactly 1 — two identical points are perfectly similar. No blow-up, unlike 1/d.</div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">Check 2 — what happens as distance grows?</h3>
+
+<div class="tbl">
+<table>
+<tr><th>Step</th><th>Do this</th><th>Result</th></tr>
+<tr><td>1</td><td>As <span class="mono">d</span> increases, <span class="mono">d²</span> increases</td><td>$d^2 \uparrow$</td></tr>
+<tr><td>2</td><td>The exponent has a <b>minus</b> sign in front</td><td>$-\dfrac{d^2}{2\sigma^2}$ becomes more negative</td></tr>
+<tr><td>3</td><td><span class="mono">e</span> raised to an increasingly negative number shrinks toward 0</td><td>$e^{\text{more negative}} \downarrow$</td></tr>
+</table>
+</div>
+
+<div class="diagram">
+<svg viewBox="0 0 480 200" width="100%" height="190">
+<line x1="40" y1="170" x2="460" y2="170" stroke="#242a34" stroke-width="1.3"/>
+<line x1="40" y1="20" x2="40" y2="170" stroke="#242a34" stroke-width="1.3"/>
+<text x="465" y="174" fill="#6b7480" font-family="IBM Plex Mono" font-size="10">distance</text>
+<text x="10" y="18" fill="#6b7480" font-family="IBM Plex Mono" font-size="10">similarity</text>
+<polyline points="40.0,20.0 47.1,23.1 54.2,31.9 61.4,45.5 68.5,62.3 75.6,80.6 82.7,98.8 89.8,115.6 96.9,130.1 104.1,141.9 111.2,151.0 118.3,157.7 125.4,162.4 132.5,165.5 139.7,167.4 146.8,168.6 153.9,169.2 161.0,169.6 168.1,169.8 175.3,169.9 182.4,170.0 460.0,170.0" fill="none" stroke="#d9ab5c" stroke-width="2.4"/>
+<text x="60" y="35" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="10">similarity = 1 at d = 0</text>
+<text x="330" y="163" fill="#6b7480" font-family="IBM Plex Mono" font-size="10">→ 0 as d grows</text>
+</svg>
+<div class="cap">The minus sign is the entire mechanism: it converts "farther away" into "smaller and smaller e-power," which is exactly the decaying-similarity shape we wanted.</div>
+</div>
+
+<div class="callout good"><span class="lbl">Memory trick</span>The minus sign makes distance <b>hurt</b> similarity. No minus sign, and this whole function would grow instead of decay — the single most important detail in the formula.</div>
+
+</section>
+
+<section class="block" id="s10-why-gauss">
+<div class="eyebrow">10 · the question worth asking</div>
+<h2>Why Gaussian, specifically?</h2>
+<p class="lead">Plenty of functions decay to zero. Here's what actually earns the Gaussian its place in this formula.</p>
+
+<div class="grid2">
+<div class="co-card">
+<div class="name">1 · Smooth and bounded everywhere</div>
+<p>Unlike <span class="mono">1/d</span>, it never explodes (capped at exactly 1) and never has a sharp corner or discontinuity. Every derivative exists everywhere — important later, once gradient descent needs to differentiate through this.</p>
+</div>
+<div class="co-card">
+<div class="name">2 · A genuine probability density</div>
+<p>The Gaussian isn't an arbitrary decaying curve — it <em>is</em> the normal distribution's shape. That means "normalize these similarity scores" (Section 12) isn't a hack; it's the natural, well-studied operation of turning a density into a probability.</p>
+</div>
+<div class="co-card">
+<div class="name">3 · One adjustable width, per point</div>
+<p>The Gaussian has exactly one shape parameter, <span class="mono">σ</span>, controlling how fast it decays. That's precisely the "dial" we need in Section 11 to let dense and sparse regions each get their own notion of "nearby."</p>
+</div>
+<div class="co-card">
+<div class="name">4 · Matches the intuition we actually want</div>
+<p>Very close points should be considered <em>dramatically</em> more similar than moderately close ones, with the effect fading gently at long range. The bell shape — sharp near the center, gentle tails — matches that intuition better than a straight line or a hard cutoff would.</p>
+</div>
+</div>
+
+<div class="callout info"><span class="lbl">Keep this in your pocket for next class</span>The <em>low</em>-dimensional side of t-SNE (Q, building the 2D similarities) deliberately does <b>not</b> reuse the Gaussian — it switches to the Student-t distribution instead, and that switch is precisely where the "t" in t-SNE comes from. The reason for that switch is a real, specific problem with using a Gaussian in low-D — saved for next class, once Q exists to explain it against.</div>
+
+</section>
+
+<section class="block" id="s11-sigma">
+<div class="eyebrow">11 · the parameter that does all the work</div>
+<h2>σ — each point's own notion of "nearby"</h2>
+<p class="lead">Think of σ as answering one question: <em>how wide or narrow is my notion of "nearby"?</em></p>
+
+<div class="grid2">
+<div class="diagram">
+<svg viewBox="0 0 480 200" width="100%" height="190">
+<line x1="40" y1="170" x2="460" y2="170" stroke="#242a34" stroke-width="1.3"/>
+<line x1="40" y1="20" x2="40" y2="170" stroke="#242a34" stroke-width="1.3"/>
+<polyline points="40.0,20.0 47.1,23.1 54.2,31.9 61.4,45.5 68.5,62.3 75.6,80.6 82.7,98.8 89.8,115.6 96.9,130.1 104.1,141.9 111.2,151.0 118.3,157.7 125.4,162.4 132.5,165.5 139.7,167.4 146.8,168.6 153.9,169.2 161.0,169.6 168.1,169.8 175.3,169.9 182.4,170.0 460.0,170.0" fill="none" stroke="#e2836c" stroke-width="2.4"/>
+<text x="190" y="60" fill="#e2836c" font-family="IBM Plex Mono" font-size="12" font-weight="600">σ = 1 (small)</text>
+</svg>
+<div class="cap">Small σ: similarity collapses to ~0 within a short distance. Only very close points count as neighbors.</div>
+</div>
+<div class="diagram">
+<svg viewBox="0 0 480 200" width="100%" height="190">
+<line x1="40" y1="170" x2="460" y2="170" stroke="#242a34" stroke-width="1.3"/>
+<line x1="40" y1="20" x2="40" y2="170" stroke="#242a34" stroke-width="1.3"/>
+<polyline points="40.0,20.0 47.1,20.1 54.2,20.3 61.4,20.8 68.5,21.4 75.6,22.1 82.7,23.1 89.8,24.2 96.9,25.4 104.1,26.8 111.2,28.4 118.3,30.1 125.4,31.9 132.5,33.9 139.7,36.0 146.8,38.2 153.9,40.5 161.0,42.9 168.1,45.5 175.3,48.1 182.4,50.8 189.5,53.6 196.6,56.4 203.7,59.3 210.8,62.3 218.0,65.3 225.1,68.3 232.2,71.3 239.3,74.4 246.4,77.5 253.6,80.6 260.7,83.6 267.8,86.7 274.9,89.8 282.0,92.8 289.2,95.8 296.3,98.8 303.4,101.7 310.5,104.6 317.6,107.4 324.7,110.2 331.9,112.9 339.0,115.6 346.1,118.2 353.2,120.7 360.3,123.1 367.5,125.5 374.6,127.8 381.7,130.1 388.8,132.2 395.9,134.3 403.1,136.3 410.2,138.3 417.3,140.1 424.4,141.9 431.5,143.6 438.6,145.2 445.8,146.8 452.9,148.3 460.0,149.7" fill="none" stroke="#5fbfae" stroke-width="2.4"/>
+<text x="230" y="50" fill="#5fbfae" font-family="IBM Plex Mono" font-size="12" font-weight="600">σ = 6 (large)</text>
+</svg>
+<div class="cap">Large σ: similarity decays much more slowly. Points quite far away still count as meaningfully similar.</div>
+</div>
+</div>
+
+<div class="tbl">
+<table>
+<tr><th>Region A point sits in</th><th>What that means for A</th><th><span class="nocase">σ_A</span> should be</th></tr>
+<tr><td>Dense — lots of points packed nearby</td><td>Don't need to look far to find real neighbors</td><td class="mono good">small</td></tr>
+<tr><td>Sparse — points spread thin</td><td>Must look farther to find any meaningful neighbor at all</td><td class="mono teal">larger</td></tr>
+</table>
+</div>
+
+<div class="callout info">
+<span class="lbl">The Google Maps analogy</span>
+In a crowded city, you can zoom in a lot and still see plenty of nearby places — you only need a <b>small radius</b>. In a remote area, you have to zoom out a long way before any other landmark shows up — you need a <b>much larger radius</b>. Two houses standing 100 meters apart are "pretty far" in a city where houses sit every 10 meters, but "very close" in a village where houses sit every 500 meters — the raw distance is identical, only the local context differs. That local context is exactly what σᵢ is built to capture.
+</div>
+
+<div class="callout good"><span class="lbl">The idea this is building toward</span>One fixed σ for the whole dataset can't be right — it would either be too small for sparse regions (barely any neighbors found) or too large for dense regions (everything looks equally "close," which destroys the fine local structure we actually care about). <b>Every point needs its own σᵢ.</b></div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">Tempting shortcut: why not just set σᵢ = distance to i's nearest neighbor?</h3>
+
+<p>Take two points and their distance to their single nearest neighbor:</p>
+
+<div class="tbl">
+<table>
+<tr><th>Point</th><th>Distance to nearest neighbor</th><th>Naive guess: <span class="nocase">σ</span> = that distance</th></tr>
+<tr><td>P1 (dense region)</td><td class="mono">0.4</td><td class="mono">σ_P1 = 0.4</td></tr>
+<tr><td>P2 (sparse region)</td><td class="mono">3.0</td><td class="mono">σ_P2 = 3.0</td></tr>
+</table>
+</div>
+
+<p>This <em>feels</em> right — the dense point gets a small σ, the sparse point gets a bigger one, exactly the direction we want. So why doesn't t-SNE just do this?</p>
+
+<div class="grid3">
+<div class="co-card"><div class="name">Which neighbor, exactly?</div><p>Nearest? 2nd-nearest? Average of the closest 5? There's no principled reason to pick one specific distance — different choices hand back different σ, with no way to say which is "correct."</p></div>
+<div class="co-card"><div class="name">One number, zero context</div><p>This formula looks at exactly <b>one</b> distance and ignores the shape of everyone else nearby. One unusually close or far neighbor (noise, an outlier) swings σᵢ around wildly — it never looks at the full neighborhood, only a single point in it.</p></div>
+<div class="co-card"><div class="name">No dial for "how many neighbors"</div><p>You can't tell this formula "give every point roughly 30 effective neighbors" — distance and σ are locked together rigidly, with no way to steer the whole dataset toward one consistent standard.</p></div>
+</div>
+
+<div class="callout warn"><span class="lbl">What t-SNE does instead — flip the logic entirely</span>Don't compute σᵢ <em>from</em> a distance. Instead, fix a <b>target</b> — how many effective neighbors every point should end up with (this target is <b>perplexity</b>, introduced next) — and <em>search</em> for whichever σᵢ produces that target, using <b>all</b> of point i's distances at once, not just one. That search is the binary-search loop in Section 16, worked through with real numbers end-to-end in Section 17.</div>
+
+</section>
+
+<section class="block" id="s12-prob">
+<div class="eyebrow">12 · from raw scores to a real distribution</div>
+<h2>From similarity to probability</h2>
+<p class="lead">Gaussian similarity scores are a great start, but they don't sum to 1 — so they aren't yet a probability distribution. One more step fixes that.</p>
+
+<p>Take our running point A, distances to B, C, D, E, F, and a similarity computed with some σ_A. Suppose the raw scores come out as:</p>
+
+<div class="tbl">
+<table>
+<tr><th>Point</th><th>Raw similarity to A</th></tr>
+<tr><td>B</td><td class="mono">0.90</td></tr>
+<tr><td>C</td><td class="mono">0.40</td></tr>
+<tr><td>D</td><td class="mono">0.05</td></tr>
+<tr><td>E</td><td class="mono">0.01</td></tr>
+<tr><td class="hl"><b>Sum</b></td><td class="mono hl">1.36</td></tr>
+</table>
+</div>
+
+<div class="callout warn"><span class="lbl">Why these aren't probabilities yet</span>Probabilities must add up to exactly 1. These raw scores add up to 1.36 — they're just <em>similarity scores</em>, not yet a distribution. The fix is the most natural one possible: divide every score by the total.</div>
+
+<div class="formula">
+<div class="tag">normalization</div>
+<div class="eq">$$p_{j|i} = \dfrac{\text{similarity}(i,j)}{\displaystyle\sum_{k \neq i} \text{similarity}(i,k)} = \dfrac{\exp\!\left(-\|x_i-x_j\|^2 / 2\sigma_i^2\right)}{\displaystyle\sum_{k \neq i} \exp\!\left(-\|x_i-x_k\|^2 / 2\sigma_i^2\right)}$$</div>
+</div>
+
+<div class="tbl">
+<table>
+<tr><th>Point</th><th>Computation</th><th>p<sub>j|A</sub></th></tr>
+<tr><td>B</td><td class="mono">0.90 / 1.36</td><td class="mono good">0.662</td></tr>
+<tr><td>C</td><td class="mono">0.40 / 1.36</td><td class="mono">0.294</td></tr>
+<tr><td>D</td><td class="mono">0.05 / 1.36</td><td class="mono">0.037</td></tr>
+<tr><td>E</td><td class="mono">0.01 / 1.36</td><td class="mono">0.007</td></tr>
+<tr><td class="hl"><b>Sum</b></td><td></td><td class="mono hl"><b>1.000 ✓</b></td></tr>
+</table>
+</div>
+
+<div class="formula">
+<div class="tag">how to read p_{j|i}</div>
+<div class="eq">$$p_{j|i} = \text{"probability of picking } j \text{ as a neighbor, given that we're standing at } i\text{"}$$</div>
+</div>
+
+<div class="callout good"><span class="lbl">Each point gets its own distribution</span>We repeat this for <em>every</em> point, not just A. Point B gets its own row of probabilities <span class="mono">p<sub>·|B</sub></span>, point C gets <span class="mono">p<sub>·|C</sub></span>, and so on. Crucially, these are generally <b>not symmetric</b>: <span class="mono">p<sub>B|A</sub></span> (how much A cares about B) need not equal <span class="mono">p<sub>A|B</sub></span> (how much B cares about A) — A might sit in a dense crowd where B is just one of many close points, while B might sit in a sparse area where A is its single most important neighbor. Collectively, all these per-point rows together are what we've been calling <span class="mono">P</span>.</div>
+
+</section>
+
+<section class="block" id="s13-density">
+<div class="eyebrow">13 · putting <span class="nocase">σᵢ</span> to work</div>
+<h2>Dense vs. sparse neighborhoods, formalized</h2>
+<p class="lead">Section 11 gave the intuition. Here's the same idea made completely concrete with the actual probability chain.</p>
+
+<div class="formula">
+<div class="tag">similarity, now written with i's own σ</div>
+<div class="eq">$$\text{similarity}(i,j) = e^{-\|x_i-x_j\|^2 / 2\sigma_i^2}$$</div>
+</div>
+
+<p>Plugging this into the normalization from Section 12 gives the complete, final formula for one entry of <span class="mono">P</span>:</p>
+
+<div class="formula">
+<div class="tag">the complete p_{j|i}</div>
+<div class="eq">$$p_{j|i} = \dfrac{e^{-\|x_i-x_j\|^2/2\sigma_i^2}}{\displaystyle\sum_{k\neq i} e^{-\|x_i-x_k\|^2/2\sigma_i^2}}$$</div>
+</div>
+
+<div class="tbl">
+<table>
+<tr><th></th><th>Point A — dense region</th><th>Point D — sparse region</th></tr>
+<tr><td>What surrounds it</td><td class="good">Neighbors packed closely</td><td class="bad">Neighbors spread thin</td></tr>
+<tr><td>σ needed</td><td class="mono good">smaller</td><td class="mono teal">larger</td></tr>
+<tr><td>Why</td><td>Even a narrow bell curve already reaches several real neighbors</td><td>A narrow bell curve would decay to ~0 before reaching <em>any</em> other point — the curve must be stretched out to find real structure</td></tr>
+</table>
+</div>
+
+<div class="callout good"><span class="lbl">Restating the shift in thinking</span>We've moved from the flawed idea "distance = similarity" to the correct one: <b>"how important is this distance, relative to this particular point's own local neighborhood?"</b> σᵢ is exactly what answers that — and that's the question we still need to answer: how does t-SNE actually pick a number for σᵢ?</div>
+
+</section>
+
+<section class="block" id="s14-entropy">
+<div class="eyebrow">14 · the missing piece</div>
+<h2>So how do we actually pick σᵢ? Entropy, then perplexity</h2>
+<p class="lead">With 10,000 points, nobody is hand-tuning 10,000 separate σ values. We need σᵢ to fall out of a single, simple choice — automatically, per point.</p>
+
+<p>Start from a distribution we already have — say, point A's:</p>
+
+<div class="formula">
+<div class="tag">A's probability distribution</div>
+<div class="eq">$$P_A = [\,p_{B|A},\ p_{C|A},\ p_{D|A},\ p_{E|A}\,] = [0.60,\ 0.25,\ 0.10,\ 0.05]$$</div>
+</div>
+
+<p>We need a number that measures: <em>how spread out is this distribution?</em> That's exactly what <b>entropy</b> measures.</p>
+
+<div class="formula">
+<div class="tag">Shannon entropy of a distribution</div>
+<div class="eq">$$H(P_i) = -\sum_{j} p_{j|i}\, \log_2 p_{j|i}$$</div>
+</div>
+
+<div class="grid2">
+<div class="co-card">
+<div class="name">Probability concentrated</div>
+<p class="mono" style="color:var(--paper-dim);">B=95%, C=2%, D=2%, E=1%</p>
+<div class="why">→ low entropy. Almost all the "neighbor weight" sits on one point — a narrow, confident neighborhood.</div>
+</div>
+<div class="co-card">
+<div class="name">Probability spread out</div>
+<p class="mono" style="color:var(--paper-dim);">B=25%, C=25%, D=25%, E=25%</p>
+<div class="why">→ higher entropy. Weight is shared roughly equally — a wide, undecided neighborhood.</div>
+</div>
+</div>
+
+<div class="callout good"><span class="lbl">In one line</span>Entropy measures how spread out the probability distribution is. That's step one. Now convert it into something with a much more intuitive scale:</div>
+
+<div class="formula">
+<div class="tag">entropy → perplexity</div>
+<div class="eq">$$\text{Perplexity}(P_i) = 2^{H(P_i)}$$</div>
+</div>
+
+<div class="tbl">
+<table>
+<tr><th>Example distribution</th><th>H (entropy)</th><th>Perplexity = 2^H</th><th>Interpretation</th></tr>
+<tr><td class="mono">[0.25, 0.25, 0.25, 0.25]</td><td class="mono">2.00</td><td class="mono hl">4</td><td>"4 equally important neighbors"</td></tr>
+<tr><td class="mono">[0.20, 0.20, 0.20, 0.20, 0.20]</td><td class="mono">2.32</td><td class="mono hl">5</td><td>"5 equally important neighbors"</td></tr>
+</table>
+</div>
+
+<div class="formula">
+<div class="tag">the intuitive reading</div>
+<div class="eq">$$\text{Perplexity} = \text{"how many equally-important neighbors would this distribution roughly correspond to?"}$$</div>
+</div>
+
+</section>
+
+<section class="block" id="s15-perp-meaning">
+<div class="eyebrow">15 · making it concrete</div>
+<h2>Perplexity in plain English</h2>
+<p class="lead">Strip away the formula for a second. In practice, perplexity is a single dial that controls the size of the neighborhood every point gets to see.</p>
+
+<div class="mental-model">
+<div class="card-title">The one sentence to remember</div>
+<p><b>Perplexity is (roughly) "how many neighbors each point should pay attention to."</b> Set perplexity = 30, and t-SNE tries to give every single point — whether it lives in a crowded region or an empty one — a probability distribution that behaves as if it has about 30 meaningfully close neighbors.</p>
+</div>
+
+<p>See it directly: the same 3-group, 42-point dataset from Section 05, run at three different perplexity values.</p>
+
+<div class="grid3">
+<div class="diagram">
+<svg viewBox="0 0 300 300" width="100%" height="230">
+<rect x="10" y="10" width="280" height="280" fill="none" stroke="#242a34" stroke-width="1"/>
+<circle cx="132.7" cy="265.5" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="112.3" cy="223.5" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="102.1" cy="215.6" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="104.8" cy="220.3" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="124.6" cy="266.1" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="93.1" cy="235.3" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="140.1" cy="266.7" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="104.5" cy="244.7" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="164.1" cy="243.7" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="97.8" cy="238.7" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="145.6" cy="269.6" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="160.6" cy="247.9" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="152.2" cy="274.7" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="87.6" cy="243.7" r="4" fill="#7f9adf" opacity="0.9"/>
+<circle cx="256.3" cy="135.4" r="4" fill="#e2836c" opacity="0.9"/><circle cx="276.7" cy="141.0" r="4" fill="#e2836c" opacity="0.9"/><circle cx="267.2" cy="125.8" r="4" fill="#e2836c" opacity="0.9"/><circle cx="245.8" cy="116.1" r="4" fill="#e2836c" opacity="0.9"/><circle cx="263.0" cy="129.2" r="4" fill="#e2836c" opacity="0.9"/><circle cx="272.3" cy="145.1" r="4" fill="#e2836c" opacity="0.9"/><circle cx="24.8" cy="277.5" r="4" fill="#e2836c" opacity="0.9"/><circle cx="254.4" cy="115.1" r="4" fill="#e2836c" opacity="0.9"/><circle cx="255.8" cy="106.8" r="4" fill="#e2836c" opacity="0.9"/><circle cx="269.8" cy="81.7" r="4" fill="#e2836c" opacity="0.9"/><circle cx="267.1" cy="94.3" r="4" fill="#e2836c" opacity="0.9"/><circle cx="280.0" cy="91.5" r="4" fill="#e2836c" opacity="0.9"/><circle cx="20.0" cy="280.0" r="4" fill="#e2836c" opacity="0.9"/><circle cx="271.1" cy="90.1" r="4" fill="#e2836c" opacity="0.9"/>
+<circle cx="68.3" cy="20.0" r="4" fill="#93c084" opacity="0.9"/><circle cx="52.9" cy="69.6" r="4" fill="#93c084" opacity="0.9"/><circle cx="141.8" cy="84.5" r="4" fill="#93c084" opacity="0.9"/><circle cx="121.2" cy="77.6" r="4" fill="#93c084" opacity="0.9"/><circle cx="66.1" cy="57.3" r="4" fill="#93c084" opacity="0.9"/><circle cx="58.7" cy="62.0" r="4" fill="#93c084" opacity="0.9"/><circle cx="66.9" cy="70.5" r="4" fill="#93c084" opacity="0.9"/><circle cx="59.7" cy="30.1" r="4" fill="#93c084" opacity="0.9"/><circle cx="134.2" cy="81.9" r="4" fill="#93c084" opacity="0.9"/><circle cx="129.0" cy="80.2" r="4" fill="#93c084" opacity="0.9"/><circle cx="52.2" cy="35.0" r="4" fill="#93c084" opacity="0.9"/><circle cx="71.8" cy="57.2" r="4" fill="#93c084" opacity="0.9"/><circle cx="52.2" cy="56.9" r="4" fill="#93c084" opacity="0.9"/><circle cx="63.6" cy="25.4" r="4" fill="#93c084" opacity="0.9"/>
+</svg>
+<div class="cap"><b>Perplexity = 2</b> (too low). Each true group fractures into two or three tighter sub-pieces — one blue/coral point even gets stranded off on its own. The algorithm is only trying to satisfy ~2 neighbors per point, so it fixates on tiny sub-cliques.</div>
+</div>
+<div class="diagram">
+<svg viewBox="0 0 300 300" width="100%" height="230">
+<rect x="10" y="10" width="280" height="280" fill="none" stroke="#242a34" stroke-width="1"/>
+<circle cx="151.4" cy="279.9" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="158.1" cy="264.7" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="165.6" cy="265.7" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="163.3" cy="264.6" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="156.3" cy="278.3" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="164.5" cy="272.4" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="149.7" cy="275.3" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="164.6" cy="280.0" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="137.6" cy="274.5" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="161.1" cy="271.3" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="149.8" cy="270.9" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="140.6" cy="275.0" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="149.2" cy="263.6" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="173.1" cy="272.2" r="4" fill="#7f9adf" opacity="0.9"/>
+<circle cx="43.6" cy="94.6" r="4" fill="#e2836c" opacity="0.9"/><circle cx="35.7" cy="91.7" r="4" fill="#e2836c" opacity="0.9"/><circle cx="38.6" cy="101.8" r="4" fill="#e2836c" opacity="0.9"/><circle cx="34.1" cy="117.3" r="4" fill="#e2836c" opacity="0.9"/><circle cx="36.1" cy="98.5" r="4" fill="#e2836c" opacity="0.9"/><circle cx="31.8" cy="92.3" r="4" fill="#e2836c" opacity="0.9"/><circle cx="49.1" cy="98.3" r="4" fill="#e2836c" opacity="0.9"/><circle cx="35.0" cy="108.5" r="4" fill="#e2836c" opacity="0.9"/><circle cx="40.9" cy="110.8" r="4" fill="#e2836c" opacity="0.9"/><circle cx="20.0" cy="102.3" r="4" fill="#e2836c" opacity="0.9"/><circle cx="30.7" cy="103.6" r="4" fill="#e2836c" opacity="0.9"/><circle cx="24.8" cy="109.6" r="4" fill="#e2836c" opacity="0.9"/><circle cx="46.7" cy="101.6" r="4" fill="#e2836c" opacity="0.9"/><circle cx="26.3" cy="104.3" r="4" fill="#e2836c" opacity="0.9"/>
+<circle cx="244.5" cy="29.0" r="4" fill="#93c084" opacity="0.9"/><circle cx="262.5" cy="38.4" r="4" fill="#93c084" opacity="0.9"/><circle cx="280.0" cy="32.9" r="4" fill="#93c084" opacity="0.9"/><circle cx="271.8" cy="22.3" r="4" fill="#93c084" opacity="0.9"/><circle cx="260.3" cy="32.7" r="4" fill="#93c084" opacity="0.9"/><circle cx="261.6" cy="29.5" r="4" fill="#93c084" opacity="0.9"/><circle cx="251.2" cy="37.7" r="4" fill="#93c084" opacity="0.9"/><circle cx="252.6" cy="27.0" r="4" fill="#93c084" opacity="0.9"/><circle cx="274.7" cy="30.3" r="4" fill="#93c084" opacity="0.9"/><circle cx="275.0" cy="28.3" r="4" fill="#93c084" opacity="0.9"/><circle cx="256.5" cy="20.0" r="4" fill="#93c084" opacity="0.9"/><circle cx="257.1" cy="33.8" r="4" fill="#93c084" opacity="0.9"/><circle cx="263.0" cy="24.0" r="4" fill="#93c084" opacity="0.9"/><circle cx="248.8" cy="29.8" r="4" fill="#93c084" opacity="0.9"/>
+</svg>
+<div class="cap"><b>Perplexity = 8</b> (well-matched to this data). All three true groups come through as one single, tight, cleanly separated cluster each — exactly the structure that's actually there.</div>
+</div>
+<div class="diagram">
+<svg viewBox="0 0 300 300" width="100%" height="230">
+<rect x="10" y="10" width="280" height="280" fill="none" stroke="#242a34" stroke-width="1"/>
+<circle cx="28.8" cy="200.6" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="37.2" cy="194.3" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="32.4" cy="198.2" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="43.0" cy="183.1" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="48.6" cy="193.4" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="21.9" cy="158.0" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="21.2" cy="168.6" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="35.8" cy="137.1" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="20.0" cy="149.9" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="52.8" cy="157.1" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="27.3" cy="186.8" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="22.1" cy="156.1" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="62.0" cy="194.6" r="4" fill="#7f9adf" opacity="0.9"/><circle cx="54.9" cy="176.0" r="4" fill="#7f9adf" opacity="0.9"/>
+<circle cx="244.0" cy="77.5" r="4" fill="#e2836c" opacity="0.9"/><circle cx="248.2" cy="46.4" r="4" fill="#e2836c" opacity="0.9"/><circle cx="245.0" cy="67.4" r="4" fill="#e2836c" opacity="0.9"/><circle cx="207.5" cy="22.5" r="4" fill="#e2836c" opacity="0.9"/><circle cx="243.5" cy="59.4" r="4" fill="#e2836c" opacity="0.9"/><circle cx="259.5" cy="56.6" r="4" fill="#e2836c" opacity="0.9"/><circle cx="255.0" cy="66.0" r="4" fill="#e2836c" opacity="0.9"/><circle cx="224.3" cy="51.4" r="4" fill="#e2836c" opacity="0.9"/><circle cx="189.7" cy="49.7" r="4" fill="#e2836c" opacity="0.9"/><circle cx="203.4" cy="20.0" r="4" fill="#e2836c" opacity="0.9"/><circle cx="226.6" cy="27.9" r="4" fill="#e2836c" opacity="0.9"/><circle cx="204.7" cy="24.2" r="4" fill="#e2836c" opacity="0.9"/><circle cx="245.9" cy="58.8" r="4" fill="#e2836c" opacity="0.9"/><circle cx="206.4" cy="31.5" r="4" fill="#e2836c" opacity="0.9"/>
+<circle cx="246.5" cy="250.3" r="4" fill="#93c084" opacity="0.9"/><circle cx="240.7" cy="230.0" r="4" fill="#93c084" opacity="0.9"/><circle cx="280.0" cy="253.6" r="4" fill="#93c084" opacity="0.9"/><circle cx="184.2" cy="278.8" r="4" fill="#93c084" opacity="0.9"/><circle cx="231.8" cy="258.2" r="4" fill="#93c084" opacity="0.9"/><circle cx="232.8" cy="234.6" r="4" fill="#93c084" opacity="0.9"/><circle cx="250.0" cy="213.6" r="4" fill="#93c084" opacity="0.9"/><circle cx="228.4" cy="280.0" r="4" fill="#93c084" opacity="0.9"/><circle cx="254.8" cy="254.6" r="4" fill="#93c084" opacity="0.9"/><circle cx="237.8" cy="267.0" r="4" fill="#93c084" opacity="0.9"/><circle cx="238.7" cy="277.9" r="4" fill="#93c084" opacity="0.9"/><circle cx="203.9" cy="251.0" r="4" fill="#93c084" opacity="0.9"/><circle cx="224.9" cy="264.3" r="4" fill="#93c084" opacity="0.9"/><circle cx="267.4" cy="252.0" r="4" fill="#93c084" opacity="0.9"/>
+</svg>
+<div class="cap"><b>Perplexity = 35</b> (too high for only 42 points). Each point is now forced to treat roughly 35 of the other 41 points as "meaningful neighbors" — nearly the whole dataset. The 3 groups are still discernible, but boundaries blur and internal structure compresses toward uniform.</div>
+</div>
+</div>
+
+<div class="callout warn"><span class="lbl">Reading the three panels together</span>Too-low perplexity makes the map obsess over tiny local cliques and fracture real groups apart. Too-high perplexity forces every point to consider far more of the dataset as "close," blurring genuinely separate groups toward each other. A well-matched perplexity (roughly: comfortably smaller than your total number of points, and in the right ballpark for your true group sizes) is what lets the natural structure come through cleanly — exactly what perplexity = 8 shows here.</div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">The simplest possible way to picture perplexity</h3>
+
+<p>Forget the formula for a moment. If a point's probability distribution p<sub>j|i</sub> came out <em>perfectly clean</em>, perplexity would just be a head-count:</p>
+
+<div class="tbl">
+<table>
+<tr><th>If perplexity ≈</th><th>The probabilities would look like</th><th>Reading it</th></tr>
+<tr><td class="mono hl">2</td><td class="mono">0.50, 0.50, 0, 0, 0, ...</td><td>"2 points share essentially all the weight — 2 real neighbors, everyone else ≈ irrelevant"</td></tr>
+<tr><td class="mono hl">3</td><td class="mono">0.33, 0.33, 0.33, 0, 0, ...</td><td>"3 points share the weight equally — 3 real neighbors"</td></tr>
+<tr><td class="mono hl">30</td><td class="mono">0.033 × 30, 0, 0, ...</td><td>"30 points share the weight equally — 30 real neighbors"</td></tr>
+</table>
+</div>
+
+<p>Real distributions are messier than this (weight trails off gradually rather than cutting to a hard 0 — see the σ = 5, 10 rows back in Section 09's table), but this idealized picture is exactly what perplexity is trying to summarize in one number: <b>roughly how many points does this distribution treat as genuine neighbors?</b></p>
+
+<p>Now the real payoff — the whole reason σᵢ exists per-point: two points can sit in <em>completely different</em> neighborhoods, need <em>completely different</em> σ, and still land on the <em>exact same</em> perplexity, because perplexity is a target on the <em>shape</em> of the distribution, not on distance itself.</p>
+
+<div class="grid2">
+<div class="diagram">
+<svg viewBox="0 0 250 190" width="100%" height="185">
+<line x1="10" y1="170" x2="240" y2="170" stroke="#242a34" stroke-width="1.3"/>
+<rect x="19.0" y="61.1" width="42" height="108.9" fill="#7f9adf" opacity="0.85"/>
+<rect x="74.0" y="66.0" width="42" height="104.0" fill="#7f9adf" opacity="0.85"/>
+<rect x="129.0" y="71.8" width="42" height="98.2" fill="#7f9adf" opacity="0.85"/>
+<rect x="184.0" y="169.0" width="42" height="1" fill="#6b7480" opacity="0.85"/>
+<text x="40" y="184" fill="#9aa1ab" font-family="IBM Plex Mono" font-size="9" text-anchor="middle">N1 (0.35)</text>
+<text x="95" y="184" fill="#9aa1ab" font-family="IBM Plex Mono" font-size="9" text-anchor="middle">N2 (0.33)</text>
+<text x="150" y="184" fill="#9aa1ab" font-family="IBM Plex Mono" font-size="9" text-anchor="middle">N3 (0.32)</text>
+<text x="205" y="184" fill="#9aa1ab" font-family="IBM Plex Mono" font-size="9" text-anchor="middle">N4 (≈0)</text>
+</svg>
+<div class="cap"><b>Dense point P1</b> — nearest neighbors at distances 0.4, 0.5, 0.6. Needs only <b>σ ≈ 0.98</b> to reach perplexity = 3.</div>
+</div>
+<div class="diagram">
+<svg viewBox="0 0 250 190" width="100%" height="185">
+<line x1="10" y1="170" x2="240" y2="170" stroke="#242a34" stroke-width="1.3"/>
+<rect x="19.0" y="53.6" width="42" height="116.4" fill="#e2836c" opacity="0.85"/>
+<rect x="74.0" y="66.2" width="42" height="103.8" fill="#e2836c" opacity="0.85"/>
+<rect x="129.0" y="79.3" width="42" height="90.7" fill="#e2836c" opacity="0.85"/>
+<rect x="184.0" y="168.8" width="42" height="1.2" fill="#6b7480" opacity="0.85"/>
+<text x="40" y="184" fill="#9aa1ab" font-family="IBM Plex Mono" font-size="9" text-anchor="middle">N1 (0.37)</text>
+<text x="95" y="184" fill="#9aa1ab" font-family="IBM Plex Mono" font-size="9" text-anchor="middle">N2 (0.33)</text>
+<text x="150" y="184" fill="#9aa1ab" font-family="IBM Plex Mono" font-size="9" text-anchor="middle">N3 (0.29)</text>
+<text x="205" y="184" fill="#9aa1ab" font-family="IBM Plex Mono" font-size="9" text-anchor="middle">N4 (≈0)</text>
+</svg>
+<div class="cap"><b>Sparse point P2</b> — nearest neighbors at distances 3.0, 3.6, 4.2 (much farther away in absolute terms). Needs a much bigger <b>σ ≈ 4.16</b> to reach the <em>same</em> perplexity = 3.</div>
+</div>
+</div>
+
+<div class="callout good"><span class="lbl">Same target, wildly different <span class="nocase">σ</span>, same-shaped result</span>P1's real neighbors are under 1 unit away; P2's real neighbors are 3–4 units away — roughly 7× farther in raw distance. Yet both end up with almost the identical probability shape (≈0.35 / 0.33 / 0.32 / ≈0 vs ≈0.37 / 0.33 / 0.29 / ≈0) because each point used its <em>own</em> σ to reach the <em>same</em> perplexity = 3 target. This is the entire point of per-point σᵢ: perplexity fixes "how many neighbors count," and σᵢ is whatever each point individually needs to make that true, regardless of how close or far those neighbors happen to sit in absolute terms.</div>
+
+</section>
+
+<section class="block" id="s16-internals">
+<div class="eyebrow">16 · optional, self-read</div>
+<h2>How is σᵢ actually found, internally?</h2>
+<p class="lead">You choose <em>one</em> perplexity for the whole run. The algorithm still has to solve, separately for every single point, "what σᵢ gives me a distribution whose perplexity matches my target?" Here's the loop that does it — not required for using t-SNE, just satisfying to know it isn't magic.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 560 210" width="100%" height="200">
+<rect x="20" y="20" width="220" height="170" rx="10" fill="var(--ink-2)" stroke="#242a34"/>
+<text x="130" y="45" text-anchor="middle" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="11" font-weight="600">for each point i</text>
+<text x="35" y="70" fill="#eef0ee" font-family="IBM Plex Mono" font-size="10.5">1. start with a guess for σᵢ</text>
+<text x="35" y="92" fill="#eef0ee" font-family="IBM Plex Mono" font-size="10.5">2. compute p_{j|i} for all j</text>
+<text x="35" y="114" fill="#eef0ee" font-family="IBM Plex Mono" font-size="10.5">3. compute entropy H(Pᵢ)</text>
+<text x="35" y="136" fill="#eef0ee" font-family="IBM Plex Mono" font-size="10.5">4. perplexity = 2^H</text>
+<text x="35" y="158" fill="#eef0ee" font-family="IBM Plex Mono" font-size="10.5">5. close to target?</text>
+<text x="35" y="178" fill="#5fbfae" font-family="IBM Plex Mono" font-size="10.5" font-weight="600">yes → move to point i+1</text>
+<line x1="260" y1="105" x2="320" y2="105" stroke="#6b7480" stroke-width="1.4"/>
+<text x="266" y="98" fill="#e2836c" font-family="IBM Plex Mono" font-size="10">no</text>
+<rect x="320" y="60" width="220" height="90" rx="10" fill="var(--ink-2)" stroke="#e2836c"/>
+<text x="430" y="82" text-anchor="middle" fill="#e2836c" font-family="IBM Plex Mono" font-size="11" font-weight="600">adjust σᵢ (binary search)</text>
+<text x="335" y="105" fill="#eef0ee" font-family="IBM Plex Mono" font-size="10.5">perplexity too low → σᵢ ↑</text>
+<text x="335" y="125" fill="#eef0ee" font-family="IBM Plex Mono" font-size="10.5">perplexity too high → σᵢ ↓</text>
+<path d="M 430 60 C 430 20, 260 20, 200 60" fill="none" stroke="#6b7480" stroke-width="1.4" marker-end="url(#pf-arr)"/>
+<text x="300" y="30" fill="#6b7480" font-family="IBM Plex Mono" font-size="9.5">try again</text>
+</svg>
+<div class="cap">A small search loop, repeated independently for every point, until each point's own perplexity lands close to the one target value you chose.</div>
+</div>
+
+<div class="formula">
+<div class="tag">the rule in one line</div>
+<div class="eq">$$\text{Distances} \to \text{try } \sigma_i \to \text{probabilities} \to \text{perplexity} \to \text{adjust } \sigma_i \to \dots \to \text{perplexity} \approx \text{target}$$</div>
+</div>
+
+<div class="callout info">This runs once per point before any 2D optimization starts — it's entirely about building <span class="mono">P</span> (today's whole job), and finishes long before Q, KL divergence, or gradient descent (next class) ever begin.</div>
+
+</section>
+
+<section class="block" id="s17-worked">
+<div class="eyebrow">17 · optional · end to end, with real numbers</div>
+<h2>Full worked example</h2>
+<p class="lead">Two clusters, six points, real 3D coordinates. Every number below — distances, similarities, entropy, perplexity, the converged σ — is computed, not invented. Nothing later in the class depends on working through this by hand; it exists so you can see, once, that none of it is magic.</p>
+
+<div class="tbl">
+<table>
+<tr><th>Point</th><th>Coordinates (3D)</th><th>Cluster</th></tr>
+<tr><td class="mono">A</td><td class="mono">(0.0, 0.0, 0.0)</td><td class="teal">dense (1)</td></tr>
+<tr><td class="mono">B</td><td class="mono">(0.5, 0.3, 0.2)</td><td class="teal">dense (1)</td></tr>
+<tr><td class="mono">C</td><td class="mono">(0.3, 0.6, 0.1)</td><td class="teal">dense (1)</td></tr>
+<tr><td class="mono">D</td><td class="mono">(8.0, 8.0, 8.0)</td><td class="bad">sparse (2)</td></tr>
+<tr><td class="mono">E</td><td class="mono">(9.0, 7.0, 8.5)</td><td class="bad">sparse (2)</td></tr>
+<tr><td class="mono">F</td><td class="mono">(7.5, 8.5, 7.0)</td><td class="bad">sparse (2)</td></tr>
+</table>
+</div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">Step 1 — distances from A</h3>
+
+<div class="tbl">
+<table>
+<tr><th>Point</th><th>d(A, ·)</th></tr>
+<tr><td>B</td><td class="mono good">0.616</td></tr>
+<tr><td>C</td><td class="mono good">0.678</td></tr>
+<tr><td>D</td><td class="mono bad">13.856</td></tr>
+<tr><td>E</td><td class="mono bad">14.221</td></tr>
+<tr><td>F</td><td class="mono bad">13.323</td></tr>
+</table>
+</div>
+
+<div class="callout info">A huge gap by design: A's true cluster-mates (B, C) sit under 1 unit away; the other cluster (D, E, F) sits over 13 units away. A good σ_A should make B and C dominate the probability, and D, E, F should end up essentially irrelevant.</div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">Step 2 — try several values of σ_A</h3>
+
+<div class="tbl">
+<table>
+<tr><th><span class="nocase">σ_A</span></th><th>p<sub>B|A</sub></th><th>p<sub>C|A</sub></th><th>p<sub>D|A</sub></th><th>p<sub>E|A</sub></th><th>p<sub>F|A</sub></th><th>H</th><th>Perplexity</th></tr>
+<tr><td class="mono">0.3</td><td class="mono">0.609</td><td class="mono">0.391</td><td class="mono">0.000</td><td class="mono">0.000</td><td class="mono">0.000</td><td class="mono">0.965</td><td class="mono">1.95</td></tr>
+<tr><td class="mono">1.0</td><td class="mono">0.510</td><td class="mono">0.490</td><td class="mono">0.000</td><td class="mono">0.000</td><td class="mono">0.000</td><td class="mono">1.000</td><td class="mono hl">2.00</td></tr>
+<tr><td class="mono">2.0</td><td class="mono">0.503</td><td class="mono">0.498</td><td class="mono">0.000</td><td class="mono">0.000</td><td class="mono">0.000</td><td class="mono">1.000</td><td class="mono hl">2.00</td></tr>
+<tr><td class="mono">5.0</td><td class="mono">0.484</td><td class="mono">0.483</td><td class="mono">0.011</td><td class="mono">0.009</td><td class="mono">0.014</td><td class="mono">1.228</td><td class="mono">2.34</td></tr>
+<tr><td class="mono">10.0</td><td class="mono">0.316</td><td class="mono">0.316</td><td class="mono">0.121</td><td class="mono">0.115</td><td class="mono">0.131</td><td class="mono">2.163</td><td class="mono bad">4.48</td></tr>
+</table>
+</div>
+
+<div class="callout warn"><span class="lbl">Read what happens as <span class="nocase">σ</span> grows</span>For σ between roughly 0.5 and 3, almost all the probability mass stays locked on B and C — perplexity sits right at ≈2, matching the "2 true neighbors" intuition perfectly. Push σ_A up to 5 or 10, and the far cluster (D, E, F) starts leaking in non-zero probability — perplexity climbs to 2.34, then 4.48. <b>Too large a σ starts treating genuinely distant, unrelated points as neighbors.</b></div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">Step 3 — binary search to hit a target perplexity of exactly 2</h3>
+
+<div class="tbl">
+<table>
+<tr><th>Iteration</th><th>Trying <span class="nocase">σ_A</span></th><th>Resulting perplexity</th></tr>
+<tr><td class="mono">1</td><td class="mono">10.005</td><td class="mono bad">4.478 (too high → shrink σ)</td></tr>
+<tr><td class="mono">2</td><td class="mono">5.008</td><td class="mono bad">2.345 (still too high → shrink σ)</td></tr>
+<tr><td class="mono">3</td><td class="mono">2.509</td><td class="mono good">2.000 ✓</td></tr>
+<tr><td class="mono">4</td><td class="mono">1.259</td><td class="mono">1.9998 (essentially there already)</td></tr>
+<tr><td class="mono">…</td><td class="mono">…</td><td class="mono">converging tightly around perplexity = 2.000</td></tr>
+<tr><td class="hl"><b>Converged</b></td><td class="mono hl"><b>σ_A ≈ 2.465</b></td><td class="mono hl"><b>2.000</b></td></tr>
+</table>
+</div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">Step 4 — contrast with a point in the "sparse" cluster</h3>
+
+<p>Run the exact same target-perplexity-2 search from point D (distances: A=13.856, B=13.281, C=13.284, E=1.5, F=1.225 — note D's own cluster-mates E, F sit noticeably farther from D than B, C sit from A):</p>
+
+<div class="tbl">
+<table>
+<tr><th></th><th><span class="nocase">σ</span> converged to</th><th>Final neighbor probabilities</th></tr>
+<tr><td class="mono">From A</td><td class="mono hl">2.465</td><td class="mono">B=0.502, C=0.498, D=E=F≈0</td></tr>
+<tr><td class="mono">From D</td><td class="mono hl">2.836</td><td class="mono">E=0.488, F=0.512, A=B=C≈0</td></tr>
+</table>
+</div>
+
+<div class="callout good"><span class="lbl">Exactly the density story from Sections 11 &amp; 13, now with real numbers</span>D's own cluster-mates (E, F) sit slightly farther from D than A's cluster-mates (B, C) sit from A — meaning D's local neighborhood is very slightly more "sparse." To reach the <em>same</em> target perplexity of 2, the search needs a <b>larger</b> σ_D (2.836) than σ_A (2.465). Same target, same algorithm, genuinely different σ — driven entirely by local density, exactly as promised.</div>
+
+</section>
+
+<section class="block" id="s18-keyidea">
+<div class="eyebrow">18 · the payoff</div>
+<h2>The key idea: we fix perplexity, not σ</h2>
+<p class="lead">This is the single most important practical fact from today, worth isolating on its own.</p>
+
+<div class="vs">
+<div class="side left">
+<div class="t">What we do NOT do</div>
+Manually pick 10,000 separate σ values, one per point, by hand-inspecting each point's local density.
+</div>
+<div class="mid">instead</div>
+<div class="side right">
+<div class="t">What t-SNE actually does</div>
+You choose <b>one</b> hyperparameter — perplexity — and the binary-search loop (Section 16) solves for every σᵢ automatically, per point.
+</div>
+</div>
+
+<div class="formula">
+<div class="tag">the four-line summary</div>
+<div class="eq">
+<div style="text-align:left; font-size:1rem; line-height:2;">
+You choose <b>ONE</b> perplexity<br>
+Each point gets its <b>OWN</b> σᵢ<br>
+Each point has its <b>OWN</b> entropy<br>
+Each point's entropy corresponds to the <b>SAME</b> target perplexity
+</div>
+</div>
+</div>
+
+<div class="tbl">
+<table>
+<tr><th>Why this is better than fixing <span class="nocase">σ</span> globally</th><th>Why this is better than tuning <span class="nocase">σ</span> by hand</th></tr>
+<tr><td>A single global σ can't serve both dense and sparse regions well (Sections 11 &amp; 13) — perplexity adapts σ automatically, per point, to local density</td><td>One human-interpretable number ("roughly how many neighbors matter") replaces thousands of arbitrary, uninterpretable radii nobody could reasonably set by hand</td></tr>
+</table>
+</div>
+
+<div class="callout good"><span class="lbl">The practical rule of thumb</span>Typical perplexity values in practice sit in the 5–50 range, and — as Section 15's sweep showed directly — should generally stay well below your total number of points, or the algorithm runs out of genuinely distinct neighbors to satisfy.</div>
+
+</section>
+
+<section class="block" id="s19-next">
+<div class="eyebrow">19 · scope check</div>
+<h2>Where we stop today</h2>
+<p class="lead">Everything above builds exactly one object: <span class="mono">P</span>, the full set of per-point neighbor probabilities in the original high-dimensional space.</p>
+
+<div class="tbl">
+<table>
+<tr><th>Covered today <span class="scopetag scope-today">done</span></th><th>Coming next class <span class="scopetag scope-next">t-SNE II</span></th></tr>
+<tr><td>Distance → Gaussian similarity → normalized probability p<sub>j|i</sub></td><td>Placing random points in 2D</td></tr>
+<tr><td>Why Gaussian, specifically</td><td>Computing low-D similarities Q — and why a <em>different</em> distribution (Student-t) is used here</td></tr>
+<tr><td>σᵢ as each point's own neighborhood width</td><td>Comparing P and Q — the KL divergence</td></tr>
+<tr><td>Entropy → Perplexity, and what perplexity means</td><td>Gradient descent — moving the 2D points to make Q look like P</td></tr>
+<tr><td>Fixing one perplexity, solving for every σᵢ</td><td>Finishing the name: why "t-distributed"</td></tr>
+</table>
+</div>
+
+</section>
+
+<section class="block" id="s20-chain">
+<div class="eyebrow">20 · everything, together</div>
+<h2>Everything today, one picture</h2>
+
+<div class="timeline">
+<div class="titem"><div class="tsec">Sections 00–03</div><div class="ttext">PCA optimizes global variance and has no notion of neighbors. t-SNE's entire question is instead: if two points were neighbors in high-D, are they still neighbors in 2D?</div></div>
+<div class="titem hl"><div class="tsec">Sections 04–05</div><div class="ttext">Proven on real data: t-SNE separates genuinely-clustered data ~3.6× better than PCA when the separating signal has low variance. Two different t-SNE runs land in different orientations but preserve ~74% of true neighbor structure either way (vs. 40% for PCA).</div></div>
+<div class="titem"><div class="tsec">Section 06</div><div class="ttext">The full pipeline: Distance → Similarity → Probability → P (today) → random 2D → Q → KL divergence → gradient descent → final map (next class).</div></div>
+<div class="titem hl"><div class="tsec">Sections 07–10</div><div class="ttext">"Close" becomes a number via Euclidean distance, then a well-behaved similarity via a Gaussian: e^(−d²/2σ²) — bounded, smooth, and a genuine probability density, unlike 1/d.</div></div>
+<div class="titem"><div class="tsec">Sections 11–13</div><div class="ttext">Every point gets its own σᵢ — small in dense regions, large in sparse ones — so "nearby" is always judged relative to local density, not one global ruler.</div></div>
+<div class="titem"><div class="tsec">Section 12</div><div class="ttext">Raw Gaussian scores don't sum to 1 — dividing by their total turns them into a real, per-point probability distribution p<sub>j|i</sub>, generally asymmetric between i and j.</div></div>
+<div class="titem hl"><div class="tsec">Sections 14–16</div><div class="ttext">Entropy measures how spread a distribution is; Perplexity = 2^H converts that into "effective neighbor count." A binary search per point finds the σᵢ that hits one chosen target perplexity.</div></div>
+<div class="titem"><div class="tsec">Sections 17–18</div><div class="ttext">Worked end to end on 6 real points: dense-cluster point A converges to σ≈2.47, sparser-cluster point D converges to σ≈2.84 — same target perplexity, genuinely different widths. You fix ONE perplexity; the algorithm finds every σᵢ.</div></div>
+</div>
+
+<div class="mental-model">
+<div class="card-title">The one-paragraph version</div>
+<p>t-SNE starts by asking, for every point, who its real neighbors are back in the original high-dimensional space — measured as distance, converted into a Gaussian similarity that decays smoothly to zero, then normalized into a proper probability distribution. Because "nearby" means something different in a crowded region than in an empty one, every point gets its own neighborhood width σᵢ, and rather than guessing that width by hand, we fix one interpretable number — perplexity, "how many neighbors should matter" — and let a small search find the σᵢ that delivers it, point by point. The result, P, is a complete, high-fidelity description of the neighborhood structure in the original data — and next class, we build its low-dimensional twin, Q, and spend the rest of the algorithm dragging Q into agreement with P.</p>
+</div>
+
+</section>
+
+<div class="divider"></div>
+<p class="mono" style="text-align:center;font-size:.82rem;color:var(--paper-faint);padding-bottom:10px;">t-SNE I — From Neighbors to Probabilities · Scaler ML Cohort · Class 09</p>
+
+</main>
+</div>
+</div>
+
+<div class="wrap">
+<div class="pagefoot">
+  <a href="#">&larr; Class 09: PCA II (orthogonality, EVR, limitations)</a>
+  <span class="relbox">Module: Unsupervised ML &middot; Class 09 (t-SNE I)</span>
+  <a href="#s0-recap">Back to top &uarr;</a>
+</div>
+</div>
+
+<script>
+document.querySelectorAll("nav a").forEach(a=>a.addEventListener("click",()=>{
+  document.querySelectorAll("nav a").forEach(x=>x.classList.remove("active"));
+  a.classList.add("active");
+}));
+</script>
+</body>
+</html>

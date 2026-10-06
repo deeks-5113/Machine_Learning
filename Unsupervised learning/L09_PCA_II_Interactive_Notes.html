@@ -1,0 +1,1125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 09 — PCA II: Directions, Orthogonality &amp; Limits | Unsupervised ML</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,ital@9..144,400;9..144,500;9..144,600;9..144,700;9..144,600italic&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'$',right:'$',display:false},{left:'\\(',right:'\\)',display:false}]});"></script>
+<style>
+:root{
+  --ink-0:#0a0c10; --ink-1:#12151b; --ink-2:#181c24;
+  --hair:#242a34; --hair-soft:#1a1e26;
+  --paper:#eef0ee; --paper-dim:#9aa3ad; --paper-faint:#6b7480;
+  --gold:#d9ab5c; --gold-dim:#4d3d22;
+  --teal:#5fbfae; --teal-dim:#1f4239;
+  --coral:#e2836c; --coral-dim:#4a2c22;
+  --slate-blue:#7f9adf; --slate-blue-dim:#252f4a;
+  --moss:#93c084; --moss-dim:#293c26;
+  --radius:12px;
+  --display:"Fraunces",Georgia,serif;
+  --sans:"Inter",-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0; background:var(--ink-0); color:var(--paper);
+  font-family:var(--sans); font-size:16px; line-height:1.6;
+  position:relative; overflow-x:hidden;
+}
+body::before{
+  content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background-image:radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size:22px 22px;
+  -webkit-mask-image:radial-gradient(circle at 30% 10%, rgba(0,0,0,0.9), transparent 70%);
+  mask-image:radial-gradient(circle at 30% 10%, rgba(0,0,0,0.9), transparent 70%);
+}
+body::after{
+  content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(600px 400px at 8% 0%, rgba(217,171,92,0.10), transparent 60%),
+    radial-gradient(700px 500px at 100% 30%, rgba(95,191,174,0.08), transparent 60%);
+}
+.wrap{max-width:1180px; margin:0 auto; padding:0 28px; position:relative; z-index:1;}
+a{color:var(--gold);}
+h1,h2,h3{font-family:var(--display); font-weight:600; margin:0;}
+em{font-style:italic; color:var(--gold);}
+.mono{font-family:var(--mono);}
+
+.hero{padding:76px 0 40px; display:grid; grid-template-columns:1.15fr 0.85fr; gap:40px; align-items:center; border-bottom:1px solid var(--hair);}
+.kicker{font-family:var(--mono); font-size:.78rem; letter-spacing:.12em; text-transform:uppercase; color:var(--teal); margin-bottom:16px;}
+.hero h1{font-size:2.7rem; line-height:1.12; color:var(--paper);}
+.hero p.sub{font-size:1.08rem; color:var(--paper-dim); max-width:46ch; margin-top:18px;}
+.meta{margin-top:26px; display:flex; flex-direction:column; gap:6px; font-family:var(--mono); font-size:.85rem; color:var(--paper-dim);}
+.meta b{color:var(--paper); font-weight:500;}
+.prereqs{display:flex; flex-wrap:wrap; gap:8px; margin-top:20px;}
+.pill{font-family:var(--mono); font-size:.76rem; padding:5px 12px; border-radius:20px; border:1px solid var(--hair); color:var(--paper-dim); background:var(--ink-1);}
+.hero-art{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:18px;}
+.hero-art .cap{font-family:var(--mono); font-size:.74rem; color:var(--paper-faint); text-align:center; margin-top:10px;}
+
+.layout{display:grid; grid-template-columns:250px 1fr; gap:48px; padding:44px 0 100px; align-items:start;}
+nav.toc{position:sticky; top:20px; font-size:.86rem; max-height:calc(100vh - 40px); overflow-y:auto; padding-right:8px;}
+nav.toc .tt{font-family:var(--mono); text-transform:uppercase; letter-spacing:.1em; font-size:.7rem; color:var(--paper-faint); margin:20px 0 8px;}
+nav.toc .tt:first-child{margin-top:0;}
+nav.toc a{display:block; padding:5px 0; color:var(--paper-dim); text-decoration:none; border-left:2px solid transparent; padding-left:10px; margin-left:-2px; transition:color .15s, border-color .15s;}
+nav.toc a:hover{color:var(--paper);}
+nav.toc a.active{color:var(--gold); border-left-color:var(--gold);}
+
+main{min-width:0;}
+section.block{margin-bottom:60px; scroll-margin-top:20px;}
+.eyebrow{font-family:var(--mono); font-size:.76rem; letter-spacing:.08em; text-transform:uppercase; color:var(--coral); margin-bottom:10px;}
+section.block h2{font-size:1.7rem; color:var(--paper); margin-bottom:6px;}
+section.block h2 i{font-style:italic; color:var(--gold); font-weight:500;}
+p.lead{color:var(--paper-dim); font-size:1.02rem; max-width:70ch; margin-top:10px;}
+
+.card{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:20px 22px; margin:16px 0;}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+.grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;}
+.grid4{display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:14px;}
+.co-card{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:18px; display:flex; flex-direction:column;}
+.co-card .name{font-family:var(--display); font-weight:600; color:var(--gold); margin-bottom:6px;}
+.co-card p{margin:0; color:var(--paper-dim); font-size:.94rem; flex:1;}
+.co-card .why{margin-top:10px; padding-top:10px; border-top:1px solid var(--hair); font-size:.86rem; color:var(--teal);}
+
+.callout{background:var(--ink-1); border-left:3px solid var(--slate-blue); border-radius:0 var(--radius) var(--radius) 0; padding:14px 18px; margin:18px 0; font-size:.95rem;}
+.callout b{color:var(--paper);}
+.callout.warn{border-left-color:var(--coral);}
+.callout.info{border-left-color:var(--slate-blue);}
+.callout.good{border-left-color:var(--moss);}
+.callout .lbl{font-family:var(--mono); font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; color:var(--paper-faint); margin-bottom:6px; display:block;}
+
+.formula{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:16px 24px 22px; margin:18px 0; text-align:center;}
+.formula.left{text-align:left;}
+.formula .tag{display:block; width:max-content; max-width:100%; text-align:left; background:var(--ink-2); border:1px solid var(--hair); font-family:var(--mono); font-size:.68rem; padding:2px 9px; border-radius:10px; color:var(--gold); margin:0 0 12px;}
+.formula .eq{overflow-x:auto; padding-bottom:2px;}
+.step{display:flex; gap:14px; margin:14px 0; align-items:flex-start;}
+.step .num{flex:0 0 30px; height:30px; border-radius:50%; background:var(--gold-dim); color:var(--gold); font-family:var(--mono); font-weight:600; font-size:.85rem; display:flex; align-items:center; justify-content:center;}
+.step .body{flex:1; padding-top:3px;}
+.step .body p{margin:4px 0 0;}
+
+.tbl{overflow-x:auto; margin:18px 0;}
+.tbl table{width:100%; border-collapse:collapse; font-size:.9rem;}
+.tbl th,.tbl td{padding:9px 12px; border-bottom:1px solid var(--hair); text-align:left;}
+.tbl th{font-family:var(--mono); font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:var(--paper-faint);}
+.nocase{text-transform:none;}
+.tbl td.hl{color:var(--gold); font-family:var(--mono);}
+.tbl td.good{color:var(--moss);}
+.tbl td.bad{color:var(--coral);}
+.tbl td.teal{color:var(--teal);}
+.tbl td.c1{background:rgba(217,171,92,0.06);}
+.tbl td.c2{background:rgba(95,191,174,0.06);}
+.tbl td.c3{background:rgba(226,131,108,0.06);}
+.tbl td.mono, .tbl th.mono{font-family:var(--mono);}
+
+.code{background:var(--ink-2); border:1px solid var(--hair); border-radius:var(--radius); padding:16px 18px; font-family:var(--mono); font-size:.84rem; overflow-x:auto; margin:16px 0; line-height:1.7;}
+.code .c{color:var(--paper-faint); font-style:italic;}
+.code .k{color:var(--slate-blue);}
+.code .n{color:var(--gold);}
+.code .s{color:var(--teal);}
+
+.quote{font-family:var(--display); font-style:italic; font-size:1.15rem; color:var(--paper); border-left:3px solid var(--gold); padding:6px 22px; margin:20px 0;}
+.quote .who{display:block; font-family:var(--mono); font-style:normal; font-size:.78rem; color:var(--paper-faint); margin-top:8px;}
+
+.vs{display:grid; grid-template-columns:1fr auto 1fr; gap:0; align-items:stretch; margin:18px 0;}
+.vs .side{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:16px 18px;}
+.vs .side.left{border-top-right-radius:0; border-bottom-right-radius:0;}
+.vs .side.right{border-top-left-radius:0; border-bottom-left-radius:0;}
+.vs .mid{display:flex; align-items:center; justify-content:center; padding:0 16px; font-family:var(--mono); color:var(--paper-faint); font-size:.8rem;}
+.vs .side .t{font-family:var(--mono); text-transform:uppercase; font-size:.7rem; letter-spacing:.08em; color:var(--paper-faint); margin-bottom:8px;}
+
+.diagram{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:18px; margin:18px 0; text-align:center;}
+.diagram svg,.diagram img{max-width:100%;}
+.diagram .cap{font-family:var(--mono); font-size:.78rem; color:var(--paper-faint); margin-top:10px;}
+
+.badge{display:inline-block; font-family:var(--mono); font-size:.72rem; padding:2px 9px; border-radius:10px; margin-right:6px;}
+.b-c1{background:var(--gold-dim); color:var(--gold);}
+.b-c2{background:var(--teal-dim); color:var(--teal);}
+.b-c3{background:var(--coral-dim); color:var(--coral);}
+
+details.deriv{background:var(--ink-1); border:1px solid var(--hair-soft); border-left:3px solid var(--gold); border-radius:var(--radius); padding:14px 18px; margin:18px 0;}
+details.deriv summary{font-family:var(--sans); font-weight:700; color:var(--gold); cursor:pointer; list-style:none;}
+details.deriv summary::-webkit-details-marker{display:none;}
+details.deriv summary::marker{color:var(--gold);}
+details.deriv summary::before{content:"▸ "; font-family:var(--mono);}
+details.deriv[open] summary::before{content:"▾ ";}
+details.deriv .inner{margin-top:14px; padding-top:14px; border-top:1px solid var(--hair-soft);}
+
+.kpi-row{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:20px 0;}
+.kpi{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:16px; text-align:center;}
+.kpi .num{font-family:var(--display); font-size:1.9rem; color:var(--gold);}
+.kpi .lbl{font-family:var(--mono); font-size:.72rem; color:var(--paper-faint); margin-top:4px; text-transform:uppercase; letter-spacing:.05em;}
+
+.timeline{position:relative; margin:24px 0 24px 10px; padding-left:26px;}
+.timeline::before{content:""; position:absolute; left:5px; top:6px; bottom:6px; width:2px; background:var(--hair);}
+.timeline .titem{position:relative; margin-bottom:20px;}
+.timeline .titem::before{content:""; position:absolute; left:-26px; top:4px; width:11px; height:11px; border-radius:50%; background:var(--gold); border:2px solid var(--ink-0);}
+.timeline .titem .tsec{font-family:var(--mono); font-size:.7rem; color:var(--paper-faint); text-transform:uppercase; letter-spacing:.05em;}
+.timeline .titem .ttext{margin-top:2px; font-size:.94rem;}
+.timeline .titem.hl::before{background:var(--teal);}
+.mental-model{background:var(--ink-1); border:1px solid var(--gold-dim); border-radius:var(--radius); padding:20px 24px; margin:24px 0;}
+.mental-model .card-title{font-family:var(--mono); text-transform:uppercase; font-size:.72rem; letter-spacing:.08em; color:var(--gold); margin-bottom:10px;}
+
+.pagefoot{display:flex; justify-content:space-between; padding:30px 0 60px; border-top:1px solid var(--hair); margin-top:20px; font-family:var(--mono); font-size:.85rem;}
+.pagefoot a{color:var(--paper-dim); text-decoration:none;}
+.pagefoot a:hover{color:var(--gold);}
+.relbox{color:var(--paper-faint);}
+.divider{border-top:1px solid var(--hair); margin:40px 0;}
+
+@media(max-width:920px){
+  .hero{grid-template-columns:1fr;}
+  .layout{grid-template-columns:1fr;}
+  nav.toc{position:relative; top:0; max-height:none;}
+  .grid2,.grid3,.grid4{grid-template-columns:1fr;}
+  .vs{grid-template-columns:1fr;}
+  .vs .mid{display:none;}
+  .kpi-row{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<section class="hero">
+  <div>
+    <div class="kicker">ML Coding · Unsupervised Learning · Class 09</div>
+    <h1>PCA II <em>— what the directions mean, and where PCA breaks</em></h1>
+    <p class="sub">Class 08 built PCA from the ground up and landed on one equation: &Sigma;w = &lambda;w. Today we ask what that equation actually hands us — why an eigenvector is a recipe over your original features, why every principal component is forced perpendicular to every other one, how to decide how many to keep, and the two places PCA quietly loses information without telling you.</p>
+    <div class="meta">
+      <div>Date: <b>11 September 2026</b></div>
+      <div>Module: <b>Unsupervised Learning</b></div>
+      <div>Builds on: <b>Class 08 — PCA I (derivation from scratch)</b></div>
+    </div>
+    <div class="prereqs">
+      <span class="pill">Var(z) = w&#7488;&Sigma;w</span>
+      <span class="pill">&Sigma;w = &lambda;w</span>
+      <span class="pill">&lambda; = variance captured</span>
+      <span class="pill">w&#7488;w = 1</span>
+    </div>
+  </div>
+  <div class="hero-art">
+    <svg viewBox="0 0 320 260" width="100%" height="260">
+      <line x1="30" y1="130" x2="300" y2="130" stroke="#242a34" stroke-width="1.5"/>
+      <line x1="160" y1="20" x2="160" y2="240" stroke="#242a34" stroke-width="1.5"/>
+      <text x="292" y="122" fill="#6b7480" font-family="IBM Plex Mono" font-size="11">x₁</text>
+      <text x="166" y="30" fill="#6b7480" font-family="IBM Plex Mono" font-size="11">x₂</text>
+      <g>
+        <circle cx="120" cy="150" r="4" fill="#7f9adf"/>
+        <circle cx="135" cy="140" r="4" fill="#7f9adf"/>
+        <circle cx="145" cy="148" r="4" fill="#7f9adf"/>
+        <circle cx="150" cy="128" r="4" fill="#7f9adf"/>
+        <circle cx="165" cy="132" r="4" fill="#7f9adf"/>
+        <circle cx="172" cy="118" r="4" fill="#7f9adf"/>
+        <circle cx="180" cy="122" r="4" fill="#7f9adf"/>
+        <circle cx="190" cy="105" r="4" fill="#7f9adf"/>
+        <circle cx="200" cy="112" r="4" fill="#7f9adf"/>
+        <circle cx="205" cy="95" r="4" fill="#7f9adf"/>
+        <circle cx="130" cy="160" r="4" fill="#7f9adf"/>
+        <circle cx="215" cy="100" r="4" fill="#7f9adf"/>
+      </g>
+      <line x1="100" y1="172" x2="235" y2="88" stroke="#d9ab5c" stroke-width="2.5"/>
+      <text x="238" y="86" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="12" font-weight="600">PC1</text>
+      <line x1="140" y1="90" x2="195" y2="170" stroke="#5fbfae" stroke-width="2.5"/>
+      <text x="198" y="176" fill="#5fbfae" font-family="IBM Plex Mono" font-size="12" font-weight="600">PC2</text>
+      <path d="M 168 122 L 174 122 L 174 128" fill="none" stroke="#9aa3ad" stroke-width="1.3"/>
+    </svg>
+    <div class="cap">PC1 and PC2 aren't just "the long axis and the short axis" — today we prove that right-angle is mathematically forced, and unpack what each arrow means.</div>
+  </div>
+</section>
+</div>
+
+<div class="wrap">
+<div class="layout">
+<nav class="toc">
+  <div class="tt">Recap</div>
+  <a href="#s0-recap">00 · The PCA chain, so far</a>
+
+  <div class="tt">1 · what a direction means</div>
+  <a href="#s1-linear-combo">01 · A direction is a recipe over features</a>
+  <a href="#s2-d-features">02 · Generalizing to d features</a>
+
+  <div class="tt">2 · orthogonality</div>
+  <a href="#s3-pc2-setup">03 · PC2: max variance, ⊥ to PC1</a>
+  <a href="#s4-proof">04 · Proof — orthogonality falls out on its own</a>
+  <a href="#s5-all-pcs">05 · Every PC ⊥ every other PC</a>
+  <a href="#s6-degenerate">06 · Optional — when &lambda;&#8321; = &lambda;&#8322;</a>
+
+  <div class="tt">3 · how many to keep</div>
+  <a href="#s7-evr">07 · Explained variance ratio</a>
+  <a href="#s8-choosing-k">08 · Choosing the number of components</a>
+
+  <div class="tt">4 · limitations</div>
+  <a href="#s9-interpretability">09 · Limitation — interpretability</a>
+  <a href="#s10-neighborhood">10 · Limitation — neighborhoods aren't kept</a>
+  <a href="#s11-other-limits">11 · Other limitations, briefly</a>
+
+  <div class="tt">5 · categorical data</div>
+  <a href="#s12-categorical">12 · PCA and categorical variables</a>
+
+  <div class="tt">6 · reconstruction</div>
+  <a href="#s13-recon-idea">13 · Encode &rarr; decode &rarr; compare</a>
+  <a href="#s14-recon-examples">14 · Two worked examples</a>
+  <a href="#s15-recon-goodness">15 · What counts as a "good" error?</a>
+
+  <div class="tt">wrap-up</div>
+  <a href="#s16-chain">16 · Classes 08 + 09, one picture</a>
+  <a href="#s17-next">17 · Where we go next — t-SNE</a>
+</nav>
+<main>
+
+<section class="block" id="s0-recap">
+<div class="eyebrow">00 · quick recap of class 08</div>
+<h2>The PCA chain, so far</h2>
+<p class="lead">Five ideas, in the order we built them last class. Today's whole class sits on top of the last one.</p>
+
+<div class="timeline">
+<div class="titem"><div class="tsec">Step 1</div><div class="ttext">Standardize: <span class="mono">X &rarr; X<sub>std</sub></span>, so no feature dominates just because its raw numbers are bigger.</div></div>
+<div class="titem"><div class="tsec">Step 2</div><div class="ttext">Pick a candidate unit direction <span class="mono">w</span> and project every point onto it: <span class="mono">z = w&#7488;X<sub>std</sub></span> — one number per point.</div></div>
+<div class="titem hl"><div class="tsec">Step 3</div><div class="ttext">Ask: which <span class="mono">w</span> makes <span class="mono">Var(z)</span> largest? Expanding the algebra <em>forces</em> a matrix to appear: <span class="mono">Var(z) = w&#7488;&Sigma;w</span>, where &Sigma; is the covariance matrix.</div></div>
+<div class="titem"><div class="tsec">Step 4</div><div class="ttext">Maximizing <span class="mono">w&#7488;&Sigma;w</span> needs a length constraint <span class="mono">w&#7488;w = 1</span> (else the score grows without bound) &rarr; solved with a Lagrange multiplier.</div></div>
+<div class="titem hl"><div class="tsec">Step 5</div><div class="ttext">Solving <em>produces</em>, unforced: <span class="mono">&Sigma;w = &lambda;w</span> — the eigenvector equation. <span class="mono">w</span> = eigenvector of &Sigma;, <span class="mono">&lambda;</span> = eigenvalue = the variance captured along <span class="mono">w</span>.</div></div>
+</div>
+
+<div class="formula">
+<div class="tag">where class 08 ended</div>
+<div class="eq">$$\Sigma w = \lambda w \qquad\qquad \lambda = \text{Var}(z) \qquad\qquad \boxed{\text{max } \lambda \Rightarrow \text{max variance direction} = \text{PC1}}$$</div>
+</div>
+
+<div class="callout info">
+<span class="lbl">Today's four open questions</span>
+Class 08 told us <b>how</b> to find PC1. It left four things unanswered — exactly the four sections of today's class: (1) what does the eigenvector <span class="mono">w</span> actually <em>mean</em>? (2) once PC1 is taken, how do we find PC2, PC3, &hellip; without repeating PC1? (3) with <span class="mono">d</span> possible components, how many should we actually keep? (4) what does PCA quietly throw away?
+</div>
+
+</section>
+
+<section class="block" id="s1-linear-combo">
+<div class="eyebrow">01 · question 1</div>
+<h2>A principal component direction is a recipe over your features</h2>
+<p class="lead">"<span class="mono">w</span> is a unit vector" is correct but unhelpful. Here's what it actually represents.</p>
+
+<p>Go back to Class 08's running example: 6 students, standardized hours studied (<span class="mono">x&#8321;</span>) and standardized problems solved (<span class="mono">x&#8322;</span>). We solved <span class="mono">&Sigma;w = &lambda;w</span> and found:</p>
+
+<div class="formula">
+<div class="tag">PC1 for our dataset</div>
+<div class="eq">$$w = \begin{pmatrix}0.707\\0.707\end{pmatrix} \qquad z_i = w^\top x_i = 0.707\,x_{i1} + 0.707\,x_{i2}$$</div>
+</div>
+
+<p>Read the right-hand side literally: <b>the projected score for every student is 70.7% of their (standardized) hours studied, plus 70.7% of their (standardized) problems solved.</b> That's not an abstract "angle" — it's a weighted blend, a recipe, built entirely from the columns you already had. PCA never invents a new measurement; it only tells you how to combine the ones you have.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 300 260" width="100%" height="250">
+<defs>
+<marker id="dc-teal" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#5fbfae"/></marker>
+<marker id="dc-slate" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#7f9adf"/></marker>
+<marker id="dc-gold" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#d9ab5c"/></marker>
+</defs>
+<line x1="20" y1="220" x2="280" y2="220" stroke="#242a34" stroke-width="1.3"/>
+<line x1="60" y1="240" x2="60" y2="30" stroke="#242a34" stroke-width="1.3"/>
+<text x="270" y="216" fill="#6b7480" font-family="IBM Plex Mono" font-size="10">x₁ (hours)</text>
+<text x="66" y="38" fill="#6b7480" font-family="IBM Plex Mono" font-size="10">x₂ (problems)</text>
+<!-- component along x1: w1*e1 -->
+<line x1="60" y1="220" x2="163" y2="220" stroke="#7f9adf" stroke-width="2.6" marker-end="url(#dc-slate)"/>
+<text x="90" y="234" fill="#7f9adf" font-family="IBM Plex Mono" font-size="10.5">0.707·e₁</text>
+<!-- component along x2: w2*e2 -->
+<line x1="60" y1="220" x2="60" y2="117" stroke="#5fbfae" stroke-width="2.6" marker-end="url(#dc-teal)"/>
+<text x="8" y="165" fill="#5fbfae" font-family="IBM Plex Mono" font-size="10.5">0.707·e₂</text>
+<!-- dashed completion -->
+<line x1="166.1" y1="220" x2="166.1" y2="114" stroke="#6b7480" stroke-width="1" stroke-dasharray="3 3"/>
+<line x1="60" y1="114" x2="166.1" y2="114" stroke="#6b7480" stroke-width="1" stroke-dasharray="3 3"/>
+<!-- resultant w -->
+<line x1="60" y1="220" x2="163" y2="117" stroke="#d9ab5c" stroke-width="3" marker-end="url(#dc-gold)"/>
+<text x="168" y="105" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="12" font-weight="600">w = PC1</text>
+</svg>
+<div class="cap">w is literally the vector sum of its two components: 0.707 units along the x₁ axis, plus 0.707 units along the x₂ axis. Every entry of the eigenvector is "how much of that original feature goes into the mix."</div>
+</div>
+
+<div class="callout good">
+<span class="lbl">The one-line takeaway</span>
+<b>PC1 = w&#8321;x&#8321; + w&#8322;x&#8322; + &hellip; + w&#8332;x&#8332;</b> — a <em>linear combination</em> of the original features, nothing more exotic. The coefficients (<span class="mono">w&#8321;, w&#8322;, &hellip;</span>) come straight out of the eigenvector, and they tell you exactly how much weight PCA gave to each original column when building this new axis.
+</div>
+
+<div class="callout info">
+<span class="lbl">Sign is arbitrary — recall Class 08, Section 07</span>
+If <span class="mono">w</span> is an eigenvector, so is <span class="mono">&minus;w</span> — same eigenvalue, same line, just the arrow flipped (a scalar multiple never leaves the line it's on). So a computer library might hand you <span class="mono">w = (&minus;0.707, &minus;0.707)</span> instead — same PC1, same variance captured, only the sign convention differs. Don't read meaning into which way the arrow points; read meaning into which line it's on and how big each coefficient is.
+</div>
+
+</section>
+
+<section class="block" id="s2-d-features">
+<div class="eyebrow">02 · scaling it up</div>
+<h2>The same idea for d features, not just 2</h2>
+<p class="lead">Nothing changes conceptually going from 2 features to 50 — only the length of the recipe.</p>
+
+<div class="formula">
+<div class="tag">general form</div>
+<div class="eq">$$w = \begin{pmatrix}w_1\\w_2\\\vdots\\w_d\end{pmatrix} \qquad\qquad PC_1 = w_1x_1 + w_2x_2 + \cdots + w_dx_d$$</div>
+</div>
+
+<p>Concretely: take a 3-feature version of our dataset (standardized hours studied <span class="mono">x&#8321;</span>, practice problems <span class="mono">x&#8322;</span>, assignment score <span class="mono">x&#8323;</span>). Solving <span class="mono">&Sigma;w = &lambda;w</span> on the 3&times;3 covariance matrix gives three eigenvectors — one full "recipe" per component:</p>
+
+<div class="tbl">
+<table>
+<tr><th>Component</th><th>Recipe (loadings on x&#8321;, x&#8322;, x&#8323;)</th><th><span class="nocase">&lambda;</span> (variance captured)</th><th>Share of total variance</th></tr>
+<tr><td class="hl">PC1</td><td class="mono">0.586 x&#8321; + 0.560 x&#8322; + 0.587 x&#8323;</td><td class="mono hl">2.791</td><td class="mono">93.0%</td></tr>
+<tr><td>PC2</td><td class="mono">0.410 x&#8321; &minus; 0.829 x&#8322; + 0.382 x&#8323;</td><td class="mono">0.184</td><td class="mono">6.1%</td></tr>
+<tr><td>PC3</td><td class="mono">&minus;0.700 x&#8321; &minus; 0.017 x&#8322; + 0.714 x&#8323;</td><td class="mono">0.025</td><td class="mono">0.8%</td></tr>
+</table>
+</div>
+
+<p>Notice PC1's coefficients here are all positive and close to equal (0.586, 0.560, 0.587) — because these three features are all strongly, positively correlated (a student who studies more also solves more problems and scores higher). PC1 has effectively become <b>"overall academic engagement,"</b> a near-equal blend of all three. That's exactly what "linear combination of input features" cashes out to in practice.</p>
+
+<div class="callout warn">
+<span class="lbl">Where this is heading</span>
+When 3 correlated features blend into one clean, nameable idea, that's the friendly case. With 50 features and messier correlations, the blend stops having one clean name — that's Limitation 1, in Section 09.
+</div>
+
+</section>
+
+<section class="block" id="s3-pc2-setup">
+<div class="eyebrow">03 · question 2, part A</div>
+<h2>We have PC1. What's next?</h2>
+<p class="lead">PC1 = the eigenvector with the largest &lambda;. Naively repeating the same search for a "second-best direction" has an obvious failure mode.</p>
+
+<div class="callout warn">
+<span class="lbl">The problem, stated plainly</span>
+If we just re-run "<span class="mono">max<sub>w</sub> w&#7488;&Sigma;w</span> subject to <span class="mono">w&#7488;w=1</span>" a second time with no other change, the maximizer is <em>still PC1</em> — nothing in the problem stops it from picking the same winning direction again.
+</div>
+
+<div class="diagram">
+<svg viewBox="0 0 340 220" width="100%" height="210">
+<defs><marker id="pc-arr" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#7f9adf"/></marker></defs>
+<line x1="170" y1="180" x2="330" y2="30" stroke="#d9ab5c" stroke-width="3"/>
+<text x="316" y="28" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="12" font-weight="600">PC1 (taken)</text>
+<g stroke="#7f9adf" stroke-width="1.6" marker-end="url(#pc-arr)" opacity="0.85">
+<line x1="170" y1="180" x2="280" y2="60"/>
+<line x1="170" y1="180" x2="255" y2="45"/>
+<line x1="170" y1="180" x2="225" y2="35"/>
+<line x1="170" y1="180" x2="195" y2="30"/>
+</g>
+<text x="180" y="200" fill="#9aa3ad" font-family="IBM Plex Mono" font-size="10">infinitely many "second-place" candidates — which one?</text>
+</svg>
+<div class="cap">Without an extra rule, the search has no reason to avoid landing back on PC1, or anywhere close to it.</div>
+</div>
+
+<p>So we need a new rule that rules PC1 back out — and the rule PCA imposes is the one we've been building toward all class: <b>look only among directions perpendicular to PC1.</b></p>
+
+<div class="formula">
+<div class="tag">PC2's optimization problem</div>
+<div class="eq">$$\max_{w_2} \; w_2^\top \Sigma w_2 \qquad \text{s.t.} \qquad w_2^\top w_2 = 1 \quad\text{and}\quad w_2^\top w_1 = 0$$</div>
+</div>
+
+<div class="tbl">
+<table>
+<tr><th>Constraint</th><th>Meaning</th></tr>
+<tr><td class="mono">w&#8322;&#7488;w&#8322; = 1</td><td>w&#8322; is a unit direction (same rule as before)</td></tr>
+<tr><td class="mono">w&#8322;&#7488;w&#8321; = 0</td><td><b>new</b>: w&#8322; is perpendicular (orthogonal) to w&#8321; — the dot product of two vectors is 0 exactly when they meet at 90&deg;</td></tr>
+</table>
+</div>
+
+<div class="callout info"><span class="lbl">Why perpendicular, not "just different"?</span>Perpendicular directions carry <em>independent</em> information — none of the spread PC2 captures overlaps with what PC1 already captured. Any non-perpendicular "second choice" would partially re-describe what PC1 already told us, which wastes a dimension. We'll see this fall out as a forced consequence, not an assumption, in the next section.</div>
+
+</section>
+
+<section class="block" id="s4-proof">
+<div class="eyebrow">04 · question 2, part B</div>
+<h2>Proof — orthogonality is forced, not assumed</h2>
+<p class="lead">Same machinery as Class 08 (Lagrange multipliers) — one extra constraint, one extra multiplier. Watch what falls out.</p>
+
+<div class="formula">
+<div class="tag">Lagrangian with two constraints</div>
+<div class="eq">$$\mathcal{L}(w_2,\lambda,\mu) = w_2^\top\Sigma w_2 \;-\; \lambda(w_2^\top w_2 - 1) \;-\; \mu\,(w_2^\top w_1)$$</div>
+</div>
+
+<div class="tbl">
+<table>
+<tr><th>Step</th><th>Do this</th><th>Result</th></tr>
+<tr><td>1</td><td>Differentiate &Lscr; w.r.t. w&#8322;, set to 0 (same two derivative rules as Class 08 Section 16)</td><td>$2\Sigma w_2 - 2\lambda w_2 - \mu w_1 = 0$</td></tr>
+<tr><td>2</td><td>Left-multiply the whole equation by <span class="mono">w&#8321;&#7488;</span></td><td>$2w_1^\top\Sigma w_2 - 2\lambda w_1^\top w_2 - \mu w_1^\top w_1 = 0$</td></tr>
+<tr><td>3</td><td>Apply what we already know: <span class="mono">w&#8321;&#7488;w&#8322;=0</span> (constraint) and <span class="mono">w&#8321;&#7488;w&#8321;=1</span> (unit norm)</td><td>$2w_1^\top\Sigma w_2 - \mu = 0$</td></tr>
+<tr><td>4</td><td><span class="mono">&Sigma;</span> is symmetric, so <span class="mono">w&#8321;&#7488;&Sigma; = (&Sigma;w&#8321;)&#7488;</span>; and from Class 08, <span class="mono">&Sigma;w&#8321;=&lambda;&#8321;w&#8321;</span></td><td>$w_1^\top\Sigma w_2 = (\lambda_1 w_1)^\top w_2 = \lambda_1(w_1^\top w_2) = \lambda_1 \cdot 0 = 0$</td></tr>
+<tr><td>5</td><td>Substitute back into Step 3</td><td>$2(0) - \mu = 0 \;\Rightarrow\; \boxed{\mu = 0}$</td></tr>
+<tr><td>6</td><td>Put <span class="mono">&mu;=0</span> back into Step 1</td><td>$2\Sigma w_2 - 2\lambda w_2 - 0 = 0 \;\Rightarrow\; \boxed{\Sigma w_2 = \lambda w_2}$</td></tr>
+</table>
+</div>
+
+<div class="callout good">
+<span class="lbl">What just happened</span>
+The orthogonality multiplier <span class="mono">&mu;</span> — whose whole job was to <em>enforce</em> "stay perpendicular to PC1" — solved out to exactly <b>zero</b>. It vanishes on its own; we never had to force it. And what's left, <span class="mono">&Sigma;w&#8322;=&lambda;w&#8322;</span>, is <em>again</em> the plain eigenvector equation from Class 08. <b>PC2 is also just an eigenvector of &Sigma;</b> — the perpendicularity constraint didn't change the type of equation we had to solve, it only restricted <em>which</em> eigenvector counts as a valid candidate (any eigenvector already perpendicular to w&#8321; automatically satisfies it).
+</div>
+
+<p>Since &Sigma; is symmetric, its eigenvectors for <em>different</em> eigenvalues are automatically perpendicular to each other (a standard fact about symmetric matrices — proved in the optional box below). So among all remaining eigenvectors of &Sigma;, we simply pick the one with the next-largest &lambda;, and orthogonality to PC1 comes for free:</p>
+
+<div class="formula">
+<div class="tag">PC2</div>
+<div class="eq">$$w_2 = \text{eigenvector of } \Sigma \text{ with the 2}^{\text{nd}}\text{-largest eigenvalue } \lambda_2$$</div>
+</div>
+
+<details class="deriv">
+<summary>Optional — why symmetric matrices automatically give perpendicular eigenvectors</summary>
+<div class="inner">
+<p>Let <span class="mono">v&#8321;, v&#8322;</span> be eigenvectors of a symmetric matrix &Sigma; with <em>different</em> eigenvalues <span class="mono">&lambda;&#8321; &ne; &lambda;&#8322;</span>.</p>
+<div class="tbl">
+<table>
+<tr><th>Step</th><th>Do this</th><th>Result</th></tr>
+<tr><td>1</td><td>Start from <span class="mono">&Sigma;v&#8321;=&lambda;&#8321;v&#8321;</span>; left-multiply by <span class="mono">v&#8322;&#7488;</span></td><td>$v_2^\top\Sigma v_1 = \lambda_1(v_2^\top v_1)$</td></tr>
+<tr><td>2</td><td>&Sigma; symmetric &rArr; <span class="mono">v&#8322;&#7488;&Sigma; = (&Sigma;v&#8322;)&#7488; = (&lambda;&#8322;v&#8322;)&#7488;</span></td><td>$v_2^\top\Sigma v_1 = \lambda_2(v_2^\top v_1)$</td></tr>
+<tr><td>3</td><td>The left-hand sides of steps 1 and 2 are identical &rArr; the right-hand sides must be equal</td><td>$\lambda_1(v_2^\top v_1) = \lambda_2(v_2^\top v_1)$</td></tr>
+<tr><td>4</td><td>Rearrange</td><td>$(\lambda_1-\lambda_2)(v_2^\top v_1) = 0$</td></tr>
+<tr><td>5</td><td>Since <span class="mono">&lambda;&#8321; &ne; &lambda;&#8322;</span>, the first factor is nonzero, so the second must be 0</td><td>$\boxed{v_2^\top v_1 = 0}$</td></tr>
+</table>
+</div>
+<div class="callout good">This is exactly why &Sigma;'s covariance-matrix structure (always symmetric) is what guarantees perpendicular principal components — it isn't a special property we build into PCA by hand, it's inherited for free from &Sigma; being symmetric.</div>
+</div>
+</details>
+
+</section>
+
+<section class="block" id="s5-all-pcs">
+<div class="eyebrow">05 · generalizing again</div>
+<h2>Every principal component is perpendicular to every other one</h2>
+<p class="lead">The same argument in Section 04 repeats for PC3, PC4, &hellip; each time adding one more orthogonality constraint.</p>
+
+<div class="tbl">
+<table>
+<tr><th>Component</th><th>Conditions it must satisfy</th></tr>
+<tr><td>PC1 = w&#8321;</td><td class="mono">w&#8321;&#7488;w&#8321; = 1</td></tr>
+<tr><td>PC2 = w&#8322;</td><td class="mono">w&#8322;&#7488;w&#8322; = 1 &nbsp;and&nbsp; w&#8322;&#7488;w&#8321; = 0</td></tr>
+<tr><td>PC3 = w&#8323;</td><td class="mono">w&#8323;&#7488;w&#8323; = 1 &nbsp;and&nbsp; w&#8323;&#7488;w&#8321; = 0, &nbsp;w&#8323;&#7488;w&#8322; = 0</td></tr>
+<tr><td>PC<sub>k</sub> = w<sub>k</sub></td><td class="mono">w<sub>k</sub>&#7488;w<sub>k</sub> = 1 &nbsp;and&nbsp; w<sub>k</sub>&#7488;w<sub>j</sub> = 0 for every j &lt; k</td></tr>
+</table>
+</div>
+
+<p>Let's actually verify this — not just assert it — on a real 3-feature dataset (the study-hours/practice/assignment-score example from Section 02). Its three eigenvectors, arranged as columns of a matrix <span class="mono">W = [w&#8321; w&#8322; w&#8323;]</span>:</p>
+
+<div class="diagram">
+<svg viewBox="0 0 300 260" width="100%" height="250">
+<defs><marker id="ax3" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#9aa3ad"/></marker></defs>
+<!-- fake-3D isometric axes from common origin -->
+<line x1="150" y1="150" x2="150" y2="30" stroke="#d9ab5c" stroke-width="3" marker-end="url(#ax3)"/>
+<text x="156" y="34" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="12" font-weight="600">PC1</text>
+<line x1="150" y1="150" x2="270" y2="195" stroke="#5fbfae" stroke-width="3" marker-end="url(#ax3)"/>
+<text x="273" y="200" fill="#5fbfae" font-family="IBM Plex Mono" font-size="12" font-weight="600">PC2</text>
+<line x1="150" y1="150" x2="55" y2="205" stroke="#e2836c" stroke-width="3" marker-end="url(#ax3)"/>
+<text x="15" y="220" fill="#e2836c" font-family="IBM Plex Mono" font-size="12" font-weight="600">PC3</text>
+<path d="M 150 138 L 160 138 L 160 150" fill="none" stroke="#6b7480" stroke-width="1.2"/>
+<circle cx="150" cy="150" r="2.5" fill="#eef0ee"/>
+</svg>
+<div class="cap">Sketch only (three mutually perpendicular directions can't be drawn at true angles on a flat page) — the actual 90° angles are confirmed numerically below, not by the picture.</div>
+</div>
+
+<div class="formula">
+<div class="tag">the actual proof for this dataset — WᵀW</div>
+<div class="eq">$$W^\top W = \begin{pmatrix}0.586 & 0.410 & -0.700\\0.560 & -0.829 & -0.017\\0.587 & 0.382 & 0.714\end{pmatrix}^{\!\top}\!\!\begin{pmatrix}0.586 & 0.410 & -0.700\\0.560 & -0.829 & -0.017\\0.587 & 0.382 & 0.714\end{pmatrix} = \begin{pmatrix}1 & 0 & 0\\0 & 1 & 0\\0 & 0 & 1\end{pmatrix}$$</div>
+</div>
+
+<div class="callout good"><span class="lbl">Reading this matrix</span>The diagonal being all 1's confirms every <span class="mono">w<sub>k</sub></span> has unit length. The off-diagonal zeros confirm every pair is perpendicular — <span class="mono">w&#8321;&#7488;w&#8322;=0</span>, <span class="mono">w&#8321;&#7488;w&#8323;=0</span>, <span class="mono">w&#8322;&#7488;w&#8323;=0</span>, all simultaneously, computed from real numbers, not assumed. <span class="mono">W</span> is what's called an <b>orthonormal matrix</b> — its columns form a brand-new set of coordinate axes for the same space, just rotated to line up with the data's actual spread.</div>
+
+<div class="mental-model">
+<div class="card-title">The picture to keep</div>
+<p>PCA doesn't hunt for k separate "best directions" independently. It builds <b>one full rotation of the axes</b> — d perpendicular directions total (for d original features), ranked by how much variance each one captures. You then keep the first k of that ranked list. Nothing about a lower-ranked PC changes if you decide to keep more or fewer of them; they were all found together, once.</p>
+</div>
+
+</section>
+
+<section class="block" id="s6-degenerate">
+<div class="eyebrow">06 · optional, self-read</div>
+<h2>What if &lambda;&#8321; = &lambda;&#8322;? Is perpendicularity still automatic?</h2>
+<p class="lead">Short answer: no — not automatically. But it's always achievable, and PCA always achieves it. The reasoning is genuinely different from Section 04's proof, so it's worth pulling apart carefully rather than waving at "the same symmetric-matrix magic."</p>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">Where the Section 04 proof actually stops working</h3>
+<p>Look at the last two steps of that proof again:</p>
+<div class="formula"><div class="eq">$$(\lambda_1-\lambda_2)(v_2^\top v_1) = 0 \;\;\xRightarrow{\;\div(\lambda_1-\lambda_2)\;}\;\; v_2^\top v_1 = 0$$</div></div>
+<p>Getting to <span class="mono">v&#8322;&#7488;v&#8321;=0</span> required dividing both sides by <span class="mono">(&lambda;&#8321;&minus;&lambda;&#8322;)</span> — legal only because that factor is nonzero. If <span class="mono">&lambda;&#8321;=&lambda;&#8322;</span>, that factor <em>is</em> zero, and the equation collapses to <span class="mono">0 &times; (v&#8322;&#7488;v&#8321;) = 0</span> — true regardless of what <span class="mono">v&#8322;&#7488;v&#8321;</span> actually equals. The proof simply goes silent once eigenvalues tie. So this needs its own argument, not an extension of Section 04's.</p>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">Proof that it really isn't automatic</h3>
+<p>Take the repeated-eigenvalue matrix from before and grab two <em>different, both perfectly valid</em> eigenvectors for &lambda;=2:</p>
+
+<div class="formula">
+<div class="tag">a degenerate case</div>
+<div class="eq">$$\Sigma = \begin{pmatrix}2 & 0 & 0\\0 & 2 & 0\\0 & 0 & 0.3\end{pmatrix} \qquad \lambda = (2,\ 2,\ 0.3)$$</div>
+</div>
+
+<div class="tbl">
+<table>
+<tr><th>Vector</th><th>&Sigma;v</th><th>Eigenvector for <span class="nocase">&lambda;</span>=2?</th></tr>
+<tr><td class="mono">v = (1, 0, 0)</td><td class="mono">(2, 0, 0) = 2v</td><td class="mono good">yes</td></tr>
+<tr><td class="mono">v&prime; = (0.6, 0.8, 0)</td><td class="mono">(1.2, 1.6, 0) = 2v&prime;</td><td class="mono good">yes</td></tr>
+</table>
+</div>
+
+<div class="formula">
+<div class="tag">now check whether they're perpendicular</div>
+<div class="eq">$$v^\top v' = (1)(0.6) + (0)(0.8) + (0)(0) = 0.6 \;\ne\; 0$$</div>
+</div>
+
+<div class="callout warn"><span class="lbl">Not perpendicular — and both are still 100% legitimate</span>v and v&prime; are each completely valid eigenvectors for &lambda;=2. Neither is "more correct." But their dot product is 0.6, not 0. So <b>two arbitrary eigenvectors sharing an eigenvalue are not automatically orthogonal</b> — if you just grabbed any two eigenvectors a solver happened to return for a repeated eigenvalue, unlucky. Something else has to be actively ensuring perpendicularity here — it isn't falling out of the algebra for free the way it did in Section 04.</div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">So how does PCA still guarantee it?</h3>
+<p>By <em>choosing</em>, not by accident. Every eigenvector for &lambda;=2 — v, v&prime;, and every other direction like them — lives inside one 2-dimensional plane (the x&#8321;&ndash;x&#8322; plane here; the eigenvalue's <em>multiplicity</em> is 2, so its full eigenspace is 2-dimensional). That plane is an ordinary 2D vector space in its own right, and <b>every 2D vector space has infinitely many orthonormal bases</b> — pick any unit vector inside the plane, rotate it 90&deg; for the second, done. Both stay inside the plane, so both stay eigenvectors for &lambda;=2, and by construction their dot product is exactly 0:</p>
+
+<div class="tbl">
+<table>
+<tr><th>Pick any unit vector in the plane...</th><th>...rotate 90&deg; within the plane for the second</th><th>Dot product</th></tr>
+<tr><td class="mono">u&#8321; = (1, 0, 0)</td><td class="mono">u&#8322; = (0, 1, 0)</td><td class="mono good">0 — perpendicular</td></tr>
+<tr><td class="mono">u&#8321; = (0.799, 0.602, 0)</td><td class="mono">u&#8322; = (&minus;0.602, 0.799, 0)</td><td class="mono good">0 — perpendicular</td></tr>
+</table>
+</div>
+
+<div class="callout good">
+<span class="lbl">The actual mechanism, stated precisely</span>
+Orthogonality between eigenvectors of a repeated eigenvalue is not automatic (Section 04's algebra has nothing to say about it) — it's <b>constructed</b>, by picking an orthonormal basis of the shared eigenspace (a standard Gram-Schmidt step). That construction always succeeds, because every subspace has an orthonormal basis. This is exactly what the <b>spectral theorem for real symmetric matrices</b> guarantees: since &Sigma; is always symmetric, it always has a <em>complete</em> orthonormal set of eigenvectors — tied eigenvalues or not. It <em>is</em> a standard property, just a different one from Section 04's — and yes, it's guaranteed every time. numpy's <span class="mono">eigh</span> / sklearn's <span class="mono">PCA</span> perform this construction for you automatically; you never do the Gram-Schmidt step by hand.
+</div>
+
+<p>One consequence worth flagging: since <em>any</em> orthonormal basis of that plane works equally well, the specific pair PCA hands you for a tied eigenvalue is <b>not unique</b>. Rotate both u&#8321; and u&#8322; together by any angle within the plane and you get an equally valid, equally orthogonal, equally-variance-capturing PC1/PC2 pair (exactly what the two rows of the table above show — same plane, different rotation, both perpendicular). A re-run with a different library, or the same library on a barely-different dataset, can rotate that particular pair without changing how much variance either one captures.</p>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">Are two eigenvalues of &Sigma; ever actually equal in practice?</h3>
+
+<div class="tbl">
+<table>
+<tr><th>Situation</th><th>Exactly equal eigenvalues?</th></tr>
+<tr><td>Real-world, continuously-valued data with no built-in symmetry — almost everything you'll actually work with</td><td class="mono good">essentially never — distinct with probability 1</td></tr>
+<tr><td>Data with a genuine structural symmetry — e.g. truly isotropic spread in 2+ directions, a perfect circle/sphere of points</td><td class="mono bad">yes, exactly, by construction</td></tr>
+<tr><td>Toy/synthetic datasets built to demonstrate this case — like &Sigma; above, or Section 10's circle example</td><td class="mono bad">yes, by design</td></tr>
+</table>
+</div>
+
+<div class="callout warn"><span class="lbl">A far more common cousin of this problem</span>Exact ties are rare, but <em>near</em>-ties (&lambda;&#8321; and &lambda;&#8322; close but not equal) are not — they happen whenever two directions happen to carry nearly the same variance. The eigenvectors are still uniquely defined and perfectly perpendicular in that case (Section 04's proof applies fine, since &lambda;&#8321;&ne;&lambda;&#8322; is still technically true) — but which one gets labeled "PC1" and which "PC2" can flip with tiny changes to the data or a different random seed, since both are competing for essentially the same amount of variance. Worth remembering if two of your explained-variance-ratio numbers (Section 07) ever come out suspiciously close together.</div>
+
+<p>Geometrically: a perfect circle of data (equal spread in every direction) has no unique "long axis" — this is precisely the case in Section 10's circle example, where you'll see the exact &lambda;&#8321;=&lambda;&#8322;=4.909 tie again.</p>
+
+</section>
+
+<section class="block" id="s7-evr">
+<div class="eyebrow">07 · question 3, part A</div>
+<h2>Explained variance ratio</h2>
+<p class="lead">We now have d perpendicular components, ranked by &lambda;. The next question: how much of the "story" does each one actually tell?</p>
+
+<div class="formula">
+<div class="tag">explained variance ratio (EVR)</div>
+<div class="eq">$$EVR_k = \dfrac{\lambda_k}{\sum_{j=1}^{d}\lambda_j}$$</div>
+</div>
+
+<p>The denominator, <span class="mono">&sum;&lambda;<sub>j</sub></span>, is the <b>total variance</b> in the (standardized) dataset — every eigenvalue added up. <span class="mono">EVR<sub>k</sub></span> is simply "what fraction of that total does component k alone account for." Stack them up in ranked order and you get the <b>cumulative explained variance</b>:</p>
+
+<div class="formula">
+<div class="tag">cumulative explained variance</div>
+<div class="eq">$$CEVR_k = \sum_{j=1}^{k} EVR_j$$</div>
+</div>
+
+<p>Worked example — 6 real (standardized) features, eigen-decomposed:</p>
+
+<div class="tbl">
+<table>
+<tr><th>Component</th><th><span class="nocase">&lambda;</span></th><th>EVR</th><th>Cumulative</th></tr>
+<tr><td>PC1</td><td class="mono">2.105</td><td class="mono hl">35.08%</td><td class="mono">35.08%</td></tr>
+<tr><td>PC2</td><td class="mono">1.840</td><td class="mono hl">30.67%</td><td class="mono">65.75%</td></tr>
+<tr><td>PC3</td><td class="mono">1.062</td><td class="mono">17.69%</td><td class="mono">83.44%</td></tr>
+<tr><td>PC4</td><td class="mono">0.721</td><td class="mono">12.02%</td><td class="mono good">95.46%</td></tr>
+<tr><td>PC5</td><td class="mono">0.178</td><td class="mono">2.97%</td><td class="mono">98.43%</td></tr>
+<tr><td>PC6</td><td class="mono">0.094</td><td class="mono">1.57%</td><td class="mono">100.00%</td></tr>
+<tr><td class="hl"><b>Total (d=6)</b></td><td class="mono hl">6.000</td><td class="mono">100%</td><td></td></tr>
+</table>
+</div>
+
+<div class="diagram">
+<svg viewBox="0 0 560 260" width="100%" height="260">
+<line x1="40" y1="230" x2="520" y2="230" stroke="#242a34"/>
+<line x1="40" y1="230" x2="40" y2="20" stroke="#242a34"/>
+<!-- bars EVR -->
+<rect x="37.0" y="54.6" width="46" height="175.4" fill="#d9ab5c"/>
+<rect x="117.0" y="76.7" width="46" height="153.3" fill="#d9ab5c"/>
+<rect x="197.0" y="141.6" width="46" height="88.4" fill="#7f9adf"/>
+<rect x="277.0" y="169.9" width="46" height="60.1" fill="#7f9adf"/>
+<rect x="357.0" y="215.2" width="46" height="14.8" fill="#6b7480"/>
+<rect x="437.0" y="222.2" width="46" height="7.8" fill="#6b7480"/>
+<text x="60" y="248" text-anchor="middle" fill="#9aa3ad" font-family="IBM Plex Mono" font-size="10">PC1</text>
+<text x="140" y="248" text-anchor="middle" fill="#9aa3ad" font-family="IBM Plex Mono" font-size="10">PC2</text>
+<text x="220" y="248" text-anchor="middle" fill="#9aa3ad" font-family="IBM Plex Mono" font-size="10">PC3</text>
+<text x="300" y="248" text-anchor="middle" fill="#9aa3ad" font-family="IBM Plex Mono" font-size="10">PC4</text>
+<text x="380" y="248" text-anchor="middle" fill="#9aa3ad" font-family="IBM Plex Mono" font-size="10">PC5</text>
+<text x="460" y="248" text-anchor="middle" fill="#9aa3ad" font-family="IBM Plex Mono" font-size="10">PC6</text>
+<text x="60" y="48" text-anchor="middle" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="10">35.1%</text>
+<text x="140" y="70" text-anchor="middle" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="10">30.7%</text>
+<text x="220" y="135" text-anchor="middle" fill="#7f9adf" font-family="IBM Plex Mono" font-size="10">17.7%</text>
+<text x="300" y="163" text-anchor="middle" fill="#7f9adf" font-family="IBM Plex Mono" font-size="10">12.0%</text>
+<!-- cumulative line -->
+<polyline points="60.0,159.8 140.0,98.5 220.0,63.1 300.0,39.1 380.0,33.1 460.0,30.0" fill="none" stroke="#5fbfae" stroke-width="2.2"/>
+<g fill="#5fbfae"><circle cx="60.0" cy="159.8" r="3.5"/><circle cx="140.0" cy="98.5" r="3.5"/><circle cx="220.0" cy="63.1" r="3.5"/><circle cx="300.0" cy="39.1" r="3.5"/><circle cx="380.0" cy="33.1" r="3.5"/><circle cx="460.0" cy="30.0" r="3.5"/></g>
+<!-- 95% threshold -->
+<line x1="40" y1="40.0" x2="520" y2="40.0" stroke="#e2836c" stroke-width="1.3" stroke-dasharray="5 4"/>
+<text x="490" y="35" fill="#e2836c" font-family="IBM Plex Mono" font-size="10">95%</text>
+<circle cx="300.0" cy="39.1" r="6" fill="none" stroke="#e2836c" stroke-width="2"/>
+</svg>
+<div class="cap">Gold/slate/grey bars = EVR (scree plot), read on the left. Teal line = cumulative variance, crossing the 95% mark (dashed coral) right at PC4 (circled).</div>
+</div>
+
+</section>
+
+<section class="block" id="s8-choosing-k">
+<div class="eyebrow">08 · question 3, part B</div>
+<h2>So how many components should I actually keep?</h2>
+<p class="lead">Three practical rules, all reading the same chart above — pick whichever fits the situation.</p>
+
+<div class="grid3">
+<div class="co-card">
+<div class="name">1 · Variance threshold</div>
+<p>Decide upfront how much of the original information you're willing to keep — typically <b>90&ndash;95%</b> — and keep the smallest k whose cumulative EVR clears that bar.</p>
+<div class="why">In our example: 95% is crossed exactly at <b>k=4</b> (95.46%). This is the most common rule used in practice — simple, and directly tied to "how much did we actually lose."</div>
+</div>
+<div class="co-card">
+<div class="name">2 · Elbow method</div>
+<p>Look at the scree plot (the bars) and find where the bars stop dropping sharply and start flattening out — the "elbow."</p>
+<div class="why">Here: PC1&rarr;PC2 drops gently (35.1%&rarr;30.7%), then a sharper drop into PC3&ndash;PC4, then a visibly flat tail from PC5 onward. The elbow sits around <b>k=4</b> too — components after this add very little each.</div>
+</div>
+<div class="co-card">
+<div class="name">3 · Kaiser rule (standardized data only)</div>
+<p>Since every standardized feature has variance exactly 1, the <em>average</em> eigenvalue is always 1. Keep only components with <span class="mono">&lambda; &gt; 1</span> — i.e. components carrying "more than an average feature's worth" of variance.</p>
+<div class="why">Here: &lambda;=2.105, 1.840, 1.062 all exceed 1; &lambda;=0.721 doesn't &rarr; suggests <b>k=3</b>. A stricter, more conservative answer than the other two rules — good as a sanity floor, not usually the final word.</div>
+</div>
+</div>
+
+<div class="callout warn">
+<span class="lbl">These rules can (and will) disagree</span>
+Above, threshold and elbow both point to k=4; Kaiser points to k=3. That's normal — there's no single "mathematically correct" k. In practice: start with the 90&ndash;95% threshold rule as a default, sanity-check it against the scree plot's elbow, and let the downstream task (does a model trained on k components perform well enough? is 2&ndash;3 needed purely for visualization?) make the final call.
+</div>
+
+<div class="callout info"><span class="lbl">Special case — visualization</span>If the only goal is to <em>plot</em> the data, k is forced to 2 or 3 regardless of variance retained, even if that only captures 65.75% (k=2, from our table). You're trading information for the ability to literally see the data — a different goal from modeling, with a different answer.</div>
+
+</section>
+
+<section class="block" id="s9-interpretability">
+<div class="eyebrow">09 · question 4, limitation 1</div>
+<h2>Limitation — interpretability gets harder, fast</h2>
+<p class="lead">Section 02 showed a friendly case: 3 correlated features blending into one nameable idea. Real datasets are rarely that clean.</p>
+
+<p>Take a 6-feature lending dataset — <span class="mono">Age, Income, Credit Score, Loan Amount, Tenure, Num. Transactions</span> — the same eigen-decomposition as Sections 07&ndash;08. Here is PC1's actual, real recipe:</p>
+
+<div class="formula">
+<div class="tag">PC1's real loadings — not simplified for teaching</div>
+<div class="eq">$$PC_1 = -0.345\,\text{Age} - 0.564\,\text{Income} + 0.634\,\text{CreditScore} - 0.063\,\text{LoanAmount} + 0.240\,\text{Tenure} - 0.315\,\text{NumTxns}$$</div>
+</div>
+
+<div class="callout warn">
+<span class="lbl">Now try to name PC1 in one word</span>
+Unlike Section 02's example, the signs here don't agree, and the weights don't cleanly track one intuitive idea. Is PC1 "creditworthiness"? It's pulled down by Income and Num. Transactions having negative loadings, which fights that story. This is the real, common case — most PCs in practice are unnamed blends, not clean concepts.
+</div>
+
+<div class="tbl">
+<table>
+<tr><th></th><th>Original features</th><th>Principal components</th></tr>
+<tr><td>What a unit "means"</td><td class="good">Exactly what it says — Age in years, Income in &#8377;</td><td class="bad">A moving blend of 6 different units and signs</td></tr>
+<tr><td>Explain a prediction to a stakeholder</td><td class="good">"Higher income &rarr; higher approval odds" — easy</td><td class="bad">"PC1 went up" doesn't translate to a business sentence</td></tr>
+<tr><td>Regulatory / audit settings (credit, healthcare)</td><td class="good">Feature-level reasoning is directly inspectable</td><td class="bad">Often unacceptable — decisions must trace to named, real-world factors</td></tr>
+</table>
+</div>
+
+<div class="callout good"><span class="lbl">When this stops mattering</span>If the goal is purely predictive performance (feed reduced features into a downstream model that nobody needs to "explain"), reduced interpretability is a non-issue. It becomes a real limitation specifically when a human needs to read and justify what a component means — audits, medical decisions, credit decisions, or just explaining results to a non-technical stakeholder.</div>
+
+</section>
+
+<section class="block" id="s10-neighborhood">
+<div class="eyebrow">10 · limitation 2</div>
+<h2>Limitation — PCA does not preserve neighborhoods</h2>
+<p class="lead">The sharpest limitation of all, and the one that sets up next class. PCA optimizes for one thing only — global variance. It was never asked to keep "who is near whom."</p>
+
+<div class="callout warn"><span class="lbl">The core issue</span>Two points that are very close together in the original high-dimensional space can land far apart after projection — and two points that were far apart can land right on top of each other. PCA has no constraint that prevents either.</div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:28px 0 6px;">Case 1 — a curved manifold collapses unevenly</h3>
+<p>12 points, evenly spaced (30&deg; apart) around a perfect circle in 2D. By symmetry, every direction has equal variance (&lambda;&#8321;=&lambda;&#8322;=4.909 — exactly Section 06's degenerate case), so PCA arbitrarily picks one diameter as PC1 — here, the vertical axis:</p>
+
+<div class="grid2">
+<div class="diagram">
+<svg viewBox="0 0 300 300" width="100%" height="290">
+<line x1="150" y1="20" x2="150" y2="280" stroke="#d9ab5c" stroke-width="2" stroke-dasharray="0"/>
+<text x="156" y="30" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="11">PC1</text>
+<circle cx="150" cy="150" r="105" fill="none" stroke="#242a34" stroke-width="1" stroke-dasharray="3 3"/>
+<g font-family="IBM Plex Mono" font-size="9.5" fill="#eef0ee">
+<circle cx="255.0" cy="150.0" r="5" fill="#e2836c"/><text x="261" y="153">0</text>
+<circle cx="240.9" cy="97.5" r="5" fill="#7f9adf"/><text x="247" y="94">1</text>
+<circle cx="202.5" cy="59.1" r="5" fill="#7f9adf"/><text x="208" y="56">2</text>
+<circle cx="150.0" cy="45.0" r="5" fill="#7f9adf"/><text x="156" y="42">3</text>
+<circle cx="97.5" cy="59.1" r="5" fill="#7f9adf"/><text x="70" y="56">4</text>
+<circle cx="59.1" cy="97.5" r="5" fill="#7f9adf"/><text x="32" y="94">5</text>
+<circle cx="45.0" cy="150.0" r="5" fill="#e2836c"/><text x="18" y="153">6</text>
+<circle cx="59.1" cy="202.5" r="5" fill="#7f9adf"/><text x="32" y="212">7</text>
+<circle cx="97.5" cy="240.9" r="5" fill="#7f9adf"/><text x="70" y="252">8</text>
+<circle cx="150.0" cy="255.0" r="5" fill="#7f9adf"/><text x="156" y="270">9</text>
+<circle cx="202.5" cy="240.9" r="5" fill="#7f9adf"/><text x="208" y="252">10</text>
+<circle cx="240.9" cy="202.5" r="5" fill="#7f9adf"/><text x="247" y="212">11</text>
+</g>
+</svg>
+<div class="cap">Original 2D: points 0 and 6 are diametrically opposite — the <b>farthest apart</b> two points can be on this circle.</div>
+</div>
+<div class="diagram">
+<svg viewBox="0 0 480 160" width="100%" height="150">
+<line x1="40" y1="80" x2="440" y2="80" stroke="#242a34" stroke-width="1.3"/>
+<g font-family="IBM Plex Mono" font-size="10">
+<circle cx="440.0" cy="80" r="5" fill="#7f9adf"/><text x="440" y="65" text-anchor="middle" fill="#7f9adf">3</text>
+<circle cx="413.2" cy="80" r="5" fill="#7f9adf"/><text x="413" y="105" text-anchor="middle" fill="#7f9adf">2,4</text>
+<circle cx="340.0" cy="80" r="5" fill="#7f9adf"/><text x="340" y="65" text-anchor="middle" fill="#7f9adf">1,5</text>
+<circle cx="240.0" cy="80" r="6.5" fill="#e2836c"/><text x="240" y="105" text-anchor="middle" fill="#e2836c" font-weight="600">0,6</text>
+<circle cx="140.0" cy="80" r="5" fill="#7f9adf"/><text x="140" y="65" text-anchor="middle" fill="#7f9adf">7,11</text>
+<circle cx="66.8" cy="80" r="5" fill="#7f9adf"/><text x="67" y="105" text-anchor="middle" fill="#7f9adf">8,10</text>
+<circle cx="40.0" cy="80" r="5" fill="#7f9adf"/><text x="40" y="65" text-anchor="middle" fill="#7f9adf">9</text>
+</g>
+</svg>
+<div class="cap">After projecting onto PC1: points 0 and 6 land on the <b>exact same</b> spot (z=0.00). Maximally far &rarr; identical. Also notice pairs like 2 &amp; 4 collapse together despite being 60° apart on the circle.</div>
+</div>
+</div>
+
+<div class="tbl">
+<table>
+<tr><th>Pair</th><th>Distance on the circle (ground truth)</th><th>Distance after PCA to 1D</th><th>What happened</th></tr>
+<tr><td class="mono">pt 0 &harr; pt 6</td><td class="mono">180&deg; apart — maximum possible</td><td class="mono bad">0.00 — identical</td><td class="bad">Farthest pair becomes indistinguishable</td></tr>
+<tr><td class="mono">pt 3 &harr; pt 9</td><td class="mono">180&deg; apart — maximum possible</td><td class="mono good">6.00 — maximum possible</td><td class="teal">This opposite pair happens to stay maximally far (luck of alignment with PC1)</td></tr>
+<tr><td class="mono">pt 2 &harr; pt 3 (adjacent)</td><td class="mono">30&deg; apart</td><td class="mono">0.40</td><td class="teal">Small gap — looks "close," correctly</td></tr>
+<tr><td class="mono">pt 0 &harr; pt 1 (adjacent)</td><td class="mono">30&deg; apart — same as above</td><td class="mono bad">1.50 — nearly 4&times; larger</td><td class="bad">Same true closeness, very different reported closeness</td></tr>
+</table>
+</div>
+
+<div class="callout warn"><span class="lbl">Read the last two rows together</span>Two pairs of points that are <em>equally close</em> in the real (2D) data — both exactly 30&deg; apart on the circle — end up reported as very different distances after PCA (0.40 vs 1.50), purely depending on <em>where</em> on the circle they happen to sit relative to whichever axis PCA chose. Local neighborhoods are not preserved consistently, even within the same dataset.</div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:28px 0 6px;">Case 2 — two real clusters merge into one</h3>
+<p>Two clearly separated clusters in 2D. The separation between them happens to sit along the <em>low</em>-variance direction, while a wide, uninformative spread runs along the <em>high</em>-variance direction:</p>
+
+<div class="grid2">
+<div class="diagram">
+<svg viewBox="0 0 320 260" width="100%" height="250">
+<line x1="20" y1="130" x2="300" y2="130" stroke="#242a34" stroke-width="1"/>
+<line x1="160" y1="20" x2="160" y2="240" stroke="#242a34" stroke-width="1"/>
+<line x1="70" y1="200" x2="250" y2="60" stroke="#d9ab5c" stroke-width="2" stroke-dasharray="5 4"/>
+<text x="252" y="58" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="10.5">PC1 (max var.)</text>
+<line x1="105" y1="185" x2="215" y2="75" stroke="#5fbfae" stroke-width="1.4" stroke-dasharray="3 3" opacity="0"/>
+<g fill="#7f9adf" opacity="0.9">
+<circle cx="156.7" cy="59.7" r="4"/><circle cx="213.9" cy="83.3" r="4"/><circle cx="140.8" cy="83.5" r="4"/><circle cx="182.4" cy="77.5" r="4"/><circle cx="190.9" cy="100.1" r="4"/><circle cx="230.3" cy="78.0" r="4"/><circle cx="187.8" cy="78.6" r="4"/><circle cx="136.9" cy="71.0" r="4"/><circle cx="194.7" cy="79.4" r="4"/><circle cx="147.8" cy="68.2" r="4"/><circle cx="113.3" cy="95.9" r="4"/><circle cx="174.1" cy="85.3" r="4"/><circle cx="62.9" cy="87.1" r="4"/><circle cx="132.7" cy="91.9" r="4"/><circle cx="83.5" cy="76.4" r="4"/>
+</g>
+<g fill="#e2836c" opacity="0.9">
+<circle cx="198.2" cy="180.6" r="4"/><circle cx="119.4" cy="172.8" r="4"/><circle cx="189.5" cy="181.4" r="4"/><circle cx="181.2" cy="164.5" r="4"/><circle cx="145.2" cy="187.9" r="4"/><circle cx="171.8" cy="174.5" r="4"/><circle cx="207.8" cy="193.8" r="4"/><circle cx="123.3" cy="188.2" r="4"/><circle cx="71.9" cy="176.0" r="4"/><circle cx="180.4" cy="186.9" r="4"/><circle cx="221.6" cy="167.3" r="4"/><circle cx="185.2" cy="172.6" r="4"/><circle cx="201.0" cy="194.4" r="4"/><circle cx="184.6" cy="170.0" r="4"/><circle cx="70.2" cy="173.3" r="4"/>
+</g>
+<text x="30" y="50" fill="#7f9adf" font-family="IBM Plex Mono" font-size="10.5">Cluster A</text>
+<text x="30" y="225" fill="#e2836c" font-family="IBM Plex Mono" font-size="10.5">Cluster B</text>
+</svg>
+<div class="cap">Two obviously separate clusters — the gap between them (vertical) is small compared to each cluster's own wide horizontal spread. PC1 aligns with the <em>wide, uninformative</em> horizontal spread.</div>
+</div>
+<div class="diagram">
+<svg viewBox="0 0 480 320" width="100%" height="310">
+<text x="40" y="30" fill="#9aa3ad" font-family="IBM Plex Mono" font-size="11">Projected onto PC1 (kept, max variance):</text>
+<line x1="40" y1="60" x2="440" y2="60" stroke="#242a34" stroke-width="1.3"/>
+<g fill="#7f9adf" opacity="0.85">
+<circle cx="224.6" cy="60" r="4"/><circle cx="109.7" cy="60" r="4"/><circle cx="255.8" cy="60" r="4"/><circle cx="172.7" cy="60" r="4"/><circle cx="155.0" cy="60" r="4"/><circle cx="77.1" cy="60" r="4"/><circle cx="162.1" cy="60" r="4"/><circle cx="263.9" cy="60" r="4"/><circle cx="148.2" cy="60" r="4"/><circle cx="242.3" cy="60" r="4"/><circle cx="310.3" cy="60" r="4"/><circle cx="189.2" cy="60" r="4"/><circle cx="411.3" cy="60" r="4"/><circle cx="271.8" cy="60" r="4"/><circle cx="370.6" cy="60" r="4"/>
+</g>
+<g fill="#e2836c" opacity="0.85">
+<circle cx="138.2" cy="60" r="4"/><circle cx="295.8" cy="60" r="4"/><circle cx="155.5" cy="60" r="4"/><circle cx="172.5" cy="60" r="4"/><circle cx="243.9" cy="60" r="4"/><circle cx="191.1" cy="60" r="4"/><circle cx="118.5" cy="60" r="4"/><circle cx="287.5" cy="60" r="4"/><circle cx="390.8" cy="60" r="4"/><circle cx="173.5" cy="60" r="4"/><circle cx="91.8" cy="60" r="4"/><circle cx="164.3" cy="60" r="4"/><circle cx="132.2" cy="60" r="4"/><circle cx="165.7" cy="60" r="4"/><circle cx="394.1" cy="60" r="4"/>
+</g>
+<text x="40" y="90" fill="#e2836c" font-family="IBM Plex Mono" font-size="10">↑ completely tangled — clusters indistinguishable</text>
+
+<text x="40" y="150" fill="#9aa3ad" font-family="IBM Plex Mono" font-size="11">Projected onto PC2 (discarded, low variance):</text>
+<line x1="40" y1="180" x2="440" y2="180" stroke="#242a34" stroke-width="1.3"/>
+<g fill="#7f9adf" opacity="0.9">
+<circle cx="73.6" cy="180" r="4"/><circle cx="115.6" cy="180" r="4"/><circle cx="134.0" cy="180" r="4"/><circle cx="109.7" cy="180" r="4"/><circle cx="161.3" cy="180" r="4"/><circle cx="99.1" cy="180" r="4"/><circle cx="110.8" cy="180" r="4"/><circle cx="105.3" cy="180" r="4"/><circle cx="111.1" cy="180" r="4"/><circle cx="96.0" cy="180" r="4"/><circle cx="170.4" cy="180" r="4"/><circle cx="130.2" cy="180" r="4"/><circle cx="161.8" cy="180" r="4"/><circle cx="156.0" cy="180" r="4"/><circle cx="131.2" cy="180" r="4"/>
+</g>
+<g fill="#e2836c" opacity="0.9">
+<circle cx="350.9" cy="180" r="4"/><circle cx="351.8" cy="180" r="4"/><circle cx="355.1" cy="180" r="4"/><circle cx="316.8" cy="180" r="4"/><circle cx="381.4" cy="180" r="4"/><circle cx="343.0" cy="180" r="4"/><circle cx="380.1" cy="180" r="4"/><circle cx="387.5" cy="180" r="4"/><circle cx="371.2" cy="180" r="4"/><circle cx="370.4" cy="180" r="4"/><circle cx="313.5" cy="180" r="4"/><circle cx="335.1" cy="180" r="4"/><circle cx="383.2" cy="180" r="4"/><circle cx="329.2" cy="180" r="4"/><circle cx="365.0" cy="180" r="4"/>
+</g>
+<text x="40" y="210" fill="#93c084" font-family="IBM Plex Mono" font-size="10">↑ cleanly separated, zero overlap</text>
+</svg>
+<div class="cap">PC1 (kept) tangles the two clusters completely. PC2 (thrown away, only 14.7% of variance) is exactly the axis that would have kept them apart.</div>
+</div>
+</div>
+
+<div class="callout warn">
+<span class="lbl">The lesson</span>
+"High variance" and "the direction that matters for your task" are <b>not the same thing</b>, and PCA has no way to know which one you actually need — it only ever optimizes the first. A direction that perfectly separates two real, meaningful groups can be thrown away simply because, numerically, it doesn't happen to spread the data out very much.
+</div>
+
+<div class="callout info"><span class="lbl">Where this is heading, next class</span>Both cases here share one root cause: PCA is a strictly <em>linear</em>, strictly <em>global-variance</em> method. It has no notion of "who is near whom" locally. Next class's method (t-SNE) is built from the ground up to directly optimize for exactly that — keeping neighbors as neighbors — at the cost of everything PCA is good at (global structure, speed, an exact formula, and reconstructability). Preview visible on the whiteboard already: <span class="mono">P(B|A), P(C|A), &hellip;</span> neighbor probabilities instead of variance.</div>
+
+</section>
+
+<section class="block" id="s11-other-limits">
+<div class="eyebrow">11 · rounding out the picture</div>
+<h2>Other limitations, briefly</h2>
+
+<div class="grid3">
+<div class="co-card">
+<div class="name">Only linear combinations</div>
+<p>Every PC is a straight-line blend, <span class="mono">w&#8321;x&#8321;+w&#8322;x&#8322;+&hellip;</span>. If the true structure is curved (a spiral, a sphere, an S-shape), no linear combination of the raw features can describe it well, no matter how many components you keep.</p>
+<div class="why">The circle example in Section 10 is the simplest possible case of this.</div>
+</div>
+<div class="co-card">
+<div class="name">Sensitive to outliers</div>
+<p>Variance is a squared quantity — a single extreme point contributes disproportionately to <span class="mono">&Sigma;</span>, and can single-handedly rotate PC1 toward itself.</p>
+<div class="why">Same root cause as why mean and standard deviation (not median/IQR) are outlier-sensitive — variance inherits that.</div>
+</div>
+<div class="co-card">
+<div class="name">Needs (roughly) linear correlation</div>
+<p>&Sigma; only captures pairwise <em>linear</em> correlation between features. Two features with a strong but curved (non-linear) relationship can show near-zero covariance, and PCA will treat them as unrelated.</p>
+<div class="why">PCA can miss real structure that isn't shaped like a straight-line relationship.</div>
+</div>
+</div>
+
+</section>
+
+<section class="block" id="s12-categorical">
+<div class="eyebrow">12 · question 5</div>
+<h2>PCA and categorical variables</h2>
+<p class="lead">Everything so far — variance, covariance, eigenvectors — assumes continuous, numeric features. Real datasets usually aren't purely that.</p>
+
+<div class="callout warn"><span class="lbl">Why PCA struggles directly on categories</span>Variance and covariance are built for continuous, ordered quantities — "how far, on average, from the mean." A category like <span class="mono">City &isin; {Delhi, Mumbai, Pune}</span> has no natural ordering or distance ("is Pune numerically between Delhi and Mumbai?" is meaningless), so "the variance of City" isn't a well-defined idea the way "the variance of Age" is.</div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:24px 0 6px;">The standard fix: encode, then apply PCA on the numeric result</h3>
+<p>Small worked example — 5 rows, 2 numeric features (Age, Income) and 1 categorical feature (City):</p>
+
+<div class="tbl">
+<table>
+<tr><th>Row</th><th>Age</th><th>Income (&#8377;k)</th><th>City</th><th>&rarr; Delhi</th><th>&rarr; Mumbai</th><th>&rarr; Pune</th></tr>
+<tr><td>1</td><td class="mono">25</td><td class="mono">40</td><td>Delhi</td><td class="mono hl">1</td><td class="mono">0</td><td class="mono">0</td></tr>
+<tr><td>2</td><td class="mono">32</td><td class="mono">72</td><td>Mumbai</td><td class="mono">0</td><td class="mono hl">1</td><td class="mono">0</td></tr>
+<tr><td>3</td><td class="mono">29</td><td class="mono">55</td><td>Delhi</td><td class="mono hl">1</td><td class="mono">0</td><td class="mono">0</td></tr>
+<tr><td>4</td><td class="mono">41</td><td class="mono">90</td><td>Pune</td><td class="mono">0</td><td class="mono">0</td><td class="mono hl">1</td></tr>
+<tr><td>5</td><td class="mono">35</td><td class="mono">68</td><td>Mumbai</td><td class="mono">0</td><td class="mono hl">1</td><td class="mono">0</td></tr>
+</table>
+</div>
+
+<div class="step"><div class="num">1</div><div class="body"><p><b>One-hot encode</b> the categorical column(s) — turn one City column into 3 binary (0/1) columns, one per category.</p></div></div>
+<div class="step"><div class="num">2</div><div class="body"><p><b>Standardize everything together</b> — the numeric columns and the new binary columns alike — then run PCA exactly as before: covariance matrix, eigenvectors, eigenvalues.</p></div></div>
+<div class="step"><div class="num">3</div><div class="body"><p><b>Read PC1's loadings</b>: on this tiny example, <span class="mono">PC1 = &minus;0.533·Age &minus; 0.536·Income + 0.490·Delhi &minus; 0.161·Mumbai &minus; 0.404·Pune</span> — the categorical dummies genuinely participate in the blend, alongside the numeric features.</p></div></div>
+
+<div class="callout warn">
+<span class="lbl">A real gotcha this example exposes</span>
+With all 3 dummy columns included, one of the resulting eigenvalues comes out at essentially <b>0.00</b> (verified numerically). That's not a coincidence — the three one-hot columns always sum to exactly 1 for every row (<span class="mono">Delhi+Mumbai+Pune=1</span> always), a perfect linear dependency. Standard practice: <b>drop one category</b> (e.g. keep only Mumbai, Pune — Delhi becomes "the implied default") before running PCA, to avoid feeding in a redundant, perfectly-predictable column.
+</div>
+
+<div class="tbl">
+<table>
+<tr><th>Situation</th><th>Common industry approach</th><th>Verdict</th></tr>
+<tr><td>Mostly numeric, a few categorical columns</td><td>One-hot / target / frequency-encode the categoricals, then run ordinary PCA on the full numeric matrix</td><td class="good">Works reasonably well — the standard, widely-used approach</td></tr>
+<tr><td>Mostly or purely categorical data</td><td>PCA is usually a poor fit — the continuous-variance machinery doesn't map cleanly onto category structure</td><td class="bad">Generally avoided</td></tr>
+</table>
+</div>
+
+<details class="deriv">
+<summary>Optional, theory only — MCA and FAMD (not part of this syllabus, not widely used in typical industry pipelines)</summary>
+<div class="inner">
+<p>Specialized cousins of PCA exist specifically for this problem — worth knowing the names exist, not worth deriving:</p>
+<div class="tbl">
+<table>
+<tr><th>Method</th><th>Built for</th><th>Rough idea</th></tr>
+<tr><td><b>MCA</b> — Multiple Correspondence Analysis</td><td>Purely categorical data</td><td>Replaces variance/covariance with a chi-square-based measure of association between categories, then does something analogous to eigen-decomposition on that</td></tr>
+<tr><td><b>FAMD</b> — Factor Analysis of Mixed Data</td><td>A genuine mix of numeric + categorical columns</td><td>Runs ordinary PCA logic on the numeric part and MCA-style logic on the categorical part, in one combined framework</td></tr>
+</table>
+</div>
+<div class="callout info">In practice, most teams reach for "encode + plain PCA" (Section above) long before reaching for MCA/FAMD — those are seen far more often in academic/statistics contexts than in typical industry ML pipelines. Tree-based models (which handle raw categories natively, no PCA needed at all) are often the more common industry answer when categorical structure genuinely matters.</div>
+</div>
+</details>
+
+</section>
+
+<section class="block" id="s13-recon-idea">
+<div class="eyebrow">13 · question 6</div>
+<h2>Reconstruction error — how much did we actually lose?</h2>
+<p class="lead">Explained variance ratio told us this in percentages. Reconstruction error tells us the same thing in the original units, point by point.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 560 140" width="100%" height="130">
+<defs><marker id="re-arr" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#9aa3ad"/></marker></defs>
+<rect x="20" y="45" width="110" height="50" rx="8" fill="var(--ink-2)" stroke="#242a34"/>
+<text x="75" y="66" text-anchor="middle" fill="#eef0ee" font-family="IBM Plex Mono" font-size="13">X</text>
+<text x="75" y="84" text-anchor="middle" fill="#6b7480" font-family="IBM Plex Mono" font-size="9">n × d, original</text>
+<line x1="130" y1="70" x2="195" y2="70" stroke="#9aa3ad" stroke-width="1.6" marker-end="url(#re-arr)"/>
+<text x="162" y="60" text-anchor="middle" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="10">encode: Z=XW</text>
+<rect x="200" y="45" width="110" height="50" rx="8" fill="var(--ink-2)" stroke="#242a34"/>
+<text x="255" y="66" text-anchor="middle" fill="#eef0ee" font-family="IBM Plex Mono" font-size="13">Z</text>
+<text x="255" y="84" text-anchor="middle" fill="#6b7480" font-family="IBM Plex Mono" font-size="9">n × k, k ≤ d</text>
+<line x1="310" y1="70" x2="375" y2="70" stroke="#9aa3ad" stroke-width="1.6" marker-end="url(#re-arr)"/>
+<text x="342" y="60" text-anchor="middle" fill="#5fbfae" font-family="IBM Plex Mono" font-size="10">decode: X̂=ZWᵀ</text>
+<rect x="380" y="45" width="110" height="50" rx="8" fill="var(--ink-2)" stroke="#242a34"/>
+<text x="435" y="66" text-anchor="middle" fill="#eef0ee" font-family="IBM Plex Mono" font-size="13">X̂</text>
+<text x="435" y="84" text-anchor="middle" fill="#6b7480" font-family="IBM Plex Mono" font-size="9">n × d, rebuilt</text>
+<path d="M 75 100 Q 255 135 435 100" fill="none" stroke="#e2836c" stroke-width="1.4" stroke-dasharray="4 3"/>
+<text x="255" y="125" text-anchor="middle" fill="#e2836c" font-family="IBM Plex Mono" font-size="10">compare X vs X̂ → reconstruction error</text>
+</svg>
+<div class="cap">X is projected down to k components (Z, the compressed representation), then projected back up to d dimensions (X̂, the best possible reconstruction from only k components). The gap between the original and the rebuilt version is the price paid for compression.</div>
+</div>
+
+<div class="formula">
+<div class="tag">encode / decode</div>
+<div class="eq">$$Z = XW_k \qquad\qquad \hat X = ZW_k^\top$$</div>
+</div>
+
+<p>Here <span class="mono">W<sub>k</sub></span> is the d&times;k matrix of the first k eigenvectors (as columns). Encoding projects onto those k directions; decoding uses the same directions to map back into the original d-dimensional space — it's the only sensible "undo," since <span class="mono">W<sub>k</sub></span> is the one matrix we actually have.</p>
+
+<div class="formula">
+<div class="tag">reconstruction error (MSE)</div>
+<div class="eq">$$MSE = \dfrac{1}{nd}\sum_{i=1}^{n}\sum_{j=1}^{d}(X_{ij}-\hat X_{ij})^2$$</div>
+</div>
+
+<p>Average squared difference between every original entry and its rebuilt counterpart, over the whole dataset. Small MSE &rarr; X&#770; is a faithful stand-in for X using only k numbers per row instead of d.</p>
+
+</section>
+
+<section class="block" id="s14-recon-examples">
+<div class="eyebrow">14 · seeing it happen</div>
+<h2>Two worked examples</h2>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:6px 0 6px;">Example 1 — 2 features &rarr; 1 (by hand, every point visible)</h3>
+<p>Our 6-student dataset, keeping only PC1 (<span class="mono">k=1</span> out of <span class="mono">d=2</span>). Reconstruct <span class="mono">X&#770; = z&middot;w&#8321;&#7488;</span> for each student and compare to the original standardized point:</p>
+
+<div class="tbl">
+<table>
+<tr><th>Student</th><th>Original (x&#8321;,x&#8322;)</th><th>z on PC1</th><th>Reconstructed (x&#770;&#8321;,x&#770;&#8322;)</th><th>Squared error</th></tr>
+<tr><td>1</td><td class="mono">(&minus;1.336, &minus;1.291)</td><td class="mono">&minus;1.858</td><td class="mono">(&minus;1.314, &minus;1.314)</td><td class="mono good">0.0010</td></tr>
+<tr><td>2</td><td class="mono">(&minus;0.802, &minus;0.645)</td><td class="mono">&minus;1.023</td><td class="mono">(&minus;0.724, &minus;0.724)</td><td class="mono good">0.0122</td></tr>
+<tr><td>3</td><td class="mono">(&minus;0.267, 0.645)</td><td class="mono">0.267</td><td class="mono">(0.189, 0.189)</td><td class="mono bad">0.4166</td></tr>
+<tr><td>4</td><td class="mono">(0.267, &minus;0.645)</td><td class="mono">&minus;0.267</td><td class="mono">(&minus;0.189, &minus;0.189)</td><td class="mono bad">0.4166</td></tr>
+<tr><td>5</td><td class="mono">(0.802, 1.291)</td><td class="mono">1.480</td><td class="mono">(1.046, 1.046)</td><td class="mono">0.1197</td></tr>
+<tr><td>6</td><td class="mono">(1.336, 0.645)</td><td class="mono">1.401</td><td class="mono">(0.991, 0.991)</td><td class="mono">0.2386</td></tr>
+<tr><td class="hl"><b>MSE (avg of all 12 squared diffs)</b></td><td></td><td></td><td></td><td class="mono hl"><b>0.1004</b></td></tr>
+</table>
+</div>
+
+<div class="diagram">
+<svg viewBox="0 0 320 280" width="100%" height="270">
+<line x1="20" y1="150" x2="300" y2="150" stroke="#242a34" stroke-width="1"/>
+<line x1="160" y1="20" x2="160" y2="280" stroke="#242a34" stroke-width="1"/>
+<line x1="65" y1="245" x2="255" y2="55" stroke="#d9ab5c" stroke-width="2"/>
+<text x="258" y="52" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="10.5">PC1</text>
+<!-- error segments original(circle) -> recon(x on line), per student -->
+<g stroke="#e2836c" stroke-width="1.3" stroke-dasharray="3 2">
+<line x1="79.8" y1="227.5" x2="81.2" y2="228.8"/>
+<line x1="111.9" y1="188.7" x2="116.6" y2="193.4"/>
+<line x1="144.0" y1="111.3" x2="171.3" y2="138.7"/>
+<line x1="176.0" y1="188.7" x2="148.7" y2="161.3"/>
+<line x1="208.1" y1="72.5" x2="222.8" y2="87.2"/>
+<line x1="240.2" y1="111.3" x2="219.5" y2="90.5"/>
+</g>
+<g fill="#7f9adf">
+<circle cx="79.8" cy="227.5" r="4"/><circle cx="111.9" cy="188.7" r="4"/><circle cx="144.0" cy="111.3" r="4"/><circle cx="176.0" cy="188.7" r="4"/><circle cx="208.1" cy="72.5" r="4"/><circle cx="240.2" cy="111.3" r="4"/>
+</g>
+<g fill="#d9ab5c">
+<circle cx="81.2" cy="228.8" r="3"/><circle cx="116.6" cy="193.4" r="3"/><circle cx="171.3" cy="138.7" r="3"/><circle cx="148.7" cy="161.3" r="3"/><circle cx="222.8" cy="87.2" r="3"/><circle cx="219.5" cy="90.5" r="3"/>
+</g>
+<text x="30" y="40" fill="#7f9adf" font-family="IBM Plex Mono" font-size="10">● original</text>
+<text x="30" y="55" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="10">● reconstructed (on PC1 line)</text>
+</svg>
+<div class="cap">Reconstruction always lands exactly on the PC1 line (that's all 1 component can represent). The dashed coral segment — the perpendicular gap between original and reconstructed — is that point's individual error. Students 3 &amp; 4 (far from the line) have the largest errors; student 1 (almost on the line already) has almost none.</div>
+</div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">Example 2 — the 6-feature dataset, at two different k</h3>
+<p>Same dataset as Sections 07&ndash;09. Compare keeping only 2 components vs. keeping 5:</p>
+
+<div class="tbl">
+<table>
+<tr><th>k kept</th><th>Cumulative EVR</th><th>Reconstruction MSE</th><th>Interpretation</th></tr>
+<tr><td class="mono">k=2</td><td class="mono">65.75%</td><td class="mono bad">0.3417</td><td class="bad">Over a third of the average per-feature variance is unaccounted for</td></tr>
+<tr><td class="mono">k=5</td><td class="mono">98.43%</td><td class="mono good">0.0156</td><td class="good">Reconstruction is nearly exact</td></tr>
+</table>
+</div>
+
+<div class="callout good">
+<span class="lbl">The exact relationship — verified numerically, not just approximately</span>
+For standardized data, <span class="mono">MSE(k) = (&lambda;<sub>k+1</sub> + &lambda;<sub>k+2</sub> + &hellip; + &lambda;<sub>d</sub>) / d</span> — the average of exactly the eigenvalues you <em>dropped</em>. Equivalently: <span class="mono">MSE(k) = (1 &minus; CEVR<sub>k</sub>)</span> when variance is expressed per-feature. This is not a coincidence: <b>explained variance ratio and reconstruction error are two ways of reporting the exact same number.</b> Checked directly: at k=2, dropped eigenvalues sum to 2.055, divided by d=6 gives 0.3425 — matches the measured MSE of 0.3417 up to ordinary sampling noise.
+</div>
+
+</section>
+
+<section class="block" id="s15-recon-goodness">
+<div class="eyebrow">15 · putting a number on "good"</div>
+<h2>What counts as a good reconstruction error?</h2>
+<p class="lead">There is no universal "MSE below X is good" rule — a raw MSE value means nothing without context. Here's how to actually read it.</p>
+
+<div class="callout warn">
+<span class="lbl">Why a bare MSE number is meaningless on its own</span>
+MSE = 0.5 sounds bad — until you realize the total variance in a <span class="mono">d</span>-feature standardized dataset is exactly <span class="mono">d</span> (each feature contributes variance 1). MSE = 0.5 out of a total of 100 (d=100) is excellent; MSE = 0.5 out of a total of 2 (d=2) is terrible. <b>Always read MSE relative to d</b>, or — easier — just read the cumulative explained variance ratio directly; it's the same information already normalized for you.
+</div>
+
+<div class="kpi-row">
+<div class="kpi"><div class="num">&ge; 95%</div><div class="lbl">CEVR — very safe default</div></div>
+<div class="kpi"><div class="num">90&ndash;95%</div><div class="lbl">CEVR — common, reasonable trade-off</div></div>
+<div class="kpi"><div class="num">70&ndash;90%</div><div class="lbl">CEVR — usable, inspect what's lost</div></div>
+<div class="kpi"><div class="num">&lt; 70%</div><div class="lbl">CEVR — significant information loss</div></div>
+</div>
+
+<div class="tbl">
+<table>
+<tr><th>Question to ask</th><th>Why it changes the "acceptable" threshold</th></tr>
+<tr><td>What's the downstream task?</td><td>Feeding k components into a model that's cross-validated for performance &rarr; let validation accuracy decide k directly, not a fixed MSE rule</td></tr>
+<tr><td>Is this for visualization?</td><td>k is forced to 2&ndash;3 regardless of MSE — you accept whatever loss comes with that, because seeing the data is the entire point (Section 08)</td></tr>
+<tr><td>Is this for compression / storage?</td><td>Compare the MSE cost against how much smaller k makes your data — a direct trade-off you can quantify</td></tr>
+<tr><td>Are individual points' errors uneven?</td><td>A low <em>average</em> MSE can hide a few points reconstructed very badly (Section 14's students 3 &amp; 4) — check the per-point spread, not just the mean, when individual points matter</td></tr>
+</table>
+</div>
+
+<div class="callout good"><span class="lbl">The practical rule of thumb</span>Don't target a raw MSE number at all — target a <b>cumulative explained variance</b> (typically 90&ndash;95%), and let MSE be the report card that confirms you actually got there. The two are the same measurement in different units (Section 14), so picking k by one is picking k by the other.</div>
+
+</section>
+
+<section class="block" id="s16-chain">
+<div class="eyebrow">16 · everything, together</div>
+<h2>Classes 08 + 09, one picture</h2>
+<p class="lead">Class 08 built the machine. Class 09 explained what it hands you, and where it quietly runs out of road.</p>
+
+<div class="timeline">
+<div class="titem"><div class="tsec">Class 08</div><div class="ttext">Standardize &rarr; project onto unknown w &rarr; Var(z)=w&#7488;&Sigma;w &rarr; constrain w&#7488;w=1 &rarr; Lagrange multiplier &rarr; &Sigma;w=&lambda;w falls out &rarr; &lambda;=variance captured &rarr; pick max &lambda; for PC1.</div></div>
+<div class="titem hl"><div class="tsec">Today, Sections 01&ndash;02</div><div class="ttext">Every eigenvector w is a linear combination of the original features — its entries are literal blending weights, not abstract angles.</div></div>
+<div class="titem hl"><div class="tsec">Today, Sections 03&ndash;06</div><div class="ttext">PC2's constrained optimization forces its Lagrange multiplier for orthogonality to exactly 0 — perpendicularity is a <em>consequence</em> of &Sigma; being symmetric, not a rule we impose by hand. Holds for every PC, even under tied eigenvalues.</div></div>
+<div class="titem"><div class="tsec">Today, Sections 07&ndash;08</div><div class="ttext">EVR<sub>k</sub>=&lambda;<sub>k</sub>/&sum;&lambda;<sub>j</sub> turns eigenvalues into interpretable percentages; cumulative EVR plus a threshold (or elbow, or Kaiser) picks k.</div></div>
+<div class="titem"><div class="tsec">Today, Sections 09&ndash;11</div><div class="ttext">PCA optimizes variance only — components can become uninterpretable blends, curved/non-linear structure is invisible to a linear method, and local neighborhoods can be scrambled even while global variance is preserved.</div></div>
+<div class="titem"><div class="tsec">Today, Section 12</div><div class="ttext">Categorical features need encoding before PCA can touch them at all; PCA remains a numeric-variance method underneath.</div></div>
+<div class="titem hl"><div class="tsec">Today, Sections 13&ndash;15</div><div class="ttext">Reconstruction error X&#770;=ZW&#7488; quantifies the same information loss EVR already reports — MSE(k) and (1&minus;cumulative EVR) are the same number, two units.</div></div>
+</div>
+
+<div class="mental-model">
+<div class="card-title">The one-paragraph version of both classes</div>
+<p>PCA rotates the coordinate axes to line up with the data's own spread, ranked by variance, with every new axis forced perpendicular to all the others — this isn't assumed, it falls directly out of maximizing <span class="mono">w&#7488;&Sigma;w</span> under a symmetric &Sigma;. Each axis is a named-in-numbers blend of your original features. Keep the top few axes (by a variance-retained threshold, an elbow, or a downstream task's own judgment) and you get a faithful, compressed stand-in for your data — faithful in the one specific sense of "preserves overall spread," which is not the same as "preserves who was near whom," and not the same as "stays interpretable."</p>
+</div>
+
+</section>
+
+<section class="block" id="s17-next">
+<div class="eyebrow">17 · looking ahead</div>
+<h2>Where we go next — t-SNE</h2>
+<p class="lead">Section 10's limitation is exactly next class's motivation.</p>
+
+<div class="vs">
+<div class="side left">
+<div class="t">PCA — this class</div>
+Linear. Deterministic (one exact answer via eigen-decomposition). Optimizes <b>global variance</b>. Gives you an exact formula you can reconstruct from. Blind to curved/non-linear structure and to local neighborhoods.
+</div>
+<div class="mid">vs</div>
+<div class="side right">
+<div class="t">t-SNE — next class</div>
+Non-linear. Stochastic (results vary run to run, optimized by gradient descent from a random start). Optimizes <b>local neighbor similarity</b> directly — its entire objective is "who was near whom." Built specifically for visualization; no simple reconstruction back to the original space.
+</div>
+</div>
+
+<div class="callout info"><span class="lbl">The trade being made</span>t-SNE will fix precisely the circle/clusters problem from Section 10 — points close in high-D will (by explicit design) stay close in the low-D picture — at the cost of everything that made PCA convenient: no closed-form solution, no simple "loadings," results that change between runs, and a picture whose absolute distances and cluster sizes should not be over-trusted. Same visualization goal as PCA's k=2/3 case (Section 08), pursued with an entirely different, entropy-and-probability-based mathematical toolkit.</div>
+
+</section>
+
+<div class="divider"></div>
+<p class="mono" style="text-align:center;font-size:.82rem;color:var(--paper-faint);padding-bottom:10px;">PCA II — Directions, Orthogonality &amp; Limits · Scaler ML Cohort · Class 09</p>
+
+</main>
+</div>
+</div>
+
+<div class="wrap">
+<div class="pagefoot">
+  <a href="#">&larr; Class 08: PCA I (derivation from scratch)</a>
+  <span class="relbox">Module: Unsupervised ML &middot; Class 09 of N</span>
+  <a href="#s0-recap">Back to top &uarr;</a>
+</div>
+</div>
+
+<script>
+document.querySelectorAll("nav a").forEach(a=>a.addEventListener("click",()=>{
+  document.querySelectorAll("nav a").forEach(x=>x.classList.remove("active"));
+  a.classList.add("active");
+}));
+</script>
+</body>
+</html>

@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clustering Algorithms — Time Complexity, Deep Dive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<style>
+:root{
+  --bg:#0b0d10; --panel:#111419; --panel2:#171a20; --panel3:#14171c;
+  --border:#2c3036; --border-soft:#30343a;
+  --text:#e8e8e8; --dim:#c8c8c8; --mute:#8f8f92;
+  --white:#ffffff;
+  --brass:#b8935a; --gold:#e9c889; --teal:#5ec9c0; --coral:#e98568; --blue:#8a9cff;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0; font-family:'Inter',Arial,sans-serif; background:var(--bg); color:var(--text);
+  line-height:1.7; -webkit-font-smoothing:antialiased;
+}
+.container{max-width:1080px; margin:0 auto; padding:0 26px 90px;}
+h1,h2,h3,h4{font-family:'Fraunces',Georgia,serif; color:var(--white); font-weight:600; letter-spacing:-0.01em;}
+h1{font-size:38px; margin:0 0 10px;}
+h2{font-size:28px; margin-top:56px; padding-bottom:12px; border-bottom:1px solid var(--border-soft); display:flex; align-items:center; gap:12px;}
+h2 .sec-no{font-family:'IBM Plex Mono',monospace; font-size:15px; color:var(--gold); border:1px solid var(--brass); border-radius:6px; padding:3px 9px; font-weight:500;}
+h3{font-size:20px; margin-top:30px; color:#f2f2f2;}
+h4{font-size:16px; margin-top:20px; color:#ececec; font-family:'Inter',sans-serif; font-weight:700;}
+p{color:var(--dim); margin:12px 0;}
+b,strong{color:var(--white); font-weight:600;}
+a{color:var(--teal);}
+code{background:#1b1e24; padding:2px 7px; border-radius:5px; color:#f0d7c9; font-family:'IBM Plex Mono',monospace; font-size:0.92em;}
+
+/* ---------- hero ---------- */
+.hero{padding:56px 0 20px;}
+.eyebrow{
+  display:inline-flex; align-items:center; gap:8px; font-family:'IBM Plex Mono',monospace;
+  font-size:12.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--gold);
+  border:1px solid var(--brass); border-radius:999px; padding:5px 13px; margin-bottom:18px;
+}
+.eyebrow::before{content:"●"; color:var(--coral); font-size:8px;}
+.subtitle{color:var(--mute); font-size:17px; max-width:760px; margin-top:2px;}
+
+/* ---------- sticky nav ---------- */
+.toc-wrap{position:sticky; top:0; z-index:50; background:rgba(11,13,16,0.92); backdrop-filter:blur(8px); border-bottom:1px solid var(--border-soft); margin-bottom:10px;}
+.toc{display:flex; gap:6px; overflow-x:auto; padding:12px 26px; max-width:1080px; margin:0 auto; scrollbar-width:thin;}
+.toc a{
+  flex:0 0 auto; font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--dim);
+  text-decoration:none; padding:7px 12px; border-radius:7px; border:1px solid transparent; white-space:nowrap;
+}
+.toc a:hover{border-color:var(--border-soft); background:var(--panel);}
+
+/* ---------- boxes ---------- */
+.box{border:1px solid var(--border-soft); border-radius:12px; padding:22px 24px; margin:22px 0; background:var(--panel);}
+.important{border-left:4px solid var(--coral); background:#121417;}
+.tip{border-left:4px solid var(--blue); background:#11151d;}
+.gold-box{border-left:4px solid var(--gold); background:#15130f;}
+.teal-box{border-left:4px solid var(--teal); background:#0f1716;}
+.box-label{font-family:'IBM Plex Mono',monospace; font-size:12px; text-transform:uppercase; letter-spacing:0.07em; color:var(--mute); margin-bottom:8px; display:block;}
+
+.formula{
+  background:var(--panel2); border:1px solid #363a42; border-radius:9px; padding:18px 20px; margin:18px 0;
+  text-align:center; font-size:20px; color:#f3f3f3;
+}
+.formula .katex{font-size:1.15em;}
+.formula .cap{display:block; font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--mute); text-transform:uppercase; letter-spacing:0.06em; margin-top:8px;}
+
+pre{background:#090b0e; border:1px solid #2d3138; border-radius:8px; padding:16px; overflow-x:auto; color:#d7d7d7; font-family:'IBM Plex Mono',monospace; font-size:13.5px;}
+
+/* ---------- step cards ---------- */
+.step{display:grid; grid-template-columns:38px 1fr; gap:14px; margin:16px 0; align-items:start;}
+.num{width:32px; height:32px; border:1px solid var(--brass); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--gold); font-weight:700; font-family:'IBM Plex Mono',monospace; flex-shrink:0;}
+
+/* ---------- tables ---------- */
+table{width:100%; border-collapse:collapse; margin:22px 0; background:var(--panel); border:1px solid var(--border-soft); border-radius:10px; overflow:hidden;}
+th,td{border-bottom:1px solid #2c3036; padding:13px 15px; text-align:left; vertical-align:top; font-size:14.5px;}
+th{background:#181b20; color:var(--white); font-family:'IBM Plex Mono',monospace; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;}
+td{color:var(--dim);}
+tr:last-child td{border-bottom:none;}
+tbody tr:hover td{background:#141820;}
+
+.tag{display:inline-block; border:1px solid #444950; border-radius:999px; padding:4px 11px; font-size:12px; color:#d6d6d6; margin:3px 5px 3px 0; font-family:'IBM Plex Mono',monospace;}
+.tag.teal{border-color:var(--teal); color:var(--teal);}
+.tag.gold{border-color:var(--gold); color:var(--gold);}
+.tag.coral{border-color:var(--coral); color:var(--coral);}
+.tag.blue{border-color:var(--blue); color:var(--blue);}
+
+.summary{font-size:18px; font-weight:600; color:var(--white);}
+.small{font-size:13.5px; color:var(--mute);}
+ul,ol{color:var(--dim);}
+li{margin:8px 0;}
+
+.grid2{display:grid; grid-template-columns:repeat(2,1fr); gap:18px;}
+.grid4{display:grid; grid-template-columns:repeat(4,1fr); gap:16px;}
+.svg-wrap{background:var(--panel3); border:1px solid var(--border-soft); border-radius:12px; padding:14px; margin:18px 0; text-align:center;}
+.svg-wrap svg{max-width:100%; height:auto;}
+.svg-cap{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--mute); margin-top:6px;}
+
+.legend{display:flex; flex-wrap:wrap; gap:16px; justify-content:center; margin-top:10px; font-size:12.5px; color:var(--dim); font-family:'IBM Plex Mono',monospace;}
+.legend span{display:inline-flex; align-items:center; gap:6px;}
+.swatch{width:10px; height:10px; border-radius:3px; display:inline-block;}
+
+.flow-node{fill:var(--panel2); stroke:var(--border-soft); stroke-width:1;}
+.flow-text{fill:var(--text); font-family:'Inter',sans-serif; font-size:12.5px;}
+.flow-diamond{fill:#15130f; stroke:var(--brass); stroke-width:1.2;}
+.flow-answer{fill:var(--mute); font-family:'IBM Plex Mono',monospace; font-size:11px;}
+.flow-arrow{stroke:#565b64; stroke-width:1.4; fill:none; marker-end:url(#arrow);}
+.flow-result{fill:#0f1716; stroke:var(--teal); stroke-width:1.4;}
+.flow-result-text{fill:var(--teal); font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600;}
+
+.chip-row{display:flex; flex-wrap:wrap; gap:8px; margin:14px 0;}
+.chip{font-family:'IBM Plex Mono',monospace; font-size:12.5px; padding:6px 12px; border-radius:8px; border:1px solid var(--border-soft); color:var(--dim); background:var(--panel2);}
+
+.two-col{display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start;}
+
+.foot{margin-top:60px; padding-top:22px; border-top:1px solid var(--border-soft);}
+
+@media (max-width:760px){
+  .grid2,.grid4,.two-col{grid-template-columns:1fr;}
+  .container{padding:0 18px 70px;}
+  h1{font-size:29px;}
+  h2{font-size:23px;}
+}
+</style>
+</head>
+
+<body>
+
+<div class="toc-wrap">
+  <nav class="toc">
+    <a href="#framework">Framework</a>
+    <a href="#kmeans">K-Means</a>
+    <a href="#kmeanspp">K-Means++</a>
+    <a href="#hier">Hierarchical</a>
+    <a href="#gmm">GMM</a>
+    <a href="#dbscan">DBSCAN</a>
+    <a href="#space">Space</a>
+    <a href="#compare">Comparison</a>
+    <a href="#decision">Which to try</a>
+    <a href="#industry">Industry practice</a>
+    <a href="#recap">Recap</a>
+  </nav>
+</div>
+
+<div class="container">
+
+<div class="hero">
+  <span class="eyebrow">Optional · Unsupervised Learning</span>
+  <h1>Clustering Algorithms — Time Complexity, Deep Dive</h1>
+  <p class="subtitle">
+    A step-by-step, intuition-first walkthrough of <b>why</b> K-Means, K-Means++, Hierarchical
+    Clustering, GMM, and DBSCAN cost what they cost — plus how to decide which one to actually
+    reach for, and how teams do this in production.
+  </p>
+</div>
+
+<h2 id="framework"><span class="sec-no">01</span>The Only Framework You Need</h2>
+
+<div class="box important">
+  <span class="box-label">Read this before anything else</span>
+  <p style="color:#eee; margin-top:0;">Don't memorize Big-O formulas. For <b>any</b> algorithm — clustering or otherwise — ask four questions in order:</p>
+  <div class="step">
+    <div class="num">1</div>
+    <div><b>What operation does it repeat?</b> (a distance check, a probability calculation, a merge…)</div>
+  </div>
+  <div class="step">
+    <div class="num">2</div>
+    <div><b>How many times does it repeat that operation?</b> (once per point? once per pair? once per point per centroid?)</div>
+  </div>
+  <div class="step">
+    <div class="num">3</div>
+    <div><b>How expensive is one operation?</b> (a quick lookup, a scan across <code>d</code> features, or a matrix inversion?)</div>
+  </div>
+  <div class="step">
+    <div class="num">4</div>
+    <div><b>Does it repeat over multiple iterations?</b> If yes, multiply everything by <code>t</code>.</div>
+  </div>
+  <p style="margin-bottom:0;">Every formula in this note is just the answer to these four questions, multiplied together.</p>
+</div>
+
+<h3>Notation used throughout</h3>
+<table>
+<tr><th>Symbol</th><th>Meaning</th></tr>
+<tr><td><code>n</code></td><td>Number of data points</td></tr>
+<tr><td><code>k</code></td><td>Number of clusters (or Gaussian components)</td></tr>
+<tr><td><code>d</code></td><td>Number of features / dimensions</td></tr>
+<tr><td><code>t</code></td><td>Number of iterations until convergence</td></tr>
+<tr><td><code>ε</code></td><td>Neighborhood radius used by DBSCAN</td></tr>
+</table>
+
+<div class="box tip">
+  <span class="box-label">Nuance worth remembering</span>
+  When you see <code>O(n²)</code>, the number of features <code>d</code> is usually being treated as a
+  fixed constant and hidden. Written out fully, one distance calculation across <code>d</code>
+  features costs <code>O(d)</code> — so a "quadratic" algorithm is often really <code>O(n²d)</code>.
+</div>
+
+<h2 id="kmeans"><span class="sec-no">02</span>K-Means</h2>
+
+<p>K-Means repeats two steps until the centroids stop moving:</p>
+<div class="step"><div class="num">1</div><div><b>Assignment:</b> every point finds its nearest centroid.</div></div>
+<div class="step"><div class="num">2</div><div><b>Update:</b> every centroid moves to the mean of its assigned points.</div></div>
+
+<div class="svg-wrap">
+<svg viewBox="0 0 500 300" xmlns="http://www.w3.org/2000/svg">
+  <g stroke="#3a4a49" stroke-width="1">
+    <line x1="80" y1="70" x2="97" y2="86"/><line x1="110" y1="60" x2="97" y2="86"/>
+    <line x1="95" y1="100" x2="97" y2="86"/><line x1="130" y1="90" x2="97" y2="86"/><line x1="70" y1="110" x2="97" y2="86"/>
+  </g>
+  <g stroke="#6b5a30" stroke-width="1">
+    <line x1="360" y1="80" x2="382" y2="96"/><line x1="400" y1="70" x2="382" y2="96"/>
+    <line x1="420" y1="110" x2="382" y2="96"/><line x1="380" y1="120" x2="382" y2="96"/><line x1="350" y1="100" x2="382" y2="96"/>
+  </g>
+  <g stroke="#5e3a30" stroke-width="1">
+    <line x1="220" y1="200" x2="230" y2="227"/><line x1="260" y1="210" x2="230" y2="227"/>
+    <line x1="200" y1="240" x2="230" y2="227"/><line x1="280" y1="230" x2="230" y2="227"/>
+    <line x1="240" y1="260" x2="230" y2="227"/><line x1="185" y1="222" x2="230" y2="227"/>
+  </g>
+  <g fill="#5ec9c0"><circle cx="80" cy="70" r="5"/><circle cx="110" cy="60" r="5"/><circle cx="95" cy="100" r="5"/><circle cx="130" cy="90" r="5"/><circle cx="70" cy="110" r="5"/></g>
+  <g fill="#e9c889"><circle cx="360" cy="80" r="5"/><circle cx="400" cy="70" r="5"/><circle cx="420" cy="110" r="5"/><circle cx="380" cy="120" r="5"/><circle cx="350" cy="100" r="5"/></g>
+  <g fill="#e98568"><circle cx="220" cy="200" r="5"/><circle cx="260" cy="210" r="5"/><circle cx="200" cy="240" r="5"/><circle cx="280" cy="230" r="5"/><circle cx="240" cy="260" r="5"/><circle cx="185" cy="222" r="5"/></g>
+  <g stroke="#fff" stroke-width="2.4">
+    <line x1="90" y1="79" x2="104" y2="93"/><line x1="104" y1="79" x2="90" y2="93"/>
+    <line x1="375" y1="89" x2="389" y2="103"/><line x1="389" y1="89" x2="375" y2="103"/>
+    <line x1="223" y1="220" x2="237" y2="234"/><line x1="237" y1="220" x2="223" y2="234"/>
+  </g>
+</svg>
+<div class="svg-cap">Every point (dot) compares itself against every centroid (✕). Line color shows which comparison "wins" — that's n × k comparisons, each costing O(d) to look across features.</div>
+</div>
+
+<h3>Deriving the cost</h3>
+<p>With <code>n</code> points and <code>k</code> centroids, every point must be compared to every
+centroid — that's <code>n × k</code> comparisons. Each comparison looks across <code>d</code>
+features, so one comparison costs <code>O(d)</code>.</p>
+
+<div class="formula">$O(n \times k \times d) = O(nkd)$<span class="cap">Assignment step, one iteration</span></div>
+
+<p>The update step touches each point once to recompute means — <code>O(nd)</code> — which is
+smaller than the assignment step, so it doesn't change the dominant term.</p>
+
+<div class="formula">$O(nkd)$<span class="cap">Total cost, one full iteration</span></div>
+
+<p>K-Means repeats assignment + update until centroids stabilize (or a max-iteration cap is hit),
+so multiply by <code>t</code>:</p>
+
+<div class="formula"><b>$O(nkdt)$</b><span class="cap">Overall K-Means</span></div>
+
+<div class="box important">
+  <span class="box-label">In one line</span>
+  Every iteration, every point checks every centroid — that's n × k comparisons. Each comparison
+  looks across d features, giving O(nkd) per iteration. Repeat for t iterations: O(nkdt).
+</div>
+
+<h2 id="kmeanspp"><span class="sec-no">03</span>K-Means++</h2>
+
+<p>K-Means++ changes <i>only</i> how centroids are initialized — the assignment/update loop
+afterward is identical to plain K-Means.</p>
+
+<div class="svg-wrap">
+<svg viewBox="0 0 500 130" xmlns="http://www.w3.org/2000/svg">
+  <g font-family="IBM Plex Mono" font-size="12" fill="#c8c8c8">
+    <rect x="20" y="20" width="150" height="34" rx="8" class="flow-node"/>
+    <text x="95" y="41" text-anchor="middle" fill="#e8e8e8">Random init</text>
+    <path d="M170 37 L205 37" class="flow-arrow" marker-end="url(#a1)"/>
+    <rect x="205" y="20" width="150" height="34" rx="8" class="flow-node"/>
+    <text x="280" y="41" text-anchor="middle" fill="#e8e8e8">Assign → Update</text>
+    <path d="M355 37 L390 37" class="flow-arrow" marker-end="url(#a1)"/>
+    <rect x="390" y="20" width="90" height="34" rx="8" fill="#0f1716" stroke="#5ec9c0"/>
+    <text x="435" y="41" text-anchor="middle" fill="#5ec9c0">Repeat</text>
+
+    <rect x="20" y="80" width="150" height="34" rx="8" fill="#15130f" stroke="#b8935a"/>
+    <text x="95" y="101" text-anchor="middle" fill="#e9c889">Weighted init (D² prob)</text>
+    <path d="M170 97 L205 97" class="flow-arrow" marker-end="url(#a1)"/>
+    <rect x="205" y="80" width="150" height="34" rx="8" class="flow-node"/>
+    <text x="280" y="101" text-anchor="middle" fill="#e8e8e8">Assign → Update</text>
+    <path d="M355 97 L390 97" class="flow-arrow" marker-end="url(#a1)"/>
+    <rect x="390" y="80" width="90" height="34" rx="8" fill="#0f1716" stroke="#5ec9c0"/>
+    <text x="435" y="101" text-anchor="middle" fill="#5ec9c0">Repeat</text>
+  </g>
+  <defs><marker id="a1" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#565b64"/></marker></defs>
+</svg>
+<div class="svg-cap">Top row: plain K-Means (cheap random start, can get unlucky). Bottom row: K-Means++ spends a little extra work up front picking well-spread starting centroids, using each point's squared distance to the nearest already-chosen centroid as a selection probability.</div>
+</div>
+
+<p>Picking each new centroid requires computing distances from every point to the
+already-chosen centroids — an extra <code>O(nkd)</code>-scale cost, paid once, before the
+main loop starts.</p>
+
+<div class="box tip">
+  <span class="box-label">Takeaway</span>
+  <b>K-Means++ total cost = (one-time smarter initialization) + (normal K-Means iterations).</b>
+  It doesn't change the complexity order of growth — it changes how many iterations you typically
+  need to converge, and how good the final clusters are.
+</div>
+
+<h2 id="hier"><span class="sec-no">04</span>Hierarchical Agglomerative Clustering</h2>
+
+<p>Forget the word "hierarchical" for a second. The algorithm is really answering one question,
+over and over: <b>"which two clusters are closest right now, so I can merge them?"</b></p>
+
+<div class="svg-wrap">
+<svg viewBox="0 0 500 260" xmlns="http://www.w3.org/2000/svg">
+  <g stroke="#565b64" stroke-width="1.6" fill="none">
+    <path d="M60,250 L60,205 L140,205 L140,250"/>
+    <path d="M220,250 L220,195 L300,195 L300,250"/>
+    <path d="M380,250 L380,215 L460,215 L460,250"/>
+    <path d="M100,205 L100,125 L260,125 L260,195"/>
+    <path d="M180,125 L180,60 L420,60 L420,215"/>
+  </g>
+  <g fill="#e9c889"><circle cx="60" cy="250" r="4"/><circle cx="140" cy="250" r="4"/><circle cx="220" cy="250" r="4"/><circle cx="300" cy="250" r="4"/><circle cx="380" cy="250" r="4"/><circle cx="460" cy="250" r="4"/></g>
+  <g font-family="IBM Plex Mono" font-size="12" fill="#c8c8c8" text-anchor="middle">
+    <text x="60" y="270">A</text><text x="140" y="270">B</text><text x="220" y="270">C</text>
+    <text x="300" y="270">D</text><text x="380" y="270">E</text><text x="460" y="270">F</text>
+  </g>
+  <text x="420" y="50" font-family="IBM Plex Mono" font-size="11" fill="#8f8f92">root (last merge)</text>
+</svg>
+<div class="svg-cap">Each horizontal bar is a merge. n − 1 merges happen in total. The height of a merge shows how far apart the two clusters were — cut the tree at any height to get a flat clustering.</div>
+</div>
+
+<h3>Step 1 — pairwise distances</h3>
+<p>With <code>n</code> points, every point needs a distance to every other point. The number of
+pairs grows as:</p>
+<div class="formula">$O(n^2)$<span class="cap">pairwise distances (and the memory to store them)</span></div>
+
+<div class="svg-wrap">
+<svg viewBox="0 0 480 190" xmlns="http://www.w3.org/2000/svg">
+  <g>
+    <text x="90" y="20" text-anchor="middle" font-family="IBM Plex Mono" font-size="12" fill="#8f8f92">n = 4 → 16 cells</text>
+    <g>
+      <!-- 4x4 grid -->
+    </g>
+    <g transform="translate(30,30)">
+      <rect x="0" y="0" width="120" height="120" fill="none" stroke="#3a3f47"/>
+      <g stroke="#2c3036"><line x1="30" y1="0" x2="30" y2="120"/><line x1="60" y1="0" x2="60" y2="120"/><line x1="90" y1="0" x2="90" y2="120"/><line x1="0" y1="30" x2="120" y2="30"/><line x1="0" y1="60" x2="120" y2="60"/><line x1="0" y1="90" x2="120" y2="90"/></g>
+      <g fill="#e98568" opacity="0.55"><rect x="0" y="0" width="120" height="120"/></g>
+      <g fill="#1c1108"><rect x="0" y="0" width="30" height="30"/><rect x="30" y="30" width="30" height="30"/><rect x="60" y="60" width="30" height="30"/><rect x="90" y="90" width="30" height="30"/></g>
+    </g>
+  </g>
+  <g>
+    <text x="350" y="20" text-anchor="middle" font-family="IBM Plex Mono" font-size="12" fill="#8f8f92">n = 8 → 64 cells</text>
+    <g transform="translate(270,30)">
+      <rect x="0" y="0" width="160" height="120" fill="none" stroke="#3a3f47"/>
+      <g stroke="#2c3036">
+        <line x1="20" y1="0" x2="20" y2="120"/><line x1="40" y1="0" x2="40" y2="120"/><line x1="60" y1="0" x2="60" y2="120"/><line x1="80" y1="0" x2="80" y2="120"/><line x1="100" y1="0" x2="100" y2="120"/><line x1="120" y1="0" x2="120" y2="120"/><line x1="140" y1="0" x2="140" y2="120"/>
+        <line x1="0" y1="15" x2="160" y2="15"/><line x1="0" y1="30" x2="160" y2="30"/><line x1="0" y1="45" x2="160" y2="45"/><line x1="0" y1="60" x2="160" y2="60"/><line x1="0" y1="75" x2="160" y2="75"/><line x1="0" y1="90" x2="160" y2="90"/><line x1="0" y1="105" x2="160" y2="105"/>
+      </g>
+      <rect x="0" y="0" width="160" height="120" fill="#e98568" opacity="0.75"/>
+    </g>
+  </g>
+  <text x="240" y="175" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" fill="#8f8f92">doubling n quadruples the matrix</text>
+</svg>
+<div class="svg-cap">The distance matrix grows as n². Going from 4 points to 8 points (2×) turns 16 cells into 64 cells (4×) — this is what "quadratic" looks like in memory.</div>
+</div>
+
+<h3>Why a naive implementation can hit O(n³)</h3>
+<p>After each merge, the algorithm must find the <i>next</i> closest pair. A naive implementation
+re-scans a large part of the structure to find that minimum, and this happens roughly
+<code>n</code> times (one merge per step):</p>
+<div class="formula"><b>$O(n^3)$</b><span class="cap">naive: n merges × O(n²) search per merge</span></div>
+
+<div class="box important">
+  <span class="box-label">Common misconception</span>
+  "Hierarchical clustering is always O(n³)." That's only true for one specific (naive) way of
+  writing it — not for the algorithm itself.
+</div>
+
+<h3>Why you'll see three different numbers for the same algorithm</h3>
+<p>O(n²), O(n² log n), and O(n³) are <b>not competing answers</b> — they're the same algorithm
+implemented three different ways. The question that changes the cost each time is: <i>"once I've
+merged two clusters, how do I find the next closest pair?"</i></p>
+
+<table>
+<tr><th>Implementation</th><th>Time</th><th>Why</th></tr>
+<tr>
+  <td>Naive</td>
+  <td><code>O(n³)</code></td>
+  <td>~n merges happen. After each one, it re-scans the whole O(n²) distance structure from scratch to find the next closest pair.</td>
+</tr>
+<tr>
+  <td>Generic, using a heap (priority queue)</td>
+  <td><code>O(n² log n)</code></td>
+  <td>~n merges happen. A heap finds the current closest pair in O(log n) instead of rescanning everything — but ~n heap entries still need updating after every merge.</td>
+</tr>
+<tr>
+  <td>Specialized ("nearest-neighbor chain")</td>
+  <td><code>O(n²)</code></td>
+  <td>Follows chains of "who's your nearest neighbor" and merges the moment it finds two clusters that pick <i>each other</i> — explained step by step below.</td>
+</tr>
+</table>
+
+<h3>What is "nearest-neighbor chain", in plain terms?</h3>
+<p>This is the part that trips most people up, so slow down here. The naive and heap versions
+both do the same kind of work at every merge: <b>ask the whole dataset</b> "who is closest to
+whom, right now?" That global question is what's expensive to keep re-asking. The
+nearest-neighbor chain trick avoids ever asking it.</p>
+
+<div class="step"><div class="num">1</div><div>Start at <b>any</b> cluster. Call it your current chain.</div></div>
+<div class="step"><div class="num">2</div><div>Ask only <i>that one cluster</i>: "who is your single nearest neighbor?" Hop to it.</div></div>
+<div class="step"><div class="num">3</div><div>Ask the new cluster the same question, and hop again. Keep hopping, building a chain.</div></div>
+<div class="step"><div class="num">4</div><div>Eventually you'll hop to a cluster whose nearest neighbor is the cluster you <i>just came from</i>. That's a <b>mutual pair</b> — two clusters that each independently picked each other as their closest match.</div></div>
+<div class="step"><div class="num">5</div><div>A mutual pair is always safe to merge immediately (for single/complete/average/Ward linkage) — no global check needed. Merge them, step back one link in the chain, and keep hopping from there.</div></div>
+
+<div class="svg-wrap">
+<svg viewBox="0 0 480 240" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="chainArrowBlue" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#8a9cff"/></marker>
+    <marker id="chainArrowGold" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#e9c889"/></marker>
+  </defs>
+  <circle cx="410" cy="45" r="5" fill="#565b64"/>
+  <circle cx="430" cy="185" r="5" fill="#565b64"/>
+
+  <line x1="60" y1="150" x2="190" y2="60" stroke="#8a9cff" stroke-width="1.8" marker-end="url(#chainArrowBlue)"/>
+  <line x1="190" y1="60" x2="330" y2="150" stroke="#8a9cff" stroke-width="1.8" marker-end="url(#chainArrowBlue)"/>
+  <path d="M330,150 Q260,205 198,70" fill="none" stroke="#e9c889" stroke-width="2.2" marker-end="url(#chainArrowGold)"/>
+
+  <circle cx="60" cy="150" r="6" fill="#5ec9c0"/>
+  <circle cx="190" cy="60" r="6" fill="#5ec9c0"/>
+  <circle cx="330" cy="150" r="6" fill="#5ec9c0"/>
+
+  <g font-family="IBM Plex Mono" font-size="11.5" fill="#c8c8c8">
+    <text x="60" y="172" text-anchor="middle">start</text>
+    <text x="110" y="98" fill="#8a9cff">hop 1</text>
+    <text x="275" y="98" fill="#8a9cff">hop 2</text>
+    <text x="260" y="225" fill="#e9c889" text-anchor="middle">hop 3 → points back → mutual! merge now</text>
+  </g>
+</svg>
+<div class="svg-cap">start → hop 1 → hop 2 lands on a cluster whose own nearest neighbor is the one you just came from — hop 3 points back. That reciprocal pair merges immediately, no global search needed.</div>
+</div>
+
+<div class="box tip">
+  <span class="box-label">Why this ends up at O(n²) overall</span>
+  Every hop only asks one cluster a "who's nearest to just you" question — cheap, local work. A
+  cluster can only join and leave chains a limited number of times across the <i>entire</i> run
+  (not once per merge, globally). Add up all that local hopping across the whole algorithm and it
+  totals O(n²) — instead of O(n³) (rescanning everything) or O(n² log n) (maintaining one giant
+  heap for everyone at once).
+</div>
+
+<div class="formula">O(n²)<span class="cap">memory — this floor applies to every implementation above, no exceptions</span></div>
+
+<div class="box tip">
+  <span class="box-label">The one thing to remember</span>
+  Whichever implementation you use, you cannot escape storing ~n² distances in memory. Time can
+  range from O(n²) (best, specialized) to O(n³) (worst, naive) — and when someone just says
+  "hierarchical clustering is O(n²)" or "O(n³)", ask which implementation they mean.
+</div>
+
+<div class="box tip">
+  <span class="box-label">The practical bottleneck</span>
+  Long before CPU time becomes the problem, <b>memory</b> does. At n = 100,000 points, a full
+  distance matrix needs ~10 billion entries — this is usually what kills hierarchical clustering
+  on large datasets, not the compute.
+</div>
+
+<h2 id="gmm"><span class="sec-no">05</span>Gaussian Mixture Models (GMM)</h2>
+
+<p>K-Means asks "which centroid is closest?" GMM asks a richer question: "what's the
+<i>probability</i> this point belongs to each Gaussian component?" That extra richness is exactly
+what makes it more expensive.</p>
+
+<div class="two-col">
+  <div class="svg-wrap">
+    <svg viewBox="0 0 240 180" xmlns="http://www.w3.org/2000/svg">
+      <text x="120" y="20" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" fill="#8f8f92">K-Means: hard boundary</text>
+      <line x1="20" y1="150" x2="120" y2="50" stroke="#565b64" stroke-width="1.4"/>
+      <line x1="120" y1="50" x2="220" y2="150" stroke="#565b64" stroke-width="1.4"/>
+      <circle cx="55" cy="115" r="4" fill="#5ec9c0"/><circle cx="45" cy="90" r="4" fill="#5ec9c0"/><circle cx="75" cy="130" r="4" fill="#5ec9c0"/>
+      <circle cx="180" cy="115" r="4" fill="#e9c889"/><circle cx="190" cy="90" r="4" fill="#e9c889"/><circle cx="160" cy="130" r="4" fill="#e9c889"/>
+      <circle cx="120" cy="150" r="4" fill="#e98568"/><circle cx="105" cy="165" r="4" fill="#e98568"/>
+    </svg>
+    <div class="svg-cap">Every point belongs 100% to exactly one region.</div>
+  </div>
+  <div class="svg-wrap">
+    <svg viewBox="0 0 240 180" xmlns="http://www.w3.org/2000/svg">
+      <text x="120" y="20" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" fill="#8f8f92">GMM: soft, overlapping</text>
+      <ellipse cx="70" cy="105" rx="46" ry="34" fill="#5ec9c0" opacity="0.28"/>
+      <ellipse cx="170" cy="105" rx="46" ry="34" fill="#e9c889" opacity="0.28"/>
+      <ellipse cx="120" cy="140" rx="42" ry="28" fill="#e98568" opacity="0.28"/>
+      <circle cx="55" cy="115" r="4" fill="#5ec9c0"/><circle cx="45" cy="90" r="4" fill="#5ec9c0"/>
+      <circle cx="180" cy="115" r="4" fill="#e9c889"/><circle cx="190" cy="90" r="4" fill="#e9c889"/>
+      <circle cx="120" cy="150" r="4" fill="#e98568"/><circle cx="105" cy="165" r="4" fill="#e98568"/>
+      <circle cx="130" cy="115" r="4" fill="#f2f2f2" stroke="#8a9cff" stroke-width="1.5"/>
+    </svg>
+    <div class="svg-cap">A point in an overlap (white dot) gets a probability for each component.</div>
+  </div>
+</div>
+
+<h3>Expectation–Maximization</h3>
+<div class="step"><div class="num">1</div><div><b>E-step:</b> for every point, compute its responsibility under every Gaussian component.</div></div>
+<div class="step"><div class="num">2</div><div><b>M-step:</b> re-estimate each Gaussian's mean <i>and</i> covariance matrix.</div></div>
+
+<h3>Why the covariance matrix changes everything</h3>
+<p>With <code>d</code> features, each component's covariance matrix is <code>d × d</code>.</p>
+
+<div class="two-col">
+  <div class="svg-wrap">
+    <svg viewBox="0 0 160 140" xmlns="http://www.w3.org/2000/svg">
+      <text x="80" y="18" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" fill="#8f8f92">Full covariance</text>
+      <g transform="translate(20,28)">
+        <rect width="120" height="90" fill="none" stroke="#3a3f47"/>
+        <line x1="40" y1="0" x2="40" y2="90" stroke="#2c3036"/><line x1="80" y1="0" x2="80" y2="90" stroke="#2c3036"/>
+        <line x1="0" y1="30" x2="120" y2="30" stroke="#2c3036"/><line x1="0" y1="60" x2="120" y2="60" stroke="#2c3036"/>
+        <rect width="120" height="90" fill="#8a9cff" opacity="0.35"/>
+      </g>
+    </svg>
+    <div class="svg-cap">Every cell filled — models relationships between all feature pairs. Inversion/determinant ≈ O(d³).</div>
+  </div>
+  <div class="svg-wrap">
+    <svg viewBox="0 0 160 140" xmlns="http://www.w3.org/2000/svg">
+      <text x="80" y="18" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" fill="#8f8f92">Diagonal covariance</text>
+      <g transform="translate(20,28)">
+        <rect width="120" height="90" fill="none" stroke="#3a3f47"/>
+        <line x1="40" y1="0" x2="40" y2="90" stroke="#2c3036"/><line x1="80" y1="0" x2="80" y2="90" stroke="#2c3036"/>
+        <line x1="0" y1="30" x2="120" y2="30" stroke="#2c3036"/><line x1="0" y1="60" x2="120" y2="60" stroke="#2c3036"/>
+        <rect x="0" y="0" width="40" height="30" fill="#5ec9c0" opacity="0.5"/>
+        <rect x="40" y="30" width="40" height="30" fill="#5ec9c0" opacity="0.5"/>
+        <rect x="80" y="60" width="40" height="30" fill="#5ec9c0" opacity="0.5"/>
+      </g>
+    </svg>
+    <div class="svg-cap">Only the diagonal filled — assumes features are independent. Much cheaper, roughly O(d).</div>
+  </div>
+</div>
+
+<h4>Cost of the E-step</h4>
+<p>Every point is evaluated under every Gaussian (<code>n × k</code>), and each evaluation
+involves <code>d</code>-dimensional matrix/vector operations:</p>
+<div class="formula">$O(nkd^2)$</div>
+
+<h4>Cost of covariance operations</h4>
+<p>Inverting / taking the determinant of a <code>d × d</code> matrix is roughly cubic in
+<code>d</code>, across <code>k</code> components:</p>
+<div class="formula">$O(kd^3)$</div>
+
+<div class="formula"><b>$O(nkd^2 + kd^3)$</b><span class="cap">full-covariance GMM, one EM iteration</span></div>
+<div class="formula"><b>$O\big(t(nkd^2 + kd^3)\big)$</b><span class="cap">overall, t EM iterations</span></div>
+
+<div class="box important">
+  <span class="box-label">The key intuition</span>
+  In GMM, the feature count <code>d</code> is dangerous in a way it isn't for K-Means — it appears
+  <i>cubed</i>. Double your features and covariance operations get roughly 8× more expensive. This
+  is why GMM struggles in high dimensions unless you constrain the covariance structure or reduce
+  dimensionality first.
+</div>
+
+<h2 id="dbscan"><span class="sec-no">06</span>DBSCAN</h2>
+
+<p>DBSCAN's core operation is a single repeated question: <b>"which points are within
+ε of this point?"</b> — a <i>neighborhood query</i>.</p>
+
+<div class="svg-wrap">
+<svg viewBox="0 0 500 240" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="140" cy="120" r="55" fill="#5ec9c0" opacity="0.14" stroke="#5ec9c0" stroke-width="1.2" stroke-dasharray="4 3"/>
+  <circle cx="300" cy="110" r="55" fill="#e9c889" opacity="0.14" stroke="#e9c889" stroke-width="1.2" stroke-dasharray="4 3"/>
+  <g fill="#5ec9c0">
+    <circle cx="140" cy="120" r="5"/><circle cx="115" cy="100" r="4"/><circle cx="165" cy="95" r="4"/><circle cx="160" cy="150" r="4"/><circle cx="110" cy="145" r="4"/>
+  </g>
+  <g fill="#e9c889">
+    <circle cx="300" cy="110" r="5"/><circle cx="275" cy="90" r="4"/><circle cx="325" cy="85" r="4"/><circle cx="330" cy="135" r="4"/><circle cx="270" cy="130" r="4"/>
+  </g>
+  <circle cx="195" cy="115" r="4" fill="#8a9cff"/>
+  <circle cx="430" cy="60" r="4" fill="#666"/>
+  <circle cx="460" cy="190" r="4" fill="#666"/>
+  <g font-family="IBM Plex Mono" font-size="11">
+    <text x="140" y="200" text-anchor="middle" fill="#5ec9c0">core point + ε-neighborhood</text>
+    <text x="195" y="90" text-anchor="middle" fill="#8a9cff">border point</text>
+    <text x="445" y="45" text-anchor="middle" fill="#888">noise</text>
+  </g>
+</svg>
+<div class="svg-cap">Core points have ≥ MinPts neighbors within ε. Border points sit on the edge of a core point's neighborhood. Noise points belong to no cluster.</div>
+</div>
+
+<h3>Naive search</h3>
+<p>Checking one point <code>X</code> against every other point costs <code>O(n)</code>. Doing this
+for every point:</p>
+<div class="formula">$O(n^2)$<span class="cap">naive, all points (O(n²d) if you count the d-feature cost per distance)</span></div>
+
+<h3>Making it faster with spatial indexing</h3>
+<div class="svg-wrap">
+<svg viewBox="0 0 300 220" xmlns="http://www.w3.org/2000/svg">
+  <rect x="10" y="10" width="280" height="200" fill="none" stroke="#3a3f47"/>
+  <line x1="150" y1="10" x2="150" y2="210" stroke="#3a4048"/>
+  <line x1="10" y1="110" x2="150" y2="110" stroke="#3a4048"/>
+  <line x1="150" y1="70" x2="290" y2="70" stroke="#3a4048"/>
+  <line x1="80" y1="10" x2="80" y2="110" stroke="#2c3439"/>
+  <line x1="150" y1="140" x2="290" y2="140" stroke="#2c3439"/>
+  <line x1="220" y1="70" x2="220" y2="210" stroke="#2c3439"/>
+  <rect x="95" y="55" width="40" height="40" fill="#5ec9c0" opacity="0.35"/>
+  <circle cx="115" cy="75" r="4" fill="#5ec9c0"/>
+  <g fill="#565b64"><circle cx="30" cy="30" r="3"/><circle cx="45" cy="150" r="3"/><circle cx="250" cy="30" r="3"/><circle cx="270" cy="180" r="3"/><circle cx="180" cy="190" r="3"/></g>
+  <text x="150" y="228" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" fill="#8f8f92">KD-tree / Ball-tree: only search the nearby region</text>
+</svg>
+<div class="svg-cap">Instead of comparing against all n points, spatial trees narrow the search to a small region — often O(log n) per query in favorable, low-dimensional conditions.</div>
+</div>
+
+<div class="formula">$O(n \log n)$<span class="cap">indexed DBSCAN — one query costs O(log n), for all n points</span></div>
+
+<h3>Why you'll see two different numbers for the same algorithm</h3>
+<p>O(n²) and O(n log n) are the <b>two ends of one spectrum</b>, not two different facts about
+DBSCAN. What moves you along that spectrum is a single question: <i>"does the spatial index
+actually manage to skip most of the points, or not?"</i></p>
+
+<table>
+<tr><th>Situation</th><th>Cost of one query</th><th>Total (n points)</th><th>Why</th></tr>
+<tr>
+  <td>No index (brute force), or an index in high dimensions</td>
+  <td><code>O(n)</code></td>
+  <td><code>O(n²)</code></td>
+  <td>Every query still has to look at every other point, because there's no reliable shortcut to skip the far-away ones.</td>
+</tr>
+<tr>
+  <td>Spatial index (KD-tree / Ball-tree), low dimensions</td>
+  <td><code>O(log n)</code></td>
+  <td><code>O(n log n)</code></td>
+  <td>The tree quickly rules out entire regions of far-away points, so each query only touches a small nearby slice.</td>
+</tr>
+</table>
+
+<div class="box tip">
+  <span class="box-label">Curse of dimensionality</span>
+  Spatial indexes lose their advantage as <code>d</code> grows — in high dimensions, "nearby" stops
+  being a meaningful shortcut, distances between points start looking similar to each other, and
+  query cost drifts back from O(log n) toward O(n) per point — i.e. the whole algorithm drifts back
+  toward O(n²). This is one of the clearest examples of the curse of dimensionality in action.
+</div>
+
+<div class="box tip">
+  <span class="box-label">The one thing to remember</span>
+  DBSCAN is never "just O(n²)" or "just O(n log n)" — it's O(n²) at worst (no index, or high
+  dimensions) and O(n log n) at best (a working spatial index in low dimensions). Where your data
+  lands depends on dimensionality, not on the algorithm itself.
+</div>
+
+<h2 id="space"><span class="sec-no">07</span>Space Complexity — How Much Memory Does Each Algorithm Need?</h2>
+
+<p>Every formula so far has measured <b>time</b> — how many operations happen. There's a second,
+equally important question that's easy to forget: how much do you need to hold in
+<b>memory at once</b>? The two don't always move together — an algorithm can be fast but
+memory-hungry, or slow but memory-light. Hierarchical and DBSCAN, coming up below, are the
+clearest example of exactly that split.</p>
+
+<div class="box tip">
+  <span class="box-label">Ask the same kind of question — for memory instead of time</span>
+  <div class="step"><div class="num">1</div><div><b>What do you have to keep in memory at the same time?</b> (raw points, a distance matrix, probabilities, a tree structure…)</div></div>
+  <div class="step"><div class="num">2</div><div><b>How many of those things are there?</b></div></div>
+  <div class="step"><div class="num">3</div><div><b>How big is each one?</b></div></div>
+  <div class="step"><div class="num">4</div><div><b>Does it grow across iterations, or stay fixed?</b> Unlike time, memory usually does <i>not</i> keep growing with more iterations — you overwrite last iteration's numbers instead of keeping every old copy around.</div></div>
+</div>
+
+<h3>K-Means &amp; K-Means++</h3>
+<p>You need the <code>k</code> centroids (<code>O(kd)</code>) and one cluster-label per point
+(<code>O(n)</code>). The dataset itself (<code>O(nd)</code>) has to be in memory too, but that's
+true no matter which algorithm you run — it's not a cost specific to K-Means.</p>
+<div class="formula">O(kd + n)<span class="cap">extra memory, beyond the dataset itself</span></div>
+<p>K-Means++ needs one more small array, only during initialization: the distance from each point
+to the nearest centroid chosen <i>so far</i> (<code>O(n)</code>), freed once initialization
+finishes. It doesn't change the complexity class.</p>
+
+<h3>Hierarchical</h3>
+<p>You already met this one: a full pairwise distance matrix between all remaining clusters.</p>
+<div class="formula">O(n²)<span class="cap">memory — required by every implementation, naive or specialized</span></div>
+<p>This is the one algorithm here where a faster <i>time</i> implementation buys you nothing in
+<i>memory</i> — the nearest-neighbor chain trick from the last section speeds up time only, not
+space.</p>
+
+<h3>GMM</h3>
+<p>Two things dominate: the responsibility of every point under every component
+(<code>n × k</code> numbers), and each component's covariance matrix (<code>d × d</code>,
+×<code>k</code> components).</p>
+<div class="formula">O(nk + kd²)<span class="cap">full covariance</span></div>
+<p>Switching to diagonal covariance (see Section 05) drops the second term to
+<code>O(kd)</code> — another reason it's the default choice once <code>d</code> gets large.</p>
+
+<h3>DBSCAN</h3>
+<p>This is the one that surprises people: DBSCAN does <b>not</b> need a full pairwise distance
+matrix. It only ever needs the neighborhood of <i>one point at a time</i> — computed, used, and
+thrown away before moving to the next point. What it keeps around is small: one visited/label
+flag per point, and — if you're using one — the spatial index itself.</p>
+<div class="formula">O(n)<span class="cap">typical — labels + index structure, not a distance matrix</span></div>
+<p>The only way DBSCAN's memory approaches O(n²) is a pathological case — an ε so large that every
+point ends up in every other point's neighborhood at once. That's rare in practice, not the normal
+cost of running it.</p>
+
+<h2 id="compare"><span class="sec-no">08</span>Side-by-Side Comparison</h2>
+
+<table>
+<tr><th>Algorithm</th><th>Main expensive operation</th><th>Time</th><th>Memory</th></tr>
+<tr><td><b>K-Means</b></td><td>Every point compares with every centroid</td><td><code>O(nkdt)</code></td><td><code>O(kd + n)</code></td></tr>
+<tr><td><b>K-Means++</b></td><td>+ weighted distance calc during init</td><td>K-Means cost + one-time init cost</td><td>Same as K-Means (+ temporary <code>O(n)</code> during init)</td></tr>
+<tr><td><b>Hierarchical</b></td><td>Pairwise distances + repeated merging</td><td><code>O(n²)</code> specialized → <code>O(n² log n)</code> generic-heap → <code>O(n³)</code> naive</td><td><code>O(n²)</code> — always, no exceptions</td></tr>
+<tr><td><b>GMM (full cov.)</b></td><td>Probabilities + covariance matrix ops</td><td><code>O(t(nkd² + kd³))</code></td><td><code>O(nk + kd²)</code></td></tr>
+<tr><td><b>DBSCAN</b></td><td>Neighborhood queries</td><td><code>O(n log n)</code> indexed, low-d (best) → <code>O(n²)</code> naive or high-d (worst)</td><td><code>O(n)</code> typical</td></tr>
+</table>
+
+<div class="grid4">
+  <div class="box"><h4 style="margin-top:0;">K-Means</h4><p style="margin:6px 0;">Point → centroid</p><div class="formula" style="padding:10px; font-size:14.5px;">time: nkd<br>memory: kd + n</div></div>
+  <div class="box"><h4 style="margin-top:0;">Hierarchical</h4><p style="margin:6px 0;">Point/cluster → pair</p><div class="formula" style="padding:10px; font-size:14.5px;">time: n² → n³<br>memory: n² always</div></div>
+  <div class="box"><h4 style="margin-top:0;">GMM</h4><p style="margin:6px 0;">Point → Gaussian</p><div class="formula" style="padding:10px; font-size:14.5px;">time: nkd² + kd³<br>memory: nk + kd²</div></div>
+  <div class="box"><h4 style="margin-top:0;">DBSCAN</h4><p style="margin:6px 0;">Point → neighbors</p><div class="formula" style="padding:10px; font-size:14.5px;">time: n log n → n²<br>memory: n typical</div></div>
+</div>
+
+<h2 id="decision"><span class="sec-no">09</span>Which Algorithm Should You Actually Try?</h2>
+
+<p>There is no single "best" clustering algorithm — complexity is only one input. The honest
+answer is a small decision tree built around what your data and problem actually look like.</p>
+
+<div class="svg-wrap">
+<svg viewBox="0 0 800 440" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#565b64"/></marker></defs>
+
+  <!-- Diamond 1 -->
+  <rect x="290" y="10" width="200" height="46" rx="9" class="flow-diamond"/>
+  <text x="390" y="30" text-anchor="middle" class="flow-text" fill="#e9c889">Know k? Clusters roughly</text>
+  <text x="390" y="45" text-anchor="middle" class="flow-text" fill="#e9c889" font-size="11">spherical &amp; similar size?</text>
+
+  <path d="M290 33 L130 33 L130 92" class="flow-arrow"/>
+  <text x="190" y="27" class="flow-answer">yes</text>
+  <path d="M390 56 L390 84" class="flow-arrow"/>
+  <text x="404" y="74" class="flow-answer">no</text>
+
+  <rect x="40" y="92" width="180" height="46" rx="9" class="flow-result"/>
+  <text x="130" y="114" text-anchor="middle" class="flow-result-text">K-Means / K-Means++</text>
+  <text x="130" y="129" text-anchor="middle" class="flow-answer">fast, scalable baseline</text>
+
+  <!-- Diamond 2 -->
+  <rect x="290" y="84" width="200" height="46" rx="9" class="flow-diamond"/>
+  <text x="390" y="104" text-anchor="middle" class="flow-text" fill="#e9c889">Need soft / probabilistic</text>
+  <text x="390" y="119" text-anchor="middle" class="flow-text" fill="#e9c889" font-size="11">cluster membership?</text>
+
+  <path d="M490 107 L650 107 L650 166" class="flow-arrow"/>
+  <text x="600" y="101" class="flow-answer">yes</text>
+  <path d="M390 130 L390 158" class="flow-arrow"/>
+  <text x="404" y="148" class="flow-answer">no</text>
+
+  <rect x="560" y="166" width="180" height="46" rx="9" class="flow-result"/>
+  <text x="650" y="188" text-anchor="middle" class="flow-result-text">GMM</text>
+  <text x="650" y="203" text-anchor="middle" class="flow-answer">overlapping / uncertain groups</text>
+
+  <!-- Diamond 3 -->
+  <rect x="290" y="158" width="200" height="52" rx="9" class="flow-diamond"/>
+  <text x="390" y="178" text-anchor="middle" class="flow-text" fill="#e9c889">Irregular-shaped clusters,</text>
+  <text x="390" y="193" text-anchor="middle" class="flow-text" fill="#e9c889" font-size="11">noise/outliers, k unknown?</text>
+
+  <path d="M290 184 L130 184 L130 242" class="flow-arrow"/>
+  <text x="190" y="178" class="flow-answer">yes</text>
+  <path d="M390 210 L390 238" class="flow-arrow"/>
+  <text x="404" y="228" class="flow-answer">no</text>
+
+  <rect x="40" y="242" width="180" height="46" rx="9" class="flow-result"/>
+  <text x="130" y="264" text-anchor="middle" class="flow-result-text">DBSCAN / HDBSCAN</text>
+  <text x="130" y="279" text-anchor="middle" class="flow-answer">arbitrary shapes, handles noise</text>
+
+  <!-- Diamond 4 -->
+  <rect x="290" y="238" width="200" height="52" rx="9" class="flow-diamond"/>
+  <text x="390" y="258" text-anchor="middle" class="flow-text" fill="#e9c889">Small dataset, want a full</text>
+  <text x="390" y="273" text-anchor="middle" class="flow-text" fill="#e9c889" font-size="11">merge hierarchy / dendrogram?</text>
+
+  <path d="M490 264 L650 264 L650 322" class="flow-arrow"/>
+  <text x="600" y="258" class="flow-answer">yes</text>
+  <path d="M390 290 L390 318" class="flow-arrow"/>
+  <text x="404" y="308" class="flow-answer">no</text>
+
+  <rect x="560" y="322" width="180" height="46" rx="9" class="flow-result"/>
+  <text x="650" y="344" text-anchor="middle" class="flow-result-text">Hierarchical</text>
+  <text x="650" y="359" text-anchor="middle" class="flow-answer">interpretable, small n only</text>
+
+  <rect x="290" y="322" width="200" height="46" rx="9" class="flow-result"/>
+  <text x="390" y="341" text-anchor="middle" class="flow-result-text">K-Means / K-Means++</text>
+  <text x="390" y="356" text-anchor="middle" class="flow-answer">scalable default, then refine</text>
+</svg>
+<div class="svg-cap">A practical decision tree — not a law of nature. Real projects often try two or three of these and compare with a validation metric (e.g. silhouette score) before committing.</div>
+</div>
+
+<div class="box gold-box">
+  <span class="box-label">Rules of thumb</span>
+  <ul>
+    <li><b>Default first attempt:</b> K-Means. It's the fastest to run, the easiest to explain to
+    a non-technical stakeholder, and a good sanity check even if you end up using something else.</li>
+    <li><b>Clusters that aren't blobs</b> (crescents, rings, geospatial "dense regions" separated
+    by sparse ones) → K-Means will actively mislead you; use DBSCAN/HDBSCAN.</li>
+    <li><b>A point can genuinely belong to more than one group</b> (e.g. a customer who shops like
+    two segments at once) → GMM's soft assignments are the right shape of answer, not just a
+    computational choice.</li>
+    <li><b>You want to show a business stakeholder "here's how granular we can get"</b> → a
+    dendrogram from hierarchical clustering is the only one of these that gives that for free,
+    but only feasible while n is small.</li>
+  </ul>
+</div>
+
+<h2 id="industry"><span class="sec-no">10</span>How Industry Actually Decides</h2>
+
+<p>In practice, complexity is rarely the <i>first</i> filter teams apply — it's the filter that
+decides which of the otherwise-reasonable options is affordable to run. The order usually looks
+like this:</p>
+
+<div class="step"><div class="num">1</div><div><b>What does the business need to know?</b> Hard segments for a dashboard? Probabilities for a recommendation model? An anomaly flag? This picks the algorithm <i>family</i> before anyone thinks about n.</div></div>
+<div class="step"><div class="num">2</div><div><b>What shape do the clusters actually have?</b> Teams usually eyeball a 2D projection (PCA/UMAP/t-SNE) first — this alone rules out K-Means for a lot of real-world data.</div></div>
+<div class="step"><div class="num">3</div><div><b>What's the data scale, and how often must it re-run?</b> A one-time offline analysis on 50k rows tolerates O(n²). A pipeline re-clustering 20M events every hour does not.</div></div>
+<div class="step"><div class="num">4</div><div><b>Now apply complexity</b> to see which of the shape-appropriate, business-appropriate options are actually feasible at that scale and refresh rate — and that's when engineering starts optimizing (indexing, sampling, dimensionality reduction, approximation).</div></div>
+
+<h3>Typical choice by dataset scale</h3>
+<table>
+<tr><th>Scale (n)</th><th>What's typically used</th><th>Why</th></tr>
+<tr><td>Small — up to ~10k–50k</td><td>Hierarchical, GMM, or plain K-Means</td><td>O(n²) or O(n³) is affordable; dendrograms and soft assignments are cheap enough to be worth it.</td></tr>
+<tr><td>Medium — ~50k–1M</td><td>K-Means / K-Means++, DBSCAN with a spatial index</td><td>O(n²) methods start to hurt; indexed neighborhood search keeps DBSCAN usable.</td></tr>
+<tr><td>Large — 1M+ / streaming</td><td>MiniBatch K-Means, HDBSCAN on a sample, approximate nearest-neighbor search (FAISS, Annoy, HNSW)</td><td>Exact O(n²) approaches are no longer feasible; teams trade a small amount of accuracy for speed.</td></tr>
+</table>
+
+<h3>Patterns that show up again and again</h3>
+<ul>
+  <li><b>Reduce dimensions before clustering.</b> Running PCA/UMAP down to a handful of dimensions
+  before GMM or DBSCAN directly attacks the <code>d</code> term in <code>O(kd³)</code> or the
+  curse-of-dimensionality problem in spatial indexing.</li>
+  <li><b>Sample, cluster, then assign the rest.</b> Fit an expensive algorithm (e.g. hierarchical)
+  on a representative sample, then assign the remaining points to the nearest resulting cluster —
+  gets the interpretability without paying O(n²) on the full dataset.</li>
+  <li><b>Approximate nearest neighbors at scale.</b> Libraries like FAISS/Annoy/HNSW turn an
+  O(n) or O(n²) neighbor search into something close to O(log n) in practice, which is what makes
+  DBSCAN-style approaches viable on large datasets.</li>
+  <li><b>MiniBatch variants for streaming/online settings.</b> MiniBatch K-Means updates centroids
+  on small random batches instead of the full dataset each iteration — trading a little quality for
+  a large drop in per-iteration cost.</li>
+  <li><b>Validate before committing.</b> Silhouette score, Davies–Bouldin index, or simply a
+  business-metric backtest usually settles ties between two algorithms that are both computationally
+  feasible — complexity narrows the shortlist, it doesn't pick the winner.</li>
+</ul>
+
+<div class="box teal-box">
+  <span class="box-label">The one sentence version</span>
+  Industry doesn't ask "which algorithm has the best Big-O?" — it asks "given what I need to know,
+  what my clusters look like, and how much data I have to process how often, which of the
+  algorithms that fit my problem can I actually afford to run?"
+</div>
+
+<h2 id="recap"><span class="sec-no">11</span>Recap</h2>
+
+<table>
+<tr><th>Algorithm</th><th>Think about…</th></tr>
+<tr><td><b>K-Means</b></td><td>n points × k centroids × d features × t iterations; memory stays light — just the centroids and labels</td></tr>
+<tr><td><b>Hierarchical</b></td><td>Many pairwise distances; O(n²) memory always, O(n²)–O(n³) time depending on implementation</td></tr>
+<tr><td><b>GMM</b></td><td>n points × k Gaussians + expensive covariance operations; memory grows with k·d² for the covariance matrices</td></tr>
+<tr><td><b>DBSCAN</b></td><td>Finding neighbors for every point; O(n log n)–O(n²) time depending on indexing &amp; dimensionality, but memory stays about O(n)</td></tr>
+</table>
+
+<div class="box important">
+  <b>One-line memory trick</b><br><br>
+  <span class="tag teal">K-Means → Point vs Centroid</span>
+  <span class="tag coral">Hierarchical → Pairwise</span>
+  <span class="tag gold">GMM → Probability + Covariance</span>
+  <span class="tag blue">DBSCAN → Neighbors</span>
+</div>
+
+<div class="foot">
+  <p class="small">
+    Note: exact complexity varies with implementation, distance metric, linkage method, covariance
+    structure, indexing strategy, dimensionality, and data distribution. The formulas here are
+    simplified, intuition-level expressions, not vendor-specific benchmarks.
+  </p>
+</div>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  if (window.renderMathInElement) {
+    renderMathInElement(document.body, {
+      delimiters: [
+        {left: "$$", right: "$$", display: true},
+        {left: "$", right: "$", display: false}
+      ]
+    });
+  }
+});
+</script>
+
+</body>
+</html>

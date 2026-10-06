@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supervised Machine Learning Hub | Interactive Notes & Revision</title>
+    <meta name="description" content="Complete lecture notes, interactive visualizations, and cheat sheets for Supervised Machine Learning — Regression, Classification, Ensembles, Boosting, and Trees.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #090d16;
+            --bg-surface: rgba(18, 24, 38, 0.72);
+            --bg-surface-hover: rgba(28, 38, 58, 0.85);
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --text-dim: #64748b;
+            
+            --accent: #38bdf8;
+            --accent-gradient: linear-gradient(135deg, #38bdf8, #818cf8);
+            
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-image: 
+                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(56, 189, 248, 0.2), transparent 70%),
+                radial-gradient(circle at 15% 45%, rgba(99, 102, 241, 0.12), transparent 30%),
+                radial-gradient(circle at 85% 65%, rgba(139, 92, 246, 0.1), transparent 35%);
+            background-attachment: fixed;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        header {
+            width: 100%;
+            max-width: 1280px;
+            padding: 3.5rem 1.5rem 1.5rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .top-nav-bar {
+            width: 100%;
+            max-width: 1280px;
+            padding: 1.5rem 1.5rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        .back-hub-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            border-radius: 999px;
+            background: rgba(18, 24, 38, 0.6);
+            border: 1px solid var(--border-subtle);
+            backdrop-filter: blur(8px);
+            transition: all 0.2s ease;
+        }
+
+        .back-hub-btn:hover {
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.25);
+            background: rgba(30, 41, 59, 0.8);
+            transform: translateX(-3px);
+        }
+
+        .brand-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 1rem;
+            border-radius: 9999px;
+            background: rgba(56, 189, 248, 0.12);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            color: #7dd3fc;
+            font-size: 0.825rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            margin-bottom: 1.25rem;
+        }
+
+        .brand-badge .dot {
+            width: 7px;
+            height: 7px;
+            background: #38bdf8;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #38bdf8;
+        }
+
+        h1 {
+            font-size: clamp(2.3rem, 5vw, 3.6rem);
+            font-weight: 800;
+            line-height: 1.15;
+            letter-spacing: -0.04em;
+            margin-bottom: 1.25rem;
+            background: linear-gradient(135deg, #ffffff 40%, #7dd3fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-desc {
+            font-size: 1.125rem;
+            color: var(--text-muted);
+            max-width: 680px;
+            line-height: 1.65;
+            font-weight: 400;
+            margin-bottom: 2rem;
+        }
+
+        .controls-panel {
+            width: 100%;
+            max-width: 1280px;
+            padding: 0 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .search-filters-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .search-container {
+            position: relative;
+            flex: 1;
+            min-width: 280px;
+            max-width: 450px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            color: var(--text-dim);
+            pointer-events: none;
+        }
+
+        .search-input {
+            width: 100%;
+            background: rgba(18, 24, 38, 0.7);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 0.75rem 2.8rem 0.75rem 2.75rem;
+            color: var(--text-main);
+            font-size: 0.925rem;
+            font-family: inherit;
+            outline: none;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(8px);
+        }
+
+        .search-input:focus {
+            border-color: rgba(56, 189, 248, 0.6);
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+            background: rgba(24, 32, 49, 0.9);
+        }
+
+        .clear-search-btn {
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            padding: 4px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .clear-search-btn:hover {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .type-filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-chip {
+            background: transparent;
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            padding: 0.45rem 0.85rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.825rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .filter-chip:hover {
+            color: var(--text-main);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .filter-chip.active {
+            background: rgba(56, 189, 248, 0.15);
+            color: #7dd3fc;
+            border-color: rgba(56, 189, 248, 0.35);
+        }
+
+        .results-status {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            padding: 0 0.25rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1280px;
+            padding: 0 1.5rem 5rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 1.65rem;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            opacity: 0;
+            background: var(--accent-gradient);
+            transition: opacity 0.25s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            background: var(--bg-surface-hover);
+            border-color: rgba(255, 255, 255, 0.18);
+            box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.55), 0 0 24px -6px rgba(56, 189, 248, 0.15);
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        .card-header-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.85rem;
+            flex-wrap: wrap;
+        }
+
+        .track-badge {
+            font-size: 0.725rem;
+            font-weight: 700;
+            padding: 0.2rem 0.55rem;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.25);
+        }
+
+        .card-number {
+            font-size: 0.8rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            color: #cbd5e1;
+        }
+
+        .type-pill {
+            font-size: 0.7rem;
+            padding: 0.15rem 0.45rem;
+            border-radius: 4px;
+            font-weight: 600;
+            margin-left: auto;
+            text-transform: capitalize;
+        }
+
+        .type-pill.core {
+            background: rgba(148, 163, 184, 0.12);
+            color: #94a3b8;
+        }
+
+        .type-pill.revision {
+            background: rgba(251, 191, 36, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .type-pill.deep {
+            background: rgba(192, 132, 252, 0.15);
+            color: #c084fc;
+            border: 1px solid rgba(192, 132, 252, 0.3);
+        }
+
+        .type-pill.optional {
+            background: rgba(148, 163, 184, 0.12);
+            color: #cbd5e1;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            line-height: 1.35;
+            margin-bottom: 0.65rem;
+            color: #f8fafc;
+        }
+
+        .card-desc {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            line-height: 1.55;
+            margin-bottom: 1.35rem;
+            font-weight: 400;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .card-footer {
+            margin-top: auto;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .card:hover .card-footer {
+            color: #38bdf8;
+        }
+
+        .card-footer svg {
+            width: 17px;
+            height: 17px;
+            transition: transform 0.25s ease;
+        }
+
+        .card:hover .card-footer svg {
+            transform: translateX(5px);
+        }
+
+        .no-results {
+            grid-column: 1 / -1;
+            padding: 4rem 2rem;
+            text-align: center;
+            background: rgba(18, 24, 38, 0.4);
+            border: 1px dashed var(--border-subtle);
+            border-radius: var(--radius-lg);
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            .search-filters-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="top-nav-bar">
+        <a href="../index.html" class="back-hub-btn">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Back to Machine Learning Hub
+        </a>
+    </div>
+
+    <header>
+        <div class="brand-badge">
+            <span class="dot"></span>
+            27 Interactive Modules & Revision Notes
+        </div>
+        <h1>Supervised Learning</h1>
+        <p class="hero-desc">Regression foundations, Classification frontiers, Optimization with Gradient Descent, Tree ensembles, GBDT, LightGBM, XGBoost, and Interview cheat sheets.</p>
+    </header>
+
+    <div class="controls-panel">
+        <div class="search-filters-row">
+            <div class="search-container">
+                <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+                <input type="text" id="searchInput" class="search-input" placeholder="Search supervised lessons (e.g. Linear, XGBoost, KNN)..." autocomplete="off">
+                <button type="button" class="clear-search-btn" id="clearSearchBtn">✕</button>
+            </div>
+
+            <div class="type-filter-group" id="typeFilters">
+                <button class="filter-chip active" data-type="all">All Modules (27)</button>
+                <button class="filter-chip" data-type="core">Core Lectures</button>
+                <button class="filter-chip" data-type="revision">Cheat Sheets</button>
+                <button class="filter-chip" data-type="deep">Deep Dives</button>
+            </div>
+        </div>
+
+        <div class="results-status">
+            <span id="resultsCount">Showing 27 of 27 interactive modules</span>
+            <span>Supervised Curriculum</span>
+        </div>
+    </div>
+
+    <main class="container" id="cardsGrid">
+        <!-- Lecture 01 - Intro to ML Engineering -->
+        <a href="./L01_Intro_to_ML_Engineering_Interactive_Notes.html" class="card" data-type="core" data-search="Lecture 01 Intro to ML Engineering ML engineering fundamentals, problem formulation, parametric models, data pipelines & notation. supervised">
+            <div class="card-header-meta">
+                <span class="track-badge">Supervised ML</span>
+                <span class="card-number">Lecture 01</span>
+                <span class="type-pill core">Core</span>
+            </div>
+            <h2 class="card-title">Intro to ML Engineering</h2>
+            <p class="card-desc">ML engineering fundamentals, problem formulation, parametric models, data pipelines & notation.</p>
+            <div class="card-footer">
+                <span>View Interactive Notes</span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Lecture 02 - Linear Regression: Introduction -->
+        <a href="./L02_Linear_Regression_Introduction_Interactive_Notes.html" class="card" data-type="core" data-search="Lecture 02 Linear Regression: Introduction Hypothesis function, residual errors, ordinary least squares (OLS) intuition, and cost function formulation. supervised">
+            <div class="card-header-meta">
+                <span class="track-badge">Supervised ML</span>
+                <span class="card-number">Lecture 02</span>
+                <span class="type-pill core">Core</span>
+            </div>
+            <h2 class="card-title">Linear Regression: Introduction</h2>
+            <p class="card-desc">Hypothesis function, residual errors, ordinary least squares (OLS) intuition, and cost function formulation.</p>
+            <div class="card-footer">
+                <span>View Interactive Notes</span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Lecture 03 - Linear Regression II -->
+        <a href="./L03_Linear_Regression_II_Interactive_Notes.html" class="card" data-type="core" data-search="Lecture 03 Linear Regression II Gradient descent mechanics, learning rates, loss surfaces, convergence criteria, and multivariate extensions. supervised">
+            <div class="card-header-meta">
+                <span class="track-badge">Supervised ML</span>
+                <span class="card-number">Lecture 03</span>
+                <span class="type-pill core">Core</span>
+            </div>
+            <h2 class="card-title">Linear Regression II</h2>
+            <p class="card-desc">Gradient descent mechanics, learning rates, loss surfaces, convergence criteria, and multivariate extensions.</p>
+            <div class="card-footer">
+                <span>View Interactive Notes</span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Lecture 04 - Linear Regression III -->
+        <a href="./L04_Linear_Regression_III_Interactive_Notes.html" class="card" data-type="core" data-search="Lecture 04 Linear Regression III Normal equation closed-form solution, assumptions of linear regression, multicollinearity, and diagnostics. supervised">
+            <div class="card-header-meta">
+                <span class="track-badge">Supervised ML</span>
+                <span class="card-number">Lecture 04</span>
+                <span class="type-pill core">Core</span>
+            </div>
+            <h2 class="card-title">Linear Regression III</h2>
+            <p class="card-desc">Normal equation closed-form solution, assumptions of linear regression, multicollinearity, and diagnostics.</p>
+            <div class="card-footer">
+                <span>View Interactive Notes</span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Lecture 05 - Model Generalization -->
+        <a href="./L05_Model_Generalization_Interactive_Notes.html" class="card" data-type="core" data-search="Lecture 05 Model Generalization Bias-Variance tradeoff, overfitting vs underfitting, cross-validation strategies, and regularization fundamentals. supervised">
+            <div class="card-header-meta">
+                <span class="track-badge">Supervised ML</span>
+                <span class="card-number">Lecture 05</span>
+                <span class="type-pill core">Core</span>
+            </div>
+            <h2 class="card-title">Model Generalization</h2>
+            <p class="card-desc">Bias-Variance tradeoff, overfitting vs underfitting, cross-validation strategies, and regularization fundamentals.</p>
+            <div class="card-footer">
+                <span>View Interactive Notes</span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Lecture 06 - Sklearn Pipelines -->
+        <a href="./L06_Sklearn_Pipelines_Interactive_Notes.html" class="card" data-type="core" data-search="Lecture 06 Sklearn Pipelines Scikit-Learn estimators, transformers, ColumnTransformer, Pipeline chaining, and data leakage prevention. supervised">
+            <div class="card-header-meta">
+                <span class="track-badge">Supervised ML</span>
+                <span class="card-number">Lecture 06</span>
+                <span class="type-pill core">Core</span>
+            </div>
+            <h2 class="card-title">Sklearn Pipelines</h2>
+            <p class="card-desc">Scikit-Learn estimators, transformers, ColumnTransformer, Pipeline chaining, and data leakage prevention.</p>
+            <div class="card-footer">
+                <span>View Interactive Notes</span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Lecture 07 - Logistic Regression I -->
+        <a href="./L07_Logistic_Regression_I_Interaction_Notes.html" class="card" data-type="core" data-search="Lecture 07 Logistic Regression I Odds ratio, logit link function, Sigmoid curve, cross-entropy log-loss formulation, and decision boundaries. supervised">
+            <div class="card-header-meta">
+                <span class="track-badge">Supervised ML</span>
+                <span class="card-number">Lecture 07</span>
+                <span class="type-pill core">Core</span>
+            </div>
+            <h2 class="card-title">Logistic Regression I</h2>
+            <p class="card-desc">Odds ratio, logit link function, Sigmoid curve, cross-entropy log-loss formulation, and decision boundaries.</p>
+            <div class="card-footer">
+                <span>View Interactive Notes</span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Lecture 08 - Logistic Regression II -->
+        <a href="./L08_Logistic_Regression_II_Interactive_Notes.html" class="card" data-type="core" data-search="Lecture 08 Logistic Regression II Maximum likelihood estimation (MLE), gradient derivation, decision threshold tuning, and probability calibration. supervised">
+            <div class="card-header-meta">
+                <span class="track-badge">Supervised ML</span>
+                <span class="card-number">Lecture 08</span>
+                <span class="type-pill core">Core</span>
+            </div>
+            <h2 class="card-title">Logistic Regression II</h2>
+            <p class="card-desc">Maximum likelihood estimation (MLE), gradient derivation, decision threshold tuning, and probability calibration.</p>
+            <div class="card-footer">
+                <span>View Interactive Notes</span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Lecture 09 - Classification Metrics -->
+        <a href="./L09_Classification_Metrics_Interactive_Notes.html" class="card" data-type="core" data-search="Lecture 09 Classification Metrics Confusion matrix, Precision, Recall, F1-Score, ROC-AUC curve, PR-AUC, and class imbalance evaluation. supervised">
+            <div class="card-header-meta">
+                <span class="track-badge">Supervised ML</span>
+                <span class="card-number">Lecture 09</span>
+                <span class="type-pill core">Core</span>
+            </div>
+            <h2 class="card-title">Classification Metrics</h2>
+            <p class="card-desc">Confusion matrix, Precision, Recall, F1-Score, ROC-AUC curve, PR-AUC, and class imbalance evaluation.</p>
+            <div class="card-footer">
+                <span>View Interactive Notes</span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Lecture 10 - Logistic Regression Multiclass -->
+        <a href="./L10_Logistic_Regression_Multiclass_Interactive_Notes.html" class="card" data-type="core" data-search="Lecture 10 Logistic Regression Multiclass One-vs-Rest (OvR), One-vs-One (OvO), Softmax multinomial regression, and multi-class decision boundaries. supervised">
+            <div class="card-header-meta">
+                <span class="track-badge">Supervised ML</span>
+                <span class="card-number">Lecture 10</span>
+                <span class="type-pill core">Core</span>
+            </div>
+            <h2 class="card-title">Logistic Regression Multiclass</h2>
+            <p class="card-desc">One-vs-Rest (OvR), One-vs-One (OvO), Softmax multinomial regression, and multi-class decision boundaries.</p>
+            <div class="card-footer">
+                <span>View Interactive Notes</span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Lecture 11 - K-Nearest Neighbors (KNN) -->
+        <a href="./L11_KNN_Interactive_Notes.html" class="card" data-type="core" data-search="Lecture 11 K-Nearest Neighbors (KNN) Instance-based learning, Euclidean/Manhattan distance, choice of k, decision boundaries, and Voronoi tessellations. supervised">
+            <div class="card-header-meta">
+                <span class="track-badge">Supervised ML</span>
+                <span class="card-number">Lecture 11</span>
+                <span class="type-pill core">Core</span>
+            </div>
+            <h2 class="card-title">K-Nearest Neighbors (KNN)</h2>
+            <p class="card-desc">Instance-based learning, Euclidean/Manhattan distance, choice of k, decision boundaries, and Voronoi tessellations.</p>
+            <div class="card-footer">
+                <span>View Interactive Notes</span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Lecture 12 - KNN II: Dimensions & Scaling -->
+        <a href="./L12_KNN_II_Interactive_Notes.html" class="card" data-type="core" data-search="Lecture 12 KNN II: Dimensions & Scaling Curse of dimensionality, feature normalization necessity, KD-Trees, Ball Trees, and approximate nearest neighbors. supervised">
+            <div class="card-header-meta">
+                <span class="track-badge">Supervised ML</span>
+                <span class="card-number">Lecture 12</span>
+                <span class="type-pill core">Core</span>
+            </div>
+            <h2 class="card-title">KNN II: Dimensions & Scaling</h2>
+            <p class="card-desc">Curse of dimensionality, feature normalization necessity, KD-Trees, Ball Trees, and approximate nearest neighbors.</p>
+            <div class="card-footer">
+                <span>View Interactive Notes</span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Lecture 13 - Decision Trees: Fundamentals -->
+        <a href="./L13_Decision_Tree_Interactive_Notes.html" class="card" data-type="core" data-search="Lecture 13 Decision Trees: Fundamentals Entropy, Information Gain, Gini Impurity, recursive partitioning, CART algorithm, and split criteria. supervised">
+            <div class="card-header-meta">
+                <span class="track-badge">Supervised ML</span>
+                <span class="card-number">Lecture 13</span>
+                <span class="type-pill core">Core</span>
+            </div>
+            <h2 class="card-title">Decision Trees: Fundamentals</h2>
+            <p class="card-desc">Entropy, Information Gain, Gini Impurity, recursive partitioning, CART algorithm, and split criteria.</p>
+            <div class="card-footer">
+                <span>View Interactive Notes</span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Lecture 14 - Decision Tree II & Random Forest Intro -->
+        <a href="./L14_Decision_Tree_II_Random_Forest_Intro_Interactive_Notes.html" class="card" data-type="core" data-search="Lecture 14 Decision Tree II & Random Forest Intro Tree regression, ensemble learning motivation, bagging, bootstrap aggregation, and out-of-bag (OOB) error. supervised">
+            <div class="card-header-meta">
+                <span class="track-badge">Supervised ML</span>
+                <span class="card-number">Lecture 14</span>
+                <span class="type-pill core">Core</span>
+            </div>
+            <h2 class="card-title">Decision Tree II & Random Forest Intro</h2>
+            <p class="card-desc">Tree regression, ensemble learning motivation, bagging, bootstrap aggregation, and out-of-bag (OOB) error.</p>
+            <div class="card-footer">
+                <span>View Interactive Notes</span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Lecture 15 - Random Forest & Tree Pruning -->
+        <a href="./L15_Random_Forest_and_Pruning_Interactive_Notes.html" class="card" data-type="core" data-search="Lecture 15 Random Forest & Tree Pruning Feature subsampling, variance reduction mechanics, feature importance methods, and cost-complexity pruning (ccp_alpha). supervised">
+            <div class="card-header-meta">
+                <span class="track-badge">Supervised ML</span>
+                <span class="card-number">Lecture 15</span>
+                <span class="type-pill core">Core</span>
+            </div>
+            <h2 class="card-title">Random Forest & Tree Pruning</h2>
+            <p class="card-desc">Feature subsampling, variance reduction mechanics, feature importance methods, and cost-complexity pruning (ccp_alpha).</p>
+            <div class="card-footer">
+                <span>View Interactive Notes</span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Lecture 16 - Boosting Intuition & AdaBoost -->
+        <a href="./L16_Boosting_Intuition_Interactive_Notes.html" class="card" data-type="core" data-search="Lecture 16 Boosting Intuition & AdaBoost Sequential learning, sample reweighting, weak learner aggregation, exponential loss, and AdaBoost step-by-step. supervised">
+            <div class="card-header-meta">
+                <span class="track-badge">Supervised ML</span>
+                <span class="card-number">Lecture 16</span>
+                <span class="type-pill core">Core</span>
+            </div>
+            <h2 class="card-title">Boosting Intuition & AdaBoost</h2>
+            <p class="card-desc">Sequential learning, sample reweighting, weak learner aggregation, exponential loss, and AdaBoost step-by-step.</p>
+            <div class="card-footer">
+                <span>View Interactive Notes</span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Lecture 17 - Gradient Boosted Decision Trees (GBDT) -->
+        <a href="./L17_Boosting_GBDT_Masterclass.html" class="card" data-type="core" data-search="Lecture 17 Gradient Boosted Decision Trees (GBDT) Residual fitting, pseudo-residuals as negative gradients, shrinkage / learning rate, and tree leaf value optimization. supervised">
+            <div class="card-header-meta">
+                <span class="track-badge">Supervised ML</span>
+                <span class="card-number">Lecture 17</span>
+                <span class="type-pill core">Core</span>
+            </div>
+            <h2 class="card-title">Gradient Boosted Decision Trees (GBDT)</h2>
+            <p class="card-desc">Residual fitting, pseudo-residuals as negative gradients, shrinkage / learning rate, and tree leaf value optimization.</p>
+            <div class="card-footer">
+                <span>View Interactive Notes</span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Lecture 17.1 - Gradient & Hessian Visual Understanding -->
+        <a href="./L17_Gradient%20%26%20Hessian%20Visual%20Understanding.html" class="card" data-type="deep dive" data-search="Lecture 17.1 Gradient & Hessian Visual Understanding First and second-order Taylor approximations, curvature insights, and Hessian intuitions in modern boosting. supervised">
+            <div class="card-header-meta">
+                <span class="track-badge">Supervised ML</span>
+                <span class="card-number">Lecture 17.1</span>
+                <span class="type-pill deep dive">Deep Dive</span>
+            </div>
+            <h2 class="card-title">Gradient & Hessian Visual Understanding</h2>
+            <p class="card-desc">First and second-order Taylor approximations, curvature insights, and Hessian intuitions in modern boosting.</p>
+            <div class="card-footer">
+                <span>View Interactive Notes</span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Lecture 17.2 - Boosting for Multiclass Classification -->
+        <a href="./L17_Boosting%20For%20Multiclass_Classification_%28Optional%29.html" class="card" data-type="optional" data-search="Lecture 17.2 Boosting for Multiclass Classification K-tree ensemble formulation per iteration, multiclass log-loss gradients, and probability normalization. supervised">
+            <div class="card-header-meta">
+                <span class="track-badge">Supervised ML</span>
+                <span class="card-number">Lecture 17.2</span>
+                <span class="type-pill optional">Optional</span>
+            </div>
+            <h2 class="card-title">Boosting for Multiclass Classification</h2>
+            <p class="card-desc">K-tree ensemble formulation per iteration, multiclass log-loss gradients, and probability normalization.</p>
+            <div class="card-footer">
+                <span>View Interactive Notes</span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Lecture 17.3 - LightGBM Masterclass -->
+        <a href="./L17_Boosting_LightGBM_Masterclass_%28Optional%29.html" class="card" data-type="deep dive" data-search="Lecture 17.3 LightGBM Masterclass Histogram-based splitting, GOSS (Gradient-based One-Side Sampling), EFB (Exclusive Feature Bundling), and leaf-wise growth. supervised">
+            <div class="card-header-meta">
+                <span class="track-badge">Supervised ML</span>
+                <span class="card-number">Lecture 17.3</span>
+                <span class="type-pill deep dive">Deep Dive</span>
+            </div>
+            <h2 class="card-title">LightGBM Masterclass</h2>
+            <p class="card-desc">Histogram-based splitting, GOSS (Gradient-based One-Side Sampling), EFB (Exclusive Feature Bundling), and leaf-wise growth.</p>
+            <div class="card-footer">
+                <span>View Interactive Notes</span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Lecture 17.4 - XGBoost Masterclass -->
+        <a href="./L17_Boosting_XGBoost_Masterclass_%28Optional%29.html" class="card" data-type="deep dive" data-search="Lecture 17.4 XGBoost Masterclass Exact greedy vs approximate split finding, sparsity awareness, shrinkage, column subsampling, and regularized objective. supervised">
+            <div class="card-header-meta">
+                <span class="track-badge">Supervised ML</span>
+                <span class="card-number">Lecture 17.4</span>
+                <span class="type-pill deep dive">Deep Dive</span>
+            </div>
+            <h2 class="card-title">XGBoost Masterclass</h2>
+            <p class="card-desc">Exact greedy vs approximate split finding, sparsity awareness, shrinkage, column subsampling, and regularized objective.</p>
+            <div class="card-footer">
+                <span>View Interactive Notes</span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Lecture 18 - Naive Bayes Classifier -->
+        <a href="./L18_Naive_Bayes_Interactive_Notes.html" class="card" data-type="core" data-search="Lecture 18 Naive Bayes Classifier Bayes theorem, conditional independence assumption, Gaussian, Multinomial, and Bernoulli Naive Bayes with Laplace smoothing. supervised">
+            <div class="card-header-meta">
+                <span class="track-badge">Supervised ML</span>
+                <span class="card-number">Lecture 18</span>
+                <span class="type-pill core">Core</span>
+            </div>
+            <h2 class="card-title">Naive Bayes Classifier</h2>
+            <p class="card-desc">Bayes theorem, conditional independence assumption, Gaussian, Multinomial, and Bernoulli Naive Bayes with Laplace smoothing.</p>
+            <div class="card-footer">
+                <span>View Interactive Notes</span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Must Read - Supervised Learning Revision Notes -->
+        <a href="./%28Must%20Read%29%20Supervised_Learning_Revision_Notes.html" class="card" data-type="revision" data-search="Must Read Supervised Learning Revision Notes Comprehensive end-to-end master revision covering all algorithms, formulas, tradeoffs, and key interview questions. supervised">
+            <div class="card-header-meta">
+                <span class="track-badge">Supervised ML</span>
+                <span class="card-number">Must Read</span>
+                <span class="type-pill revision">Revision</span>
+            </div>
+            <h2 class="card-title">Supervised Learning Revision Notes</h2>
+            <p class="card-desc">Comprehensive end-to-end master revision covering all algorithms, formulas, tradeoffs, and key interview questions.</p>
+            <div class="card-footer">
+                <span>View Interactive Notes</span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Cheat Sheet - Algorithm Cheat Sheets -->
+        <a href="./Supervised_Learning_Algorithm_Cheat_Sheets.html" class="card" data-type="revision" data-search="Cheat Sheet Algorithm Cheat Sheets Concise comparative cheatsheet: assumptions, time/space complexity, pros/cons, and quick selection matrices. supervised">
+            <div class="card-header-meta">
+                <span class="track-badge">Supervised ML</span>
+                <span class="card-number">Cheat Sheet</span>
+                <span class="type-pill revision">Revision</span>
+            </div>
+            <h2 class="card-title">Algorithm Cheat Sheets</h2>
+            <p class="card-desc">Concise comparative cheatsheet: assumptions, time/space complexity, pros/cons, and quick selection matrices.</p>
+            <div class="card-footer">
+                <span>View Interactive Notes</span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Optional Study - KNN Imputation Self Study -->
+        <a href="./Cpmpletely%20Optional_%20KNN_Imputation_Self_Study%20%28Not%20Mandatory%29.html" class="card" data-type="optional" data-search="Optional Study KNN Imputation Self Study Handling missing values via nearest neighbor proximity, weighting methods, and impact on downstream estimators. supervised">
+            <div class="card-header-meta">
+                <span class="track-badge">Supervised ML</span>
+                <span class="card-number">Optional Study</span>
+                <span class="type-pill optional">Optional</span>
+            </div>
+            <h2 class="card-title">KNN Imputation Self Study</h2>
+            <p class="card-desc">Handling missing values via nearest neighbor proximity, weighting methods, and impact on downstream estimators.</p>
+            <div class="card-footer">
+                <span>View Interactive Notes</span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Must Read - Post-Pruning in Full Flow -->
+        <a href="./Must%20Read_%20Post_Pruning%20in%20Full%20Flow.html" class="card" data-type="revision" data-search="Must Read Post-Pruning in Full Flow Cost-complexity pruning parameter alpha path walkthrough, cross-validation pruning curves, and avoiding over-pruning. supervised">
+            <div class="card-header-meta">
+                <span class="track-badge">Supervised ML</span>
+                <span class="card-number">Must Read</span>
+                <span class="type-pill revision">Revision</span>
+            </div>
+            <h2 class="card-title">Post-Pruning in Full Flow</h2>
+            <p class="card-desc">Cost-complexity pruning parameter alpha path walkthrough, cross-validation pruning curves, and avoiding over-pruning.</p>
+            <div class="card-footer">
+                <span>View Interactive Notes</span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Deep Dive - Why Random Forest Reduces Variance -->
+        <a href="./Why_Random_Forest_Reduces_Variance.html" class="card" data-type="deep dive" data-search="Deep Dive Why Random Forest Reduces Variance Mathematical proof of variance reduction in averaged correlated random variables, bagging limits, and decorrelation. supervised">
+            <div class="card-header-meta">
+                <span class="track-badge">Supervised ML</span>
+                <span class="card-number">Deep Dive</span>
+                <span class="type-pill deep dive">Deep Dive</span>
+            </div>
+            <h2 class="card-title">Why Random Forest Reduces Variance</h2>
+            <p class="card-desc">Mathematical proof of variance reduction in averaged correlated random variables, bagging limits, and decorrelation.</p>
+            <div class="card-footer">
+                <span>View Interactive Notes</span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+            </div>
+        </a>
+
+        <div class="no-results" id="noResults">
+            <h3>No matching notes found</h3>
+            <p>Try searching for a different keyword or reset filters.</p>
+        </div>
+    </main>
+
+    <script>
+        const filterChips = document.querySelectorAll('.filter-chip');
+        const searchInput = document.getElementById('searchInput');
+        const clearSearchBtn = document.getElementById('clearSearchBtn');
+        const cards = document.querySelectorAll('.card');
+        const noResults = document.getElementById('noResults');
+        const resultsCount = document.getElementById('resultsCount');
+
+        let currentType = 'all';
+        let currentSearch = '';
+
+        function filterCards() {
+            let visibleCount = 0;
+            const query = currentSearch.toLowerCase().trim();
+
+            cards.forEach(card => {
+                const type = card.getAttribute('data-type');
+                const searchData = (card.getAttribute('data-search') || '').toLowerCase();
+
+                let matchesType = true;
+                if (currentType !== 'all') {
+                    if (currentType === 'deep') {
+                        matchesType = (type === 'deep' || type === 'optional');
+                    } else {
+                        matchesType = (type === currentType);
+                    }
+                }
+
+                const matchesSearch = !query || searchData.includes(query);
+
+                if (matchesType && matchesSearch) {
+                    card.style.display = 'flex';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            resultsCount.textContent = `Showing ${visibleCount} of ${cards.length} interactive modules`;
+            noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+        }
+
+        filterChips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                filterChips.forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                currentType = chip.getAttribute('data-type');
+                filterCards();
+            });
+        });
+
+        searchInput.addEventListener('input', (e) => {
+            currentSearch = e.target.value;
+            clearSearchBtn.style.display = currentSearch ? 'flex' : 'none';
+            filterCards();
+        });
+
+        clearSearchBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            currentSearch = '';
+            clearSearchBtn.style.display = 'none';
+            searchInput.focus();
+            filterCards();
+        });
+    </script>
+</body>
+</html>

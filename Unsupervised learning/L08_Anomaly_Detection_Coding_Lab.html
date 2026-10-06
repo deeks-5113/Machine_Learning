@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anomaly Detection — Coding Lab &amp; Novelty Detection | Unsupervised ML</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,ital@9..144,400;9..144,500;9..144,600;9..144,700;9..144,600italic&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'$',right:'$',display:false},{left:'\\(',right:'\\)',display:false}]});"></script>
+<style>
+:root{
+  --ink-0:#0a0c10; --ink-1:#12151b; --ink-2:#181c24;
+  --hair:#242a34; --hair-soft:#1a1e26;
+  --paper:#eef0ee; --paper-dim:#9aa3ad; --paper-faint:#6b7480;
+  --gold:#d9ab5c; --gold-dim:#4d3d22;
+  --teal:#5fbfae; --teal-dim:#1f4239;
+  --coral:#e2836c; --coral-dim:#4a2c22;
+  --slate-blue:#7f9adf; --slate-blue-dim:#252f4a;
+  --moss:#93c084; --moss-dim:#293c26;
+  --radius:12px;
+  --display:"Fraunces",Georgia,serif;
+  --sans:"Inter",-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0; background:var(--ink-0); color:var(--paper);
+  font-family:var(--sans); font-size:16px; line-height:1.6;
+  position:relative; overflow-x:hidden;
+}
+body::before{
+  content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background-image:radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size:22px 22px;
+  -webkit-mask-image:radial-gradient(circle at 30% 10%, rgba(0,0,0,0.9), transparent 70%);
+  mask-image:radial-gradient(circle at 30% 10%, rgba(0,0,0,0.9), transparent 70%);
+}
+body::after{
+  content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(600px 400px at 8% 0%, rgba(217,171,92,0.10), transparent 60%),
+    radial-gradient(700px 500px at 100% 30%, rgba(95,191,174,0.08), transparent 60%);
+}
+.wrap{max-width:1180px; margin:0 auto; padding:0 28px; position:relative; z-index:1;}
+a{color:var(--gold);}
+h1,h2,h3{font-family:var(--display); font-weight:600; margin:0;}
+em{font-style:italic; color:var(--gold);}
+.mono{font-family:var(--mono);}
+
+/* ---------- HERO ---------- */
+.hero{padding:76px 0 40px; display:grid; grid-template-columns:1.15fr 0.85fr; gap:40px; align-items:center; border-bottom:1px solid var(--hair);}
+.kicker{font-family:var(--mono); font-size:.78rem; letter-spacing:.12em; text-transform:uppercase; color:var(--teal); margin-bottom:16px;}
+.hero h1{font-size:2.7rem; line-height:1.12; color:var(--paper);}
+.hero p.sub{font-size:1.08rem; color:var(--paper-dim); max-width:46ch; margin-top:18px;}
+.meta{margin-top:26px; display:flex; flex-direction:column; gap:6px; font-family:var(--mono); font-size:.85rem; color:var(--paper-dim);}
+.meta b{color:var(--paper); font-weight:500;}
+.prereqs{display:flex; flex-wrap:wrap; gap:8px; margin-top:20px;}
+.pill{font-family:var(--mono); font-size:.76rem; padding:5px 12px; border-radius:20px; border:1px solid var(--hair); color:var(--paper-dim); background:var(--ink-1);}
+.hero-art{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:18px;}
+.hero-art .cap{font-family:var(--mono); font-size:.74rem; color:var(--paper-faint); text-align:center; margin-top:10px;}
+
+/* ---------- LAYOUT + TOC ---------- */
+.layout{display:grid; grid-template-columns:250px 1fr; gap:48px; padding:44px 0 100px; align-items:start;}
+nav.toc{position:sticky; top:20px; font-size:.86rem; max-height:calc(100vh - 40px); overflow-y:auto; padding-right:8px;}
+nav.toc .tt{font-family:var(--mono); text-transform:uppercase; letter-spacing:.1em; font-size:.7rem; color:var(--paper-faint); margin:20px 0 8px;}
+nav.toc .tt:first-child{margin-top:0;}
+nav.toc a{display:block; padding:5px 0; color:var(--paper-dim); text-decoration:none; border-left:2px solid transparent; padding-left:10px; margin-left:-2px; transition:color .15s, border-color .15s;}
+nav.toc a:hover{color:var(--paper);}
+nav.toc a.active{color:var(--gold); border-left-color:var(--gold);}
+
+main{min-width:0;}
+section.block{margin-bottom:60px; scroll-margin-top:20px;}
+.eyebrow{font-family:var(--mono); font-size:.76rem; letter-spacing:.08em; text-transform:uppercase; color:var(--coral); margin-bottom:10px;}
+section.block h2{font-size:1.7rem; color:var(--paper); margin-bottom:6px;}
+section.block h2 i{font-style:italic; color:var(--gold); font-weight:500;}
+p.lead{color:var(--paper-dim); font-size:1.02rem; max-width:70ch; margin-top:10px;}
+
+/* ---------- CARDS / GRIDS ---------- */
+.card{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:20px 22px; margin:16px 0;}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+.grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;}
+.grid4{display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:14px;}
+.grid6{display:grid; grid-template-columns:repeat(6,1fr); gap:10px;}
+.co-card{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:18px; display:flex; flex-direction:column;}
+.co-card .name{font-family:var(--display); font-weight:600; color:var(--gold); margin-bottom:6px;}
+.co-card p{margin:0; color:var(--paper-dim); font-size:.94rem; flex:1;}
+.co-card .why{margin-top:10px; padding-top:10px; border-top:1px solid var(--hair); font-size:.86rem; color:var(--teal);}
+
+/* ---------- CALLOUTS ---------- */
+.callout{background:var(--ink-1); border-left:3px solid var(--slate-blue); border-radius:0 var(--radius) var(--radius) 0; padding:14px 18px; margin:18px 0; font-size:.95rem;}
+.callout b{color:var(--paper);}
+.callout.warn{border-left-color:var(--coral);}
+.callout.info{border-left-color:var(--slate-blue);}
+.callout.good{border-left-color:var(--moss);}
+.callout .lbl{font-family:var(--mono); font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; color:var(--paper-faint); margin-bottom:6px; display:block;}
+
+/* ---------- FORMULA / STEPS ---------- */
+.formula{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:16px 24px 22px; margin:18px 0; text-align:center;}
+.formula.left{text-align:left;}
+.formula .tag{display:block; width:max-content; max-width:100%; text-align:left; background:var(--ink-2); border:1px solid var(--hair); font-family:var(--mono); font-size:.68rem; padding:2px 9px; border-radius:10px; color:var(--gold); margin:0 0 12px;}
+.formula .eq{overflow-x:auto; padding-bottom:2px;}
+.step{display:flex; gap:14px; margin:14px 0; align-items:flex-start;}
+.step .num{flex:0 0 30px; height:30px; border-radius:50%; background:var(--gold-dim); color:var(--gold); font-family:var(--mono); font-weight:600; font-size:.85rem; display:flex; align-items:center; justify-content:center;}
+.step .body{flex:1; padding-top:3px;}
+.step .body p{margin:4px 0 0;}
+
+/* ---------- TABLES ---------- */
+.tbl{overflow-x:auto; margin:18px 0;}
+.tbl table{width:100%; border-collapse:collapse; font-size:.9rem;}
+.tbl th,.tbl td{padding:9px 12px; border-bottom:1px solid var(--hair); text-align:left;}
+.tbl th{font-family:var(--mono); font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:var(--paper-faint);}
+.tbl td.hl{color:var(--gold); font-family:var(--mono);}
+.tbl td.good{color:var(--moss);}
+.tbl td.bad{color:var(--coral);}
+.tbl td.teal{color:var(--teal);}
+.tbl td.c1{background:rgba(217,171,92,0.06);}
+.tbl td.c2{background:rgba(95,191,174,0.06);}
+.tbl td.c3{background:rgba(226,131,108,0.06);}
+.tbl td.mono, .tbl th.mono{font-family:var(--mono);}
+
+/* ---------- CODE ---------- */
+.code{background:var(--ink-2); border:1px solid var(--hair); border-radius:var(--radius); padding:16px 18px; font-family:var(--mono); font-size:.84rem; overflow-x:auto; margin:16px 0; line-height:1.7; white-space:pre-wrap;}
+.code .c{color:var(--paper-faint); font-style:italic;}
+.code .k{color:var(--slate-blue);}
+.code .n{color:var(--gold);}
+.code .s{color:var(--teal);}
+
+/* ---------- QUOTE ---------- */
+.quote{font-family:var(--display); font-style:italic; font-size:1.15rem; color:var(--paper); border-left:3px solid var(--gold); padding:6px 22px; margin:20px 0;}
+.quote .who{display:block; font-family:var(--mono); font-style:normal; font-size:.78rem; color:var(--paper-faint); margin-top:8px;}
+
+/* ---------- VS ---------- */
+.vs{display:grid; grid-template-columns:1fr auto 1fr; gap:0; align-items:stretch; margin:18px 0;}
+.vs .side{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:16px 18px;}
+.vs .side.left{border-top-right-radius:0; border-bottom-right-radius:0;}
+.vs .side.right{border-top-left-radius:0; border-bottom-left-radius:0;}
+.vs .mid{display:flex; align-items:center; justify-content:center; padding:0 16px; font-family:var(--mono); color:var(--paper-faint); font-size:.8rem;}
+.vs .side .t{font-family:var(--mono); text-transform:uppercase; font-size:.7rem; letter-spacing:.08em; color:var(--paper-faint); margin-bottom:8px;}
+
+/* ---------- DIAGRAM ---------- */
+.diagram{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:18px; margin:18px 0; text-align:center;}
+.diagram svg,.diagram img{max-width:100%;}
+.diagram .cap{font-family:var(--mono); font-size:.78rem; color:var(--paper-faint); margin-top:10px;}
+
+/* ---------- BADGE ---------- */
+.badge{display:inline-block; font-family:var(--mono); font-size:.72rem; padding:2px 9px; border-radius:10px; margin-right:6px;}
+.b-c1{background:var(--gold-dim); color:var(--gold);}
+.b-c2{background:var(--teal-dim); color:var(--teal);}
+.b-c3{background:var(--coral-dim); color:var(--coral);}
+
+/* ---------- OPTIONAL / DERIVATION ---------- */
+details.deriv{background:var(--ink-1); border:1px solid var(--hair-soft); border-left:3px solid var(--gold); border-radius:var(--radius); padding:14px 18px; margin:18px 0;}
+details.deriv summary{font-family:var(--sans); font-weight:700; color:var(--gold); cursor:pointer; list-style:none;}
+details.deriv summary::-webkit-details-marker{display:none;}
+details.deriv summary::marker{color:var(--gold);}
+details.deriv summary::before{content:"▸ "; font-family:var(--mono);}
+details.deriv[open] summary::before{content:"▾ ";}
+details.deriv .inner{margin-top:14px; padding-top:14px; border-top:1px solid var(--hair-soft);}
+
+/* ---------- KPI ---------- */
+.kpi-row{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:20px 0;}
+.kpi{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:16px; text-align:center;}
+.kpi .num{font-family:var(--display); font-size:1.9rem; color:var(--gold);}
+.kpi .lbl{font-family:var(--mono); font-size:.72rem; color:var(--paper-faint); margin-top:4px; text-transform:uppercase; letter-spacing:.05em;}
+
+/* ---------- TIMELINE (final unifying flow) ---------- */
+.timeline{position:relative; margin:24px 0 24px 10px; padding-left:26px;}
+.timeline::before{content:""; position:absolute; left:5px; top:6px; bottom:6px; width:2px; background:var(--hair);}
+.timeline .titem{position:relative; margin-bottom:20px;}
+.timeline .titem::before{content:""; position:absolute; left:-26px; top:4px; width:11px; height:11px; border-radius:50%; background:var(--gold); border:2px solid var(--ink-0);}
+.timeline .titem .tsec{font-family:var(--mono); font-size:.7rem; color:var(--paper-faint); text-transform:uppercase; letter-spacing:.05em;}
+.timeline .titem .ttext{margin-top:2px; font-size:.94rem;}
+.timeline .titem.hl::before{background:var(--teal);}
+.mental-model{background:var(--ink-1); border:1px solid var(--gold-dim); border-radius:var(--radius); padding:20px 24px; margin:24px 0;}
+.mental-model .card-title{font-family:var(--mono); text-transform:uppercase; font-size:.72rem; letter-spacing:.08em; color:var(--gold); margin-bottom:10px;}
+
+/* ---------- FOOTER ---------- */
+.pagefoot{display:flex; justify-content:space-between; padding:30px 0 60px; border-top:1px solid var(--hair); margin-top:20px; font-family:var(--mono); font-size:.85rem;}
+.pagefoot a{color:var(--paper-dim); text-decoration:none;}
+.pagefoot a:hover{color:var(--gold);}
+.relbox{color:var(--paper-faint);}
+.divider{border-top:1px solid var(--hair); margin:40px 0;}
+
+@media(max-width:920px){
+  .hero{grid-template-columns:1fr;}
+  .layout{grid-template-columns:1fr;}
+  nav.toc{position:relative; top:0; max-height:none;}
+  .grid2,.grid3,.grid4{grid-template-columns:1fr;}
+  .vs{grid-template-columns:1fr;}
+  .vs .mid{display:none;}
+  .kpi-row{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<section class="hero">
+  <div>
+    <div class="kicker">ML Coding · Unsupervised Learning · Class 08 (Lab)</div>
+    <h1>Anomaly Detection <em>— coding, novelty &amp; thresholds</em></h1>
+    <p class="sub">Class 07 built the theory for 4 methods. This session codes all 4 on one dataset, then answers the question theory skips: once a model is fit, how does it score a brand-new point, and why does one of the four methods need an extra flag to do that at all?</p>
+    <div class="meta">
+      <div>Date: <b>9 September 2026</b></div>
+      <div>Module: <b>Unsupervised Learning</b></div>
+      <div>Prior class: <b>07 · Anomaly Detection (theory)</b></div>
+    </div>
+    <div class="prereqs">
+      <span class="pill">IQR</span>
+      <span class="pill">Elliptic Envelope</span>
+      <span class="pill">Isolation Forest</span>
+      <span class="pill">Local Outlier Factor</span>
+    </div>
+  </div>
+  <div class="hero-art">
+    <svg viewBox="0 0 320 260" width="100%" height="260">
+      <line x1="30" y1="220" x2="300" y2="220" stroke="#242a34" stroke-width="1.5"/>
+      <line x1="30" y1="220" x2="30" y2="30" stroke="#242a34" stroke-width="1.5"/>
+      <text x="292" y="235" fill="#6b7480" font-family="IBM Plex Mono" font-size="11">Mileage</text>
+      <text x="10" y="26" fill="#6b7480" font-family="IBM Plex Mono" font-size="11">Price</text>
+      <g fill="#7f9adf">
+        <circle cx="80" cy="120" r="4"/><circle cx="95" cy="130" r="4"/><circle cx="110" cy="115" r="4"/>
+        <circle cx="120" cy="140" r="4"/><circle cx="135" cy="125" r="4"/><circle cx="150" cy="150" r="4"/>
+        <circle cx="160" cy="135" r="4"/><circle cx="175" cy="155" r="4"/><circle cx="190" cy="145" r="4"/>
+        <circle cx="200" cy="160" r="4"/><circle cx="140" cy="118" r="4"/><circle cx="165" cy="128" r="4"/>
+      </g>
+      <circle cx="255" cy="70" r="5.5" fill="#e2836c"/>
+      <text x="262" y="68" fill="#e2836c" font-family="IBM Plex Mono" font-size="11">new point?</text>
+      <line x1="255" y1="70" x2="180" y2="140" stroke="#e2836c" stroke-width="1.3" stroke-dasharray="3 3"/>
+    </svg>
+    <div class="cap">Fitting a model on this cloud is only half the job — scoring a fresh point against it is the other half.</div>
+  </div>
+</section>
+</div>
+
+<div class="wrap">
+<div class="layout">
+<nav class="toc">
+  <div class="tt">Recap &amp; data</div>
+  <a href="#a1-recap">01 · The 4 methods, in one line each</a>
+  <a href="#a2-dataset">02 · The dataset</a>
+
+  <div class="tt">Code walkthrough</div>
+  <a href="#a3-iqr">03 · IQR</a>
+  <a href="#a4-ee">04 · Elliptic Envelope</a>
+  <a href="#a5-if">05 · Isolation Forest</a>
+  <a href="#a6-lof">06 · Local Outlier Factor</a>
+
+  <div class="tt">Outlier vs. novelty detection</div>
+  <a href="#a7-two-questions">07 · Two different questions</a>
+  <a href="#a8-why-ee-if-work">08 · Why EE &amp; IF predict() new points natively</a>
+  <a href="#a9-why-lof-needs-novelty">09 · Why LOF needs novelty=True</a>
+  <a href="#a10-novelty-true-changes">10 · What novelty=True actually changes</a>
+
+  <div class="tt">Thresholds</div>
+  <a href="#a11-threshold-fit">11 · contamination &rarr; threshold, at fit time</a>
+  <a href="#a12-threshold-predict">12 · Scoring a brand-new point</a>
+
+  <div class="tt">Wrap-up</div>
+  <a href="#a13-summary">13 · Summary table</a>
+</nav>
+<main>
+<section class="block" id="a1-recap">
+<div class="eyebrow">01 · quick recap</div>
+<h2>The 4 methods, in one line each</h2>
+<p class="lead">Full theory is in Class 07. Here's just enough to follow the code.</p>
+
+<div class="tbl">
+<table>
+<tr><th>Method</th><th>Core idea</th></tr>
+<tr><td>IQR</td><td>A point is an outlier if it's too far below Q1 or above Q3, on <em>one feature at a time</em>.</td></tr>
+<tr><td>Elliptic Envelope</td><td>Fit an ellipse (mean + covariance) around the "normal" data; points far from its center (by Mahalanobis distance) are outliers.</td></tr>
+<tr><td>Isolation Forest</td><td>Randomly split the data with many trees; points that get isolated into their own leaf <em>quickly</em> (few splits) are outliers.</td></tr>
+<tr><td>Local Outlier Factor (LOF)</td><td>Compare a point's local density to its k nearest neighbors' density; a point sitting in a much sparser neighborhood than its neighbors is an outlier.</td></tr>
+</table>
+</div>
+
+</section>
+
+<section class="block" id="a2-dataset">
+<div class="eyebrow">02 · the data</div>
+<h2>The dataset — used EVs</h2>
+<p class="lead">Same business framing as the Cars-24 regression classes: a used-EV listing dataset, 2 features — <span class="mono">Mileage</span> and <span class="mono">Price</span>. Same dataframe is reused across all 4 methods so results are directly comparable.</p>
+
+<div class="code">import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+df = pd.read_csv('AnomalyDetection.csv')
+plt.scatter(df.Mileage, df.Price)
+plt.xlabel('Mileage'); plt.ylabel('Price')</div>
+
+<div class="callout info"><span class="lbl">Why anomaly detection here</span>A listing with an unusually low price for its mileage (or vice versa) is exactly the kind of "few and different" point these 4 methods are built to catch — a pricing error, a damaged vehicle, or a data-entry mistake.</div>
+
+</section>
+<section class="block" id="a3-iqr">
+<div class="eyebrow">03 · code</div>
+<h2>IQR</h2>
+
+<div class="code">import numpy as np
+def outlier_indices(x):
+    Q1, Q3 = np.percentile(x, [25, 75])
+    IQR = Q3 - Q1
+    lower_bound = Q1 - (1.5 * IQR)
+    upper_bound = Q3 + (1.5 * IQR)
+    outlier_index = np.where((x &lt; lower_bound) | (x &gt; upper_bound))
+    return outlier_index
+
+outlier_indices(df['Mileage'])
+outlier_indices(df['Price'])
+df['Mileage'].iloc[outlier_indices(df['Mileage'])[0]]</div>
+
+<div class="tbl">
+<table>
+<tr><th>Line</th><th>What it does</th></tr>
+<tr><td class="mono">Q1, Q3 = percentile(x, [25,75])</td><td>the box edges of a boxplot, on one column</td></tr>
+<tr><td class="mono">lower_bound / upper_bound</td><td>fixed cutoffs, 1.5&times;IQR outside the box</td></tr>
+<tr><td class="mono">np.where(x &lt; lower | x &gt; upper)</td><td>row positions that fall outside those cutoffs</td></tr>
+</table>
+</div>
+
+<div class="callout warn"><span class="lbl">One feature at a time</span>Run separately on Mileage and Price — a car normal on both individually can still be a joint outlier (low mileage <em>and</em> high price together). IQR can't see that; the other 3 methods, working on both columns at once, can.</div>
+
+</section>
+
+<section class="block" id="a4-ee">
+<div class="eyebrow">04 · code</div>
+<h2>Elliptic Envelope</h2>
+
+<div class="code">import numpy as np
+from sklearn.covariance import EllipticEnvelope
+
+elpenv = EllipticEnvelope(contamination=0.5,   # fraction assumed to be outliers
+                           random_state=1)
+pred = elpenv.fit_predict(df)                  # -1 = outlier, 1 = inlier
+df['is_outlier_ee'] = pred
+
+df[df['is_outlier_ee']==-1]                    # inspect the outliers
+plt.scatter(df.Mileage, df.Price, s=40, c=df['is_outlier_ee'])</div>
+
+<div class="tbl">
+<table>
+<tr><th>Argument</th><th>Meaning</th></tr>
+<tr><td class="mono">contamination=0.5</td><td>tell the model to expect (here) an unusually high 50% of rows as outliers — set high just to make the split visible in this small demo</td></tr>
+<tr><td class="mono">fit_predict(df)</td><td>fit the ellipse <em>and</em> label every training row in one call</td></tr>
+</table>
+</div>
+
+</section>
+
+<section class="block" id="a5-if">
+<div class="eyebrow">05 · code</div>
+<h2>Isolation Forest</h2>
+
+<div class="code">from sklearn.ensemble import IsolationForest
+
+# using the same data used for Elliptic Envelope -> X
+clf = IsolationForest(random_state=0, contamination=0.03).fit_predict(df.iloc[:, :-1])
+df['is_outlier_if'] = clf
+plt.scatter(df.Mileage, df.Price, s=40, c=df['is_outlier_if'])</div>
+
+<div class="tbl">
+<table>
+<tr><th>Argument</th><th>Meaning</th></tr>
+<tr><td class="mono">contamination=0.03</td><td>expect ~3% of rows to be outliers</td></tr>
+<tr><td class="mono">df.iloc[:, :-1]</td><td>drop the previous method's label column before refitting on the raw features</td></tr>
+</table>
+</div>
+
+</section>
+
+<section class="block" id="a6-lof">
+<div class="eyebrow">06 · code</div>
+<h2>Local Outlier Factor</h2>
+
+<div class="code">from sklearn.neighbors import LocalOutlierFactor
+
+# using the same data used for Elliptic Envelope -> df
+outlier_scores = LocalOutlierFactor(n_neighbors=20, contamination=0.025).fit_predict(df)
+df['is_outlier_lof'] = outlier_scores
+plt.scatter(df.Mileage, df.Price, s=40, c=df['is_outlier_lof'])</div>
+
+<div class="tbl">
+<table>
+<tr><th>Argument</th><th>Meaning</th></tr>
+<tr><td class="mono">n_neighbors=20</td><td>how many nearest neighbors define a point's "local" neighborhood</td></tr>
+<tr><td class="mono">contamination=0.025</td><td>expect ~2.5% of rows to be outliers</td></tr>
+<tr><td class="mono">novelty</td><td>not passed here &rarr; defaults to <b>False</b>. This one default is the whole subject of the next section.</td></tr>
+</table>
+</div>
+
+</section>
+<section class="block" id="a7-two-questions">
+<div class="eyebrow">07 · the real distinction</div>
+<h2>Two different questions</h2>
+<p class="lead">The code so far only answers one question. There's a second, different one it doesn't touch yet.</p>
+
+<div class="vs">
+  <div class="side left">
+    <div class="t">Outlier detection</div>
+    "Among the rows I already have, which ones are weird?" <span class="mono">fit_predict(df)</span> — fit and label the <em>same</em> data in one call.
+  </div>
+  <div class="mid">vs</div>
+  <div class="side right">
+    <div class="t">Novelty detection</div>
+    "Here's a car that just came in — is <em>it</em> weird, compared to what I've already seen?" Fit once on known-good data, then <span class="mono">predict()</span> on new rows, one at a time, as they arrive.
+  </div>
+</div>
+
+<div class="callout info"><span class="lbl">Same math, different question</span>Every method still scores a point and compares it to a threshold. The only thing that changes is <em>whose</em> point is being scored — a training row, or a fresh one that showed up after fitting.</div>
+
+</section>
+
+<section class="block" id="a8-why-ee-if-work">
+<div class="eyebrow">08 · why 2 of the 4 just work</div>
+<h2>Why Elliptic Envelope &amp; Isolation Forest predict() new points natively</h2>
+<p class="lead">Both finish fitting with a complete, self-contained rule — evaluating it on a new point needs nothing but the point's own feature values.</p>
+
+<div class="tbl">
+<table>
+<tr><th>Method</th><th>What fitting produces</th><th>Scoring a point x</th></tr>
+<tr><td>Elliptic Envelope</td><td>a center (mean) and a covariance matrix, describing the "normal" ellipse</td><td>Mahalanobis distance of x from that center — just arithmetic on x and the fitted numbers</td></tr>
+<tr><td>Isolation Forest</td><td>a fixed set of already-built random trees</td><td>drop x down every tree, average how many splits it took to isolate it</td></tr>
+</table>
+</div>
+
+<div class="callout good"><span class="lbl">The key property</span>Neither rule cares where x came from. A training row and a brand-new row are scored by the exact same formula/trees — so <span class="mono">predict()</span> on new data works immediately after <span class="mono">fit()</span>, no extra flag needed.</div>
+
+</section>
+
+<section class="block" id="a9-why-lof-needs-novelty">
+<div class="eyebrow">09 · the one exception</div>
+<h2>Why LOF needs <span class="mono">novelty=True</span></h2>
+<p class="lead">LOF's score for a point is only defined <em>relative to its neighbors</em> — and "neighbors" only makes unambiguous sense within one fixed set of points.</p>
+
+<div class="step"><div class="num">1</div><div class="body"><p>For a <b>training</b> row, its 20 nearest neighbors (n_neighbors=20) are just other training rows — already sitting right there. <span class="mono">fit_predict</span> scores every row this way in one pass. This is the default, <span class="mono">novelty=False</span>.</p></div></div>
+<div class="step"><div class="num">2</div><div class="body"><p>For a genuinely <b>new</b> row, there's a real decision to make: find ITS 20 nearest neighbors — <em>from where?</em> sklearn's answer is to search inside the training data the model remembers. That's a materially different computation than step 1, done for a point the model has never scored before.</p></div></div>
+<div class="step"><div class="num">3</div><div class="body"><p>sklearn refuses to let that happen by accident. With <span class="mono">novelty=False</span> (the default), <span class="mono">.predict()</span> simply <b>does not exist</b> on the fitted object:</p>
+<div class="code">LocalOutlierFactor(n_neighbors=20).fit(X_train).predict(X_test)
+# AttributeError: 'LocalOutlierFactor' object has no attribute 'predict'</div>
+</div></div>
+
+<div class="callout warn"><span class="lbl">In short</span>Elliptic Envelope and Isolation Forest's scoring rule was always "a function of x alone" — new points were never a special case. LOF's scoring rule is "a function of x <em>and its neighborhood</em>" — scoring a genuinely new point is a <em>different</em> operation from scoring a training point, so sklearn makes you opt in explicitly before it will do it.</div>
+
+</section>
+
+<section class="block" id="a10-novelty-true-changes">
+<div class="eyebrow">10 · what actually changes</div>
+<h2>Setting novelty=True</h2>
+
+<div class="code">from sklearn.neighbors import LocalOutlierFactor
+
+lof = LocalOutlierFactor(n_neighbors=20, contamination=0.025, novelty=True)
+lof.fit(X_train)          # fit once, on data believed to be normal
+lof.predict(X_test)       # now available: score new, unseen rows</div>
+
+<div class="tbl">
+<table>
+<tr><th>novelty=</th><th>predict() / decision_function() / score_samples()</th><th>fit_predict()</th><th>Intended use</th></tr>
+<tr><td class="mono">False (default)</td><td class="bad">not available</td><td class="good">yes — the normal way to use LOF</td><td>find outliers within one fixed dataset</td></tr>
+<tr><td class="mono">True</td><td class="good">available, on new data</td><td class="bad">technically callable, but wrong to use here</td><td>score future new points against a fitted reference</td></tr>
+</table>
+</div>
+
+<div class="callout warn"><span class="lbl">One more catch, once novelty=True</span>Fit only on clean/reference data (not data you suspect already has outliers in it) — and call <span class="mono">predict()</span> only on <em>new</em> rows, never on the training rows themselves. A training row fed back into <span class="mono">predict()</span> would find <em>itself</em> (distance 0) sitting in the stored training set and count that as its own nearest neighbor — making it look artificially normal. sklearn keeps the training rows' real scores separately, in the <span class="mono">negative_outlier_factor_</span> attribute, for exactly this reason.</div>
+
+</section>
+<section class="block" id="a11-threshold-fit">
+<div class="eyebrow">11 · where the cutoff comes from</div>
+<h2>contamination &rarr; threshold, at fit time</h2>
+<p class="lead">Same recipe for all 3 model-based methods — only the "score" formula changes.</p>
+
+<div class="step"><div class="num">1</div><div class="body"><p>Fit the model on the training data (mean+covariance / trees / neighbor-distances).</p></div></div>
+<div class="step"><div class="num">2</div><div class="body"><p>Compute <b>every training row's raw anomaly score</b> using that fitted model.</p></div></div>
+<div class="step"><div class="num">3</div><div class="body"><p>Sort those scores. <span class="mono">contamination</span> says what fraction should end up flagged — so the cut line is placed exactly at that percentile of the sorted scores.</p></div></div>
+<div class="step"><div class="num">4</div><div class="body"><p>That cut line is saved as the model's <b>threshold</b> — a single fixed number, kept for later.</p></div></div>
+
+<div class="tbl">
+<table>
+<tr><th>Method</th><th>Raw score</th><th>contamination example</th><th>Threshold, in words</th></tr>
+<tr><td>Elliptic Envelope</td><td>Mahalanobis distance from the fitted center</td><td class="mono">0.5</td><td>the distance below which the closest 50% of rows sit</td></tr>
+<tr><td>Isolation Forest</td><td>average path length to isolate the point (shorter = more anomalous)</td><td class="mono">0.03</td><td>the path-length cutoff below which the most-isolated 3% sit</td></tr>
+<tr><td>LOF</td><td>local outlier factor (density of neighbors &divide; density of the point)</td><td class="mono">0.025</td><td>the LOF value above which the sparsest 2.5% sit</td></tr>
+</table>
+</div>
+
+<div class="callout good"><span class="lbl">The point</span><span class="mono">contamination</span> never touches the new-point calculation directly — its only job is to fix this one threshold number, once, during fit.</div>
+
+</section>
+
+<section class="block" id="a12-threshold-predict">
+<div class="eyebrow">12 · using it on a new point</div>
+<h2>Scoring a brand-new point</h2>
+<p class="lead">Once the threshold exists, predicting is just: compute the same score for the new point, then compare.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 500 130" width="100%" height="130">
+<rect x="10" y="45" width="120" height="40" rx="8" fill="#181c24" stroke="#242a34"/>
+<text x="70" y="69" text-anchor="middle" fill="#eef0ee" font-family="IBM Plex Mono" font-size="12">new point x</text>
+<line x1="130" y1="65" x2="180" y2="65" stroke="#6b7480" stroke-width="1.5" marker-end="url(#arr)"/>
+<defs><marker id="arr" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0L8,4L0,8Z" fill="#6b7480"/></marker></defs>
+<rect x="185" y="45" width="150" height="40" rx="8" fill="#181c24" stroke="#242a34"/>
+<text x="260" y="69" text-anchor="middle" fill="#eef0ee" font-family="IBM Plex Mono" font-size="12">compute score(x)</text>
+<line x1="335" y1="65" x2="380" y2="65" stroke="#6b7480" stroke-width="1.5" marker-end="url(#arr)"/>
+<rect x="385" y="20" width="105" height="40" rx="8" fill="#4d3d22" stroke="#d9ab5c"/>
+<text x="437" y="44" text-anchor="middle" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="11">past threshold</text>
+<text x="437" y="14" text-anchor="middle" fill="#e2836c" font-family="IBM Plex Mono" font-size="10">outlier (&minus;1)</text>
+<rect x="385" y="70" width="105" height="40" rx="8" fill="#1f4239" stroke="#5fbfae"/>
+<text x="437" y="94" text-anchor="middle" fill="#5fbfae" font-family="IBM Plex Mono" font-size="11">within threshold</text>
+<text x="437" y="126" text-anchor="middle" fill="#93c084" font-family="IBM Plex Mono" font-size="10">inlier (+1)</text>
+</svg>
+<div class="cap">Same flow for Elliptic Envelope, Isolation Forest, and LOF (novelty=True) — only "score(x)" differs.</div>
+</div>
+
+<div class="tbl">
+<table>
+<tr><th>Method</th><th>score(new point x)</th><th>Compared against</th></tr>
+<tr><td>Elliptic Envelope</td><td>x's Mahalanobis distance from the (already fitted) center</td><td>the distance threshold fixed at fit time</td></tr>
+<tr><td>Isolation Forest</td><td>drop x down the (already built) trees, average the path length</td><td>the path-length threshold fixed at fit time</td></tr>
+<tr><td>LOF (novelty=True)</td><td>find x's 20 nearest neighbors <em>inside the stored training data</em>, compute x's LOF from them</td><td>the LOF threshold fixed at fit time</td></tr>
+</table>
+</div>
+
+<div class="callout warn"><span class="lbl">Easy way to remember it</span>Fitting answers "how unusual does a point have to be, to count as the worst contamination% ?" — and freezes that answer as one number. Predicting just asks "is this point's score past that frozen number?" Nothing about the new point changes the threshold itself.</div>
+
+</section>
+<section class="block" id="a13-summary">
+<div class="eyebrow">13 · wrap-up</div>
+<h2>Summary</h2>
+
+<div class="tbl">
+<table>
+<tr><th>Method</th><th>Score</th><th>predict() on new data, by default?</th><th>Needs novelty=True?</th></tr>
+<tr><td>IQR</td><td>distance outside Q1/Q3 &plusmn; 1.5&times;IQR</td><td class="good">trivially — fixed bounds, one column</td><td>&mdash;</td></tr>
+<tr><td>Elliptic Envelope</td><td>Mahalanobis distance</td><td class="good">yes</td><td class="good">no</td></tr>
+<tr><td>Isolation Forest</td><td>average isolation path length</td><td class="good">yes</td><td class="good">no</td></tr>
+<tr><td>LOF</td><td>local outlier factor (neighbor-relative density)</td><td class="bad">no — AttributeError</td><td class="bad">yes</td></tr>
+</table>
+</div>
+
+<div class="mental-model">
+<div class="card-title">The one thing to remember</div>
+<p>Elliptic Envelope and Isolation Forest finish fitting with a rule that only needs a point's own feature values — so scoring a new point is no different from scoring a training point, and <span class="mono">predict()</span> is available immediately. LOF's rule needs a <em>neighborhood</em> to mean anything — scoring a genuinely new point means searching for its neighbors inside the stored training data, a step training-time scoring never had to do. sklearn hides that step behind <span class="mono">novelty=True</span> so it only happens when you actually ask for it. Once fit, all three freeze one threshold number from <span class="mono">contamination</span>; predicting a new point is always just "compute its score, compare to that frozen number."</p>
+</div>
+
+</section>
+
+<div class="divider"></div>
+<p class="mono" style="text-align:center;font-size:.82rem;color:var(--paper-faint);padding-bottom:10px;">Anomaly Detection — Coding Lab &middot; Scaler ML Cohort &middot; Class 08</p>
+
+</main>
+</div>
+</div>
+
+<div class="wrap">
+<div class="pagefoot">
+  <a href="#">&larr; Class 07: Anomaly Detection (theory)</a>
+  <span class="relbox">Module: Unsupervised ML &middot; Coding Lab</span>
+  <a href="#a1-recap">Back to top &uarr;</a>
+</div>
+</div>
+
+<script>
+document.querySelectorAll("nav a").forEach(a=>a.addEventListener("click",()=>{
+  document.querySelectorAll("nav a").forEach(x=>x.classList.remove("active"));
+  a.classList.add("active");
+}));
+</script>
+</body>
+</html>

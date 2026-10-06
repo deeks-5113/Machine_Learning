@@ -1,0 +1,1775 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 10 — t-SNE II & UMAP: Optimization to a Final Map | Unsupervised ML</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,ital@9..144,400;9..144,500;9..144,600;9..144,700;9..144,600italic&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'$',right:'$',display:false},{left:'\\(',right:'\\)',display:false}]});"></script>
+<style>
+:root{
+  --ink-0:#0a0c10; --ink-1:#12151b; --ink-2:#181c24;
+  --hair:#242a34; --hair-soft:#1a1e26;
+  --paper:#eef0ee; --paper-dim:#9aa3ad; --paper-faint:#6b7480;
+  --gold:#d9ab5c; --gold-dim:#4d3d22;
+  --teal:#5fbfae; --teal-dim:#1f4239;
+  --coral:#e2836c; --coral-dim:#4a2c22;
+  --slate-blue:#7f9adf; --slate-blue-dim:#252f4a;
+  --moss:#93c084; --moss-dim:#293c26;
+  --radius:12px;
+  --display:"Fraunces",Georgia,serif;
+  --sans:"Inter",-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0; background:var(--ink-0); color:var(--paper);
+  font-family:var(--sans); font-size:16px; line-height:1.6;
+  position:relative; overflow-x:hidden;
+}
+body::before{
+  content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background-image:radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size:22px 22px;
+  -webkit-mask-image:radial-gradient(circle at 30% 10%, rgba(0,0,0,0.9), transparent 70%);
+  mask-image:radial-gradient(circle at 30% 10%, rgba(0,0,0,0.9), transparent 70%);
+}
+body::after{
+  content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(600px 400px at 8% 0%, rgba(217,171,92,0.10), transparent 60%),
+    radial-gradient(700px 500px at 100% 30%, rgba(95,191,174,0.08), transparent 60%);
+}
+.wrap{max-width:1180px; margin:0 auto; padding:0 28px; position:relative; z-index:1;}
+a{color:var(--gold);}
+h1,h2,h3{font-family:var(--display); font-weight:600; margin:0;}
+em{font-style:italic; color:var(--gold);}
+.mono{font-family:var(--mono);}
+.nocase{text-transform:none;}
+
+.hero{padding:76px 0 40px; display:grid; grid-template-columns:1.15fr 0.85fr; gap:40px; align-items:center; border-bottom:1px solid var(--hair);}
+.kicker{font-family:var(--mono); font-size:.78rem; letter-spacing:.12em; text-transform:uppercase; color:var(--teal); margin-bottom:16px;}
+.hero h1{font-size:2.6rem; line-height:1.12; color:var(--paper);}
+.hero p.sub{font-size:1.08rem; color:var(--paper-dim); max-width:48ch; margin-top:18px;}
+.meta{margin-top:26px; display:flex; flex-direction:column; gap:6px; font-family:var(--mono); font-size:.85rem; color:var(--paper-dim);}
+.meta b{color:var(--paper); font-weight:500;}
+.prereqs{display:flex; flex-wrap:wrap; gap:8px; margin-top:20px;}
+.pill{font-family:var(--mono); font-size:.76rem; padding:5px 12px; border-radius:20px; border:1px solid var(--hair); color:var(--paper-dim); background:var(--ink-1);}
+.hero-art{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:18px;}
+.hero-art .cap{font-family:var(--mono); font-size:.74rem; color:var(--paper-faint); text-align:center; margin-top:10px;}
+
+.layout{display:grid; grid-template-columns:260px 1fr; gap:48px; padding:44px 0 100px; align-items:start;}
+nav.toc{position:sticky; top:20px; font-size:.85rem; max-height:calc(100vh - 40px); overflow-y:auto; padding-right:8px;}
+nav.toc .tt{font-family:var(--mono); text-transform:uppercase; letter-spacing:.1em; font-size:.68rem; color:var(--paper-faint); margin:18px 0 6px;}
+nav.toc .tt:first-child{margin-top:0;}
+nav.toc a{display:block; padding:4px 0; color:var(--paper-dim); text-decoration:none; border-left:2px solid transparent; padding-left:10px; margin-left:-2px; transition:color .15s, border-color .15s; font-size:.83rem;}
+nav.toc a:hover{color:var(--paper);}
+nav.toc a.active{color:var(--gold); border-left-color:var(--gold);}
+
+main{min-width:0;}
+section.block{margin-bottom:60px; scroll-margin-top:20px;}
+.eyebrow{font-family:var(--mono); font-size:.76rem; letter-spacing:.08em; text-transform:uppercase; color:var(--coral); margin-bottom:10px;}
+section.block h2{font-size:1.65rem; color:var(--paper); margin-bottom:6px;}
+section.block h2 i{font-style:italic; color:var(--gold); font-weight:500;}
+p.lead{color:var(--paper-dim); font-size:1.02rem; max-width:72ch; margin-top:10px;}
+
+.card{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:20px 22px; margin:16px 0;}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+.grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;}
+.grid4{display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:14px;}
+.co-card{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:18px; display:flex; flex-direction:column;}
+.co-card .name{font-family:var(--display); font-weight:600; color:var(--gold); margin-bottom:6px;}
+.co-card p{margin:0; color:var(--paper-dim); font-size:.94rem; flex:1;}
+.co-card .why{margin-top:10px; padding-top:10px; border-top:1px solid var(--hair); font-size:.86rem; color:var(--teal);}
+
+.callout{background:var(--ink-1); border-left:3px solid var(--slate-blue); border-radius:0 var(--radius) var(--radius) 0; padding:14px 18px; margin:18px 0; font-size:.95rem;}
+.callout b{color:var(--paper);}
+.callout.warn{border-left-color:var(--coral);}
+.callout.info{border-left-color:var(--slate-blue);}
+.callout.good{border-left-color:var(--moss);}
+.callout .lbl{font-family:var(--mono); font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; color:var(--paper-faint); margin-bottom:6px; display:block;}
+
+.formula{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:16px 24px 22px; margin:18px 0; text-align:center;}
+.formula.left{text-align:left;}
+.formula .tag{display:block; width:max-content; max-width:100%; text-align:left; background:var(--ink-2); border:1px solid var(--hair); font-family:var(--mono); font-size:.68rem; padding:2px 9px; border-radius:10px; color:var(--gold); margin:0 0 12px;}
+.formula .eq{overflow-x:auto; padding-bottom:2px;}
+.step{display:flex; gap:14px; margin:14px 0; align-items:flex-start;}
+.step .num{flex:0 0 30px; height:30px; border-radius:50%; background:var(--gold-dim); color:var(--gold); font-family:var(--mono); font-weight:600; font-size:.85rem; display:flex; align-items:center; justify-content:center;}
+.step .body{flex:1; padding-top:3px;}
+.step .body p{margin:4px 0 0;}
+
+.tbl{overflow-x:auto; margin:18px 0;}
+.tbl table{width:100%; border-collapse:collapse; font-size:.9rem;}
+.tbl th,.tbl td{padding:9px 12px; border-bottom:1px solid var(--hair); text-align:left;}
+.tbl th{font-family:var(--mono); font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:var(--paper-faint);}
+.tbl td.hl{color:var(--gold); font-family:var(--mono);}
+.tbl td.good{color:var(--moss);}
+.tbl td.bad{color:var(--coral);}
+.tbl td.teal{color:var(--teal);}
+.tbl td.c1{background:rgba(217,171,92,0.06);}
+.tbl td.c2{background:rgba(95,191,174,0.06);}
+.tbl td.c3{background:rgba(226,131,108,0.06);}
+.tbl td.mono, .tbl th.mono{font-family:var(--mono);}
+
+.code{background:var(--ink-2); border:1px solid var(--hair); border-radius:var(--radius); padding:16px 18px; font-family:var(--mono); font-size:.84rem; overflow-x:auto; margin:16px 0; line-height:1.7;}
+.code .c{color:var(--paper-faint); font-style:italic;}
+.code .k{color:var(--slate-blue);}
+.code .n{color:var(--gold);}
+.code .s{color:var(--teal);}
+
+.quote{font-family:var(--display); font-style:italic; font-size:1.15rem; color:var(--paper); border-left:3px solid var(--gold); padding:6px 22px; margin:20px 0;}
+.quote .who{display:block; font-family:var(--mono); font-style:normal; font-size:.78rem; color:var(--paper-faint); margin-top:8px;}
+
+.vs{display:grid; grid-template-columns:1fr auto 1fr; gap:0; align-items:stretch; margin:18px 0;}
+.vs .side{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:16px 18px;}
+.vs .side.left{border-top-right-radius:0; border-bottom-right-radius:0;}
+.vs .side.right{border-top-left-radius:0; border-bottom-left-radius:0;}
+.vs .mid{display:flex; align-items:center; justify-content:center; padding:0 16px; font-family:var(--mono); color:var(--paper-faint); font-size:.8rem;}
+.vs .side .t{font-family:var(--mono); text-transform:uppercase; font-size:.7rem; letter-spacing:.08em; color:var(--paper-faint); margin-bottom:8px;}
+
+.diagram{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:18px; margin:18px 0; text-align:center;}
+.diagram svg,.diagram img{max-width:100%;}
+.diagram .cap{font-family:var(--mono); font-size:.78rem; color:var(--paper-faint); margin-top:10px;}
+
+.badge{display:inline-block; font-family:var(--mono); font-size:.72rem; padding:2px 9px; border-radius:10px; margin-right:6px;}
+.b-c1{background:var(--gold-dim); color:var(--gold);}
+.b-c2{background:var(--teal-dim); color:var(--teal);}
+.b-c3{background:var(--coral-dim); color:var(--coral);}
+
+.kpi-row{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:20px 0;}
+.kpi{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:16px; text-align:center;}
+.kpi .num{font-family:var(--display); font-size:1.9rem; color:var(--gold);}
+.kpi .lbl{font-family:var(--mono); font-size:.72rem; color:var(--paper-faint); margin-top:4px; text-transform:uppercase; letter-spacing:.05em;}
+
+.timeline{position:relative; margin:24px 0 24px 10px; padding-left:26px;}
+.timeline::before{content:""; position:absolute; left:5px; top:6px; bottom:6px; width:2px; background:var(--hair);}
+.timeline .titem{position:relative; margin-bottom:20px;}
+.timeline .titem::before{content:""; position:absolute; left:-26px; top:4px; width:11px; height:11px; border-radius:50%; background:var(--gold); border:2px solid var(--ink-0);}
+.timeline .titem .tsec{font-family:var(--mono); font-size:.7rem; color:var(--paper-faint); text-transform:uppercase; letter-spacing:.05em;}
+.timeline .titem .ttext{margin-top:2px; font-size:.94rem;}
+.timeline .titem.hl::before{background:var(--teal);}
+.timeline .titem.next::before{background:var(--paper-faint);}
+.mental-model{background:var(--ink-1); border:1px solid var(--gold-dim); border-radius:var(--radius); padding:20px 24px; margin:24px 0;}
+.mental-model .card-title{font-family:var(--mono); text-transform:uppercase; font-size:.72rem; letter-spacing:.08em; color:var(--gold); margin-bottom:10px;}
+
+.pagefoot{display:flex; justify-content:space-between; padding:30px 0 60px; border-top:1px solid var(--hair); margin-top:20px; font-family:var(--mono); font-size:.85rem;}
+.pagefoot a{color:var(--paper-dim); text-decoration:none;}
+.pagefoot a:hover{color:var(--gold);}
+.relbox{color:var(--paper-faint);}
+.divider{border-top:1px solid var(--hair); margin:40px 0;}
+
+.scopetag{display:inline-block; font-family:var(--mono); font-size:.68rem; padding:3px 10px; border-radius:20px; margin-left:8px; vertical-align:middle;}
+.scope-today{background:var(--moss-dim); color:var(--moss); border:1px solid var(--moss-dim);}
+.scope-next{background:var(--ink-2); color:var(--paper-faint); border:1px solid var(--hair);}
+.scope-opt{background:var(--gold-dim); color:var(--gold); border:1px solid var(--gold-dim);}
+
+.threecol{display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin:18px 0;}
+.flowcard{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:18px; display:flex; flex-direction:column;}
+.flowcard .fc-title{font-family:var(--display); font-size:1.15rem; font-weight:600; margin-bottom:10px; text-align:center;}
+.flowcard .fc-title.pca{color:var(--slate-blue);}
+.flowcard .fc-title.tsne{color:var(--gold);}
+.flowcard .fc-title.umap{color:var(--teal);}
+.flowstep{font-family:var(--mono); font-size:.76rem; background:var(--ink-2); border:1px solid var(--hair); border-radius:8px; padding:7px 10px; margin:5px 0; text-align:center;}
+.flowarrow{text-align:center; color:var(--paper-faint); font-size:.8rem; margin:1px 0;}
+.flowwhen{margin-top:12px; padding-top:12px; border-top:1px solid var(--hair); font-size:.86rem; color:var(--paper-dim); flex:1;}
+.flowwhen b{color:var(--paper);}
+
+@media(max-width:920px){
+  .hero{grid-template-columns:1fr;}
+  .layout{grid-template-columns:1fr;}
+  nav.toc{position:relative; top:0; max-height:none;}
+  .grid2,.grid3,.grid4,.threecol{grid-template-columns:1fr;}
+  .vs{grid-template-columns:1fr;}
+  .vs .mid{display:none;}
+  .kpi-row{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<section class="hero">
+  <div>
+    <div class="kicker">ML Coding · Unsupervised Learning · Class 10</div>
+    <h1>t-SNE II &amp; UMAP <em>— from probability to a finished picture, then a faster way there</em></h1>
+    <p class="sub">Last class we built P — a complete description of "who is a neighbor of whom" in the original high-dimensional space. Today we build P's low-dimensional twin, Q, learn to measure the gap between them, and use gradient descent to close that gap until the 2D map is done. Then we meet UMAP — a newer, faster way to solve the same problem — and finish with a decision guide for when to reach for PCA, t-SNE, or UMAP in the real world.</p>
+    <div class="meta">
+      <div>Date: <b>16 September 2026</b></div>
+      <div>Module: <b>Unsupervised Learning</b></div>
+      <div>Builds directly on: <b>Class 09 — t-SNE I (through perplexity)</b></div>
+      <div>Today's scope: <b>Symmetrize P → Q → KL divergence → Gradient descent → UMAP → when to use what</b></div>
+    </div>
+    <div class="prereqs">
+      <span class="pill">Class 09 — P, σᵢ, perplexity</span>
+      <span class="pill">Gaussian curve</span>
+      <span class="pill">log, entropy</span>
+      <span class="pill">Gradient descent basics</span>
+      <span class="pill">PCA (Class 08–09)</span>
+    </div>
+  </div>
+  <div class="hero-art">
+    <svg viewBox="0 0 320 260" width="100%" height="260">
+      <text x="20" y="28" fill="#6b7480" font-family="IBM Plex Mono" font-size="10">WHERE WE STOPPED</text>
+      <rect x="20" y="40" width="130" height="26" rx="6" fill="#1f4239" stroke="#5fbfae"/><text x="85" y="57" text-anchor="middle" fill="#5fbfae" font-family="IBM Plex Mono" font-size="10">P — high-D done</text>
+      <text x="170" y="58" fill="#6b7480" font-family="IBM Plex Mono" font-size="16">→</text>
+      <text x="195" y="28" fill="#6b7480" font-family="IBM Plex Mono" font-size="10">WHERE WE'RE GOING</text>
+      <rect x="195" y="40" width="105" height="26" rx="6" fill="#181c24" stroke="#242a34"/><text x="247" y="57" text-anchor="middle" fill="#eef0ee" font-family="IBM Plex Mono" font-size="10">Q, then optimize</text>
+      <line x1="30" y1="100" x2="290" y2="100" stroke="#242a34"/>
+      <circle cx="60" cy="140" r="5" fill="#7f9adf"/><circle cx="75" cy="150" r="5" fill="#7f9adf"/><circle cx="68" cy="128" r="5" fill="#7f9adf"/>
+      <circle cx="230" cy="130" r="5" fill="#e2836c"/><circle cx="245" cy="145" r="5" fill="#e2836c"/><circle cx="240" cy="118" r="5" fill="#e2836c"/>
+      <text x="30" y="185" fill="#6b7480" font-family="IBM Plex Mono" font-size="9">random or PCA start (Y)</text>
+      <path d="M 75 150 Q 150 210 230 130" stroke="#d9ab5c" stroke-width="1.3" fill="none" stroke-dasharray="3 3"/>
+      <text x="110" y="215" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="9">gradient descent nudges Y</text>
+      <line x1="30" y1="240" x2="290" y2="240" stroke="#242a34"/>
+      <text x="30" y="255" fill="#93c084" font-family="IBM Plex Mono" font-size="10">until Q looks like P →</text>
+    </svg>
+    <div class="cap">Today's whole job: manufacture a 2D point per input, then move those points around until their relationships (Q) match P's.</div>
+  </div>
+</section>
+</div>
+
+<div class="wrap">
+<div class="layout">
+<nav class="toc">
+  <div class="tt">Revision</div>
+  <a href="#s00-recap">00 · Recap — everything up to P</a>
+
+  <div class="tt">Perplexity, revisited</div>
+  <a href="#s01-perplexity">01 · Perplexity, made completely visual</a>
+  <a href="#s02-two-sigma">02 · Same perplexity, two very different σ</a>
+
+  <div class="tt">One relationship, not two</div>
+  <a href="#s03-two-conditionals">03 · p(B|A) vs p(A|B) — why they differ</a>
+  <a href="#s04-symmetrize">04 · Optional — why divide by 2n?</a>
+
+  <div class="tt">From P to a 2D point</div>
+  <a href="#s05-new-goal">05 · P is done — the new goal</a>
+  <a href="#s06-init-y">06 · Initializing Y — random vs PCA</a>
+
+  <div class="tt">Building Q</div>
+  <a href="#s07-q-lowd">07 · From Y to Q — similarity in low-D</a>
+  <a href="#s08-crowding">08 · The crowding problem</a>
+  <a href="#s09-student-t">09 · Optional — the Student-t distribution</a>
+  <a href="#s10-q-matrix">10 · The Q matrix, computed</a>
+
+  <div class="tt">Comparing P and Q</div>
+  <a href="#s11-kl">11 · Optional — KL divergence, from scratch</a>
+  <a href="#s12-why-minimize">12 · Why minimize this, and not the reverse?</a>
+
+  <div class="tt">Optimization</div>
+  <a href="#s13-gradient">13 · Gradient descent — the update rule</a>
+  <a href="#s14-attract-repel">14 · Attraction &amp; repulsion, in real numbers</a>
+  <a href="#s15-full-loop">15 · The full loop, until convergence</a>
+
+  <div class="tt">t-SNE, wrapped up</div>
+  <a href="#s16-tsne-recap">16 · t-SNE end to end, one picture</a>
+
+  <div class="tt">Enter UMAP</div>
+  <a href="#s17-tsne-limits">17 · Limitations of t-SNE</a>
+  <a href="#s18-umap-highlevel">18 · Meet UMAP — the high-level flow</a>
+  <a href="#s19-umap-detailed">19 · Optional — UMAP, step by step, with real numbers</a>
+  <a href="#s20-umap-toy">20 · G_high vs. G_low, drawn and compared</a>
+
+  <div class="tt">Choosing the right tool</div>
+  <a href="#s21-when-dimred">21 · When do you even need this?</a>
+  <a href="#s22-supervised">22 · Using it inside supervised learning</a>
+  <a href="#s23-unsupervised">23 · Using it inside unsupervised learning</a>
+  <a href="#s24-decision-guide">24 · Decision guide — which one, which scenario</a>
+  <a href="#s25-three-flows">25 · PCA vs t-SNE vs UMAP — three flows</a>
+  <a href="#s26-industry">26 · In industry — which one, and why</a>
+
+  <div class="tt">Wrap-up</div>
+  <a href="#s27-final-recap">27 · Everything, one last time</a>
+</nav>
+<main>
+
+<section class="block" id="s00-recap">
+<div class="eyebrow">00 · one-paragraph bridge, then a proper revision</div>
+<h2>Recap — everything up to P</h2>
+<p class="lead">Class 09 stopped the instant P was finished. Before building anything new, walk the whole chain once, properly, so nothing here is taken on faith.</p>
+
+<div class="formula">
+<div class="tag">the chain we built last class</div>
+<div class="eq">$$\text{High-D data } X \;\to\; \text{distances} \;\to\; \text{Gaussian similarity} \;\to\; \text{normalize} \;\to\; p_{j|i} \;\to\; (\text{pick } \sigma_i \text{ via perplexity}) \;\to\; P$$</div>
+</div>
+
+<div class="step">
+<div class="num">1</div>
+<div class="body"><p><b>High-D data.</b> Every point <span class="mono">xᵢ</span> lives in the original space — 100 dimensions, say, for 10,000 customers. We can't look at this directly.</p></div>
+</div>
+<div class="step">
+<div class="num">2</div>
+<div class="body"><p><b>Distances.</b> For every pair (i, j), compute the ordinary Euclidean distance <span class="mono">d(i,j) = ‖xᵢ − xⱼ‖</span>. Same formula as always — just in n dimensions instead of 2 or 3.</p></div>
+</div>
+<div class="step">
+<div class="num">3</div>
+<div class="body"><p><b>Gaussian similarity.</b> Distance points the wrong way (small = close), so we flip it with a Gaussian: $\text{similarity}(i,j) = e^{-\|x_i-x_j\|^2/2\sigma_i^2}$. Bounded at 1, decays smoothly to 0, and — crucially — has one adjustable width, σᵢ, that belongs to point i alone.</p></div>
+</div>
+<div class="step">
+<div class="num">4</div>
+<div class="body"><p><b>Normalize.</b> Raw similarity scores don't sum to 1, so we divide each by the row total: $p_{j|i} = \dfrac{e^{-\|x_i-x_j\|^2/2\sigma_i^2}}{\sum_{k\neq i} e^{-\|x_i-x_k\|^2/2\sigma_i^2}}$ — now a genuine per-point probability distribution over "who is my neighbor."</p></div>
+</div>
+<div class="step">
+<div class="num">5</div>
+<div class="body"><p><b>Pick σᵢ via perplexity.</b> Rather than guessing σᵢ, we fix one interpretable number — perplexity, "how many neighbors should matter" — compute entropy $H(P_i)=-\sum_j p_{j|i}\log_2 p_{j|i}$, convert it via $\text{Perplexity}(P_i)=2^{H(P_i)}$, and binary-search for whichever σᵢ makes that number match our chosen target. This runs once, independently, for every single point.</p></div>
+</div>
+<div class="step">
+<div class="num">6</div>
+<div class="body"><p><b>P.</b> The collection of every point's own $p_{j|i}$ row. This is everything Class 09 built — a complete, high-fidelity map of neighborhood structure in the original space.</p></div>
+</div>
+
+<div class="callout good"><span class="lbl">The running example we'll keep using all class</span>Six points, two clusters, real 3D coordinates — identical to Class 09's worked example, so every number today builds on numbers you've already seen: <span class="mono">A(0,0,0), B(0.5,0.3,0.2), C(0.3,0.6,0.1)</span> form a tight "dense" cluster; <span class="mono">D(8,8,8), E(9,7,8.5), F(7.5,8.5,7)</span> form a "sparse" cluster roughly 13 units away. Target perplexity = 2 throughout.</div>
+
+<div class="tbl">
+<table>
+<tr><th>Point</th><th>Converged σᵢ (perplexity = 2)</th><th>Its two real neighbors get</th></tr>
+<tr><td class="mono">A</td><td class="mono hl">2.442</td><td class="mono">p(B|A)=0.502, p(C|A)=0.498</td></tr>
+<tr><td class="mono">B</td><td class="mono hl">2.564</td><td class="mono">p(A|B)=0.495, p(C|B)=0.505</td></tr>
+<tr><td class="mono">C</td><td class="mono hl">2.612</td><td class="mono">p(A|C)=0.494, p(B|C)=0.506</td></tr>
+<tr><td class="mono">D</td><td class="mono hl">2.832</td><td class="mono">p(E|D)=0.488, p(F|D)=0.512</td></tr>
+<tr><td class="mono">E</td><td class="mono hl">3.418</td><td class="mono">p(D|E)=0.548, p(F|E)=0.452</td></tr>
+<tr><td class="mono">F</td><td class="mono hl">3.296</td><td class="mono">p(D|F)=0.560, p(E|F)=0.440</td></tr>
+</table>
+</div>
+
+<div class="callout info">These σ values are freshly solved (not copy-pasted from Class 09), which is exactly why they land at 2.442/2.832 rather than the previously-quoted ≈2.465/≈2.836 — same binary search, same target, a hair of numerical difference. Notice the pattern still holds perfectly: the sparse cluster (D, E, F) needs consistently <em>larger</em> σ than the dense cluster (A, B, C) to reach the identical target perplexity of 2.</div>
+
+</section>
+
+<section class="block" id="s01-perplexity">
+<div class="eyebrow">01 · the dial, made completely visual</div>
+<h2>Perplexity, made completely visual</h2>
+<p class="lead">One more pass at perplexity — this time purely through pictures, so the idea is unmistakable before we move on.</p>
+
+<p>Picture two neighborhoods sitting in the same high-dimensional space:</p>
+
+<div class="diagram">
+<svg viewBox="0 0 620 260" width="100%" height="260">
+<circle cx="180" cy="130" r="95" fill="none" stroke="#5fbfae" stroke-dasharray="4 3" stroke-width="1.3"/>
+<text x="180" y="30" text-anchor="middle" fill="#5fbfae" font-family="IBM Plex Mono" font-size="11">DENSE CLUSTER</text>
+<circle cx="180" cy="130" r="5" fill="#d9ab5c"/>
+<circle cx="150" cy="105" r="3.5" fill="#5fbfae"/><circle cx="205" cy="100" r="3.5" fill="#5fbfae"/><circle cx="215" cy="140" r="3.5" fill="#5fbfae"/><circle cx="160" cy="160" r="3.5" fill="#5fbfae"/><circle cx="140" cy="140" r="3.5" fill="#5fbfae"/><circle cx="200" cy="165" r="3.5" fill="#5fbfae"/><circle cx="125" cy="118" r="3.5" fill="#5fbfae"/><circle cx="230" cy="115" r="3.5" fill="#5fbfae"/>
+<circle cx="180" cy="130" r="38" fill="rgba(217,171,92,0.08)" stroke="#d9ab5c" stroke-width="1.3"/>
+<text x="180" y="228" text-anchor="middle" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="10">small radius already reaches 8 real neighbors</text>
+
+<circle cx="470" cy="130" r="95" fill="none" stroke="#e2836c" stroke-dasharray="4 3" stroke-width="1.3"/>
+<text x="470" y="30" text-anchor="middle" fill="#e2836c" font-family="IBM Plex Mono" font-size="11">SPARSE CLUSTER</text>
+<circle cx="470" cy="130" r="5" fill="#d9ab5c"/>
+<circle cx="410" cy="80" r="3.5" fill="#e2836c"/><circle cx="530" cy="70" r="3.5" fill="#e2836c"/><circle cx="540" cy="185" r="3.5" fill="#e2836c"/><circle cx="400" cy="175" r="3.5" fill="#e2836c"/>
+<circle cx="470" cy="130" r="80" fill="rgba(217,171,92,0.08)" stroke="#d9ab5c" stroke-width="1.3"/>
+<text x="470" y="228" text-anchor="middle" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="10">needs a much bigger radius to reach even 4 neighbors</text>
+</svg>
+<div class="cap">Same target perplexity for the gold point in both panels — but reaching it takes a small σ on the left (crowded) and a large σ on the right (empty). The dashed gold circle is literally "how far this point's Gaussian has to stretch."</div>
+</div>
+
+<p>Now the payoff, stated as plainly as possible: perplexity never asks "how far is far?" It only asks <b>"how many points does your probability distribution treat as real neighbors?"</b> — and it is σᵢ's entire job to make that true, however far or near those real neighbors physically sit.</p>
+
+<div class="grid2">
+<div class="diagram">
+<svg viewBox="0 0 260 200" width="100%" height="195">
+<line x1="15" y1="175" x2="245" y2="175" stroke="#242a34" stroke-width="1.3"/>
+<line x1="15" y1="20" x2="15" y2="175" stroke="#242a34" stroke-width="1.3"/>
+<rect x="30" y="21.9" width="34" height="153.1" fill="#5fbfae" opacity="0.9"/>
+<rect x="75" y="24.9" width="34" height="150.1" fill="#5fbfae" opacity="0.9"/>
+<rect x="120" y="174" width="34" height="1" fill="#3a4150"/>
+<rect x="165" y="174" width="34" height="1" fill="#3a4150"/>
+<rect x="210" y="174" width="34" height="1" fill="#3a4150"/>
+<text x="47" y="188" fill="#9aa1ab" font-family="IBM Plex Mono" font-size="9" text-anchor="middle">B (0.502)</text>
+<text x="92" y="188" fill="#9aa1ab" font-family="IBM Plex Mono" font-size="9" text-anchor="middle">C (0.498)</text>
+<text x="137" y="188" fill="#9aa1ab" font-family="IBM Plex Mono" font-size="9" text-anchor="middle">D (≈0)</text>
+<text x="182" y="188" fill="#9aa1ab" font-family="IBM Plex Mono" font-size="9" text-anchor="middle">E (≈0)</text>
+<text x="227" y="188" fill="#9aa1ab" font-family="IBM Plex Mono" font-size="9" text-anchor="middle">F (≈0)</text>
+</svg>
+<div class="cap"><b>p(·|A)</b> — dense point, σ_A = 2.442. All the weight sits on its two true cluster-mates.</div>
+</div>
+<div class="diagram">
+<svg viewBox="0 0 260 200" width="100%" height="195">
+<line x1="15" y1="175" x2="245" y2="175" stroke="#242a34" stroke-width="1.3"/>
+<line x1="15" y1="20" x2="15" y2="175" stroke="#242a34" stroke-width="1.3"/>
+<rect x="30" y="174" width="34" height="1" fill="#3a4150"/>
+<rect x="75" y="174" width="34" height="1" fill="#3a4150"/>
+<rect x="120" y="174" width="34" height="1" fill="#3a4150"/>
+<rect x="165" y="25.7" width="34" height="149.3" fill="#e2836c" opacity="0.9"/>
+<rect x="210" y="17.8" width="34" height="157.2" fill="#e2836c" opacity="0.9"/>
+<text x="47" y="188" fill="#9aa1ab" font-family="IBM Plex Mono" font-size="9" text-anchor="middle">A (≈0)</text>
+<text x="92" y="188" fill="#9aa1ab" font-family="IBM Plex Mono" font-size="9" text-anchor="middle">B (≈0)</text>
+<text x="137" y="188" fill="#9aa1ab" font-family="IBM Plex Mono" font-size="9" text-anchor="middle">C (≈0)</text>
+<text x="182" y="188" fill="#9aa1ab" font-family="IBM Plex Mono" font-size="9" text-anchor="middle">E (0.488)</text>
+<text x="227" y="188" fill="#9aa1ab" font-family="IBM Plex Mono" font-size="9" text-anchor="middle">F (0.512)</text>
+</svg>
+<div class="cap"><b>p(·|D)</b> — sparse point, σ_D = 2.832 (a noticeably bigger σ). Nearly identical <em>shape</em> of distribution, on a completely different physical scale.</div>
+</div>
+</div>
+
+<div class="callout good"><span class="lbl">The one sentence to keep forever</span>Perplexity fixes the <b>shape</b> of the distribution (how concentrated vs. spread the probability mass is); σᵢ is whatever number makes that shape happen, and that number is free to be wildly different for two points that are both "correctly" reaching the same target. That's the entire reason σ is per-point and perplexity is global.</div>
+
+</section>
+
+<section class="block" id="s02-two-sigma">
+<div class="eyebrow">02 · the side-by-side proof</div>
+<h2>Same perplexity, two clusters, two very different σ</h2>
+<p class="lead">Putting Section 01's two bar charts next to the raw distances makes the whole mechanism impossible to miss.</p>
+
+<div class="tbl">
+<table>
+<tr><th></th><th>Point A (dense cluster)</th><th>Point D (sparse cluster)</th></tr>
+<tr><td>Distance to its real neighbors</td><td class="mono good">0.616, 0.678</td><td class="mono bad">1.225, 1.500</td></tr>
+<tr><td>Distance to the far cluster</td><td class="mono">13.3 – 14.2</td><td class="mono">13.3 – 13.7</td></tr>
+<tr><td>σ found by binary search</td><td class="mono hl">2.442</td><td class="mono hl">2.832</td></tr>
+<tr><td>Resulting perplexity</td><td class="mono good">2.000</td><td class="mono good">2.000</td></tr>
+<tr><td>Resulting shape p(·|point)</td><td class="mono">0.502, 0.498, ≈0, ≈0, ≈0</td><td class="mono">≈0, ≈0, ≈0, 0.488, 0.512</td></tr>
+</table>
+</div>
+
+<div class="callout warn"><span class="lbl">Read this row by row</span>D's real neighbors (1.225, 1.500) sit roughly <b>2× farther</b> in absolute distance than A's real neighbors (0.616, 0.678) — D's cluster is, relatively, the sparser of the two. To still land on the exact same target perplexity of 2, D's search has to land on a <b>larger</b> σ (2.832 vs 2.442) — wide enough to make those farther-away points count as "close" in D's own local terms. Same target, same algorithm, genuinely different σ, driven purely by local density. This is <em>why</em> per-point σ exists at all — one global σ could never do this for both points simultaneously.</div>
+
+</section>
+
+<section class="block" id="s03-two-conditionals">
+<div class="eyebrow">03 · the asymmetry nobody expects</div>
+<h2>One relationship, two numbers: p(B|A) vs. p(A|B)</h2>
+<p class="lead">Take two points, A and B, sitting some distance apart in high-D space.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 400 60" width="100%" height="60">
+<circle cx="50" cy="30" r="5" fill="#7f9adf"/><text x="50" y="52" text-anchor="middle" fill="#7f9adf" font-family="IBM Plex Mono" font-size="11">A</text>
+<line x1="58" y1="30" x2="342" y2="30" stroke="#6b7480" stroke-width="1.3" stroke-dasharray="4 3"/>
+<circle cx="350" cy="30" r="5" fill="#e2836c"/><text x="350" y="52" text-anchor="middle" fill="#e2836c" font-family="IBM Plex Mono" font-size="11">B</text>
+</svg>
+</div>
+
+<p>We can compute two different conditional probabilities for this one pair:</p>
+
+<div class="grid2">
+<div class="co-card"><div class="name">p(B|A)</div><p>"Standing at A, and looking only at A's own neighborhood scale σ_A, how strongly is B a neighbor?"</p></div>
+<div class="co-card"><div class="name">p(A|B)</div><p>"Standing at B, and looking only at B's own neighborhood scale σ_B, how strongly is A a neighbor?"</p></div>
+</div>
+
+<div class="callout warn"><span class="lbl">These two numbers don't have to agree — and usually don't</span>Because $\sigma_A \neq \sigma_B$ in general, A and B each judge the same physical distance through a different lens. A might sit in a dense crowd (small σ_A, so B — however close — competes with many other close points for probability mass), while B might sit in a sparser area (larger σ_B, so A stands out as relatively more important to B than B is to A).</div>
+
+<p>Our real data shows this directly:</p>
+
+<div class="tbl">
+<table>
+<tr><th>Pair</th><th>p(j|i)</th><th>p(i|j)</th><th>Equal?</th></tr>
+<tr><td class="mono">A, B</td><td class="mono">p(B|A) = 0.5017</td><td class="mono">p(A|B) = 0.4954</td><td class="bad">No — close, but not identical</td></tr>
+<tr><td class="mono">D, E</td><td class="mono">p(E|D) = 0.4883</td><td class="mono">p(D|E) = 0.5477</td><td class="bad">No — a visibly bigger gap</td></tr>
+</table>
+</div>
+
+<div class="callout info"><span class="lbl">The actual problem this creates</span>t-SNE ultimately wants to say <em>one</em> thing about the pair (A, B): "here is how strongly these two points are related." But right now we have <b>two</b> numbers for that one relationship, and they disagree. Worse — the low-dimensional side we're about to build (Q, starting Section 07) will only ever produce <b>one</b> similarity value per pair, $q_{ij}=q_{ji}$, because it's built from a single 2D distance that has no "direction." There's no way to compare an asymmetric P against a symmetric Q, pair-by-pair. <b>We need one single number per pair on the P side too.</b></div>
+
+<div class="formula">
+<div class="tag">the fix</div>
+<div class="eq">$$p_{j|i},\ p_{i|j} \;\longrightarrow\; p_{ij} \qquad \text{(combine both directions into one symmetric relationship)}$$</div>
+</div>
+
+</section>
+
+<section class="block" id="s04-symmetrize">
+<div class="eyebrow">04 · optional, self-read — the full derivation</div>
+<h2>Why divide by 2n? <span class="scopetag scope-opt">optional</span></h2>
+<p class="lead">The natural first instinct is to just average the two directions. That's almost right — this section works out precisely why "almost" isn't good enough, and what the exact fix is.</p>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">Step 1 — the naive average</h3>
+
+<p>Suppose $p_{B|A}=0.8$ and $p_{A|B}=0.3$. The obvious combination:</p>
+
+<div class="formula">
+<div class="eq">$$p_{AB} \overset{?}{=} \dfrac{p_{B|A}+p_{A|B}}{2} = \dfrac{0.8+0.3}{2} = 0.55$$</div>
+</div>
+
+<p>This feels reasonable — "A's view + B's view → one symmetric relationship" — and it does fix the asymmetry: now $p_{AB}=p_{BA}$, there's a single number, done. So why does t-SNE not stop here?</p>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">Step 2 — check whether it's still a probability distribution</h3>
+
+<p>A valid joint probability distribution over <em>all pairs</em> must sum to exactly 1 — that was the entire reason we normalized back in Class 09's Section 12. Check it on our real 6-point data: if we only average (divide by 2, never by n), and sum every off-diagonal entry:</p>
+
+<div class="formula">
+<div class="eq">$$\sum_{i \neq j} \dfrac{p_{j|i}+p_{i|j}}{2} = 6.000 \qquad \text{— not 1. It's exactly } n.$$</div>
+</div>
+
+<div class="callout warn"><span class="lbl">Why it lands exactly on n, not by accident</span>Each of the n rows of P individually sums to 1 (that's what normalization in Class 09 guaranteed): $\sum_{j\neq i} p_{j|i} = 1$ for every row i. Averaging two matrices that are each "row-stochastic" and then summing every entry of the result just adds up n independent 1's — landing on exactly n, every time, for any dataset. Simple averaging can never produce a valid joint distribution over pairs; it's structurally guaranteed to overshoot by a factor of n.</div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">Step 3 — the actual fix: divide by 2n, not 2</h3>
+
+<div class="formula">
+<div class="tag">t-SNE's real symmetrization formula</div>
+<div class="eq">$$p_{ij} = \dfrac{p_{j|i}+p_{i|j}}{2n}$$</div>
+</div>
+
+<p>Same numerator as the naive average — we still genuinely combine both directions — but now divided by <span class="mono">2n</span> instead of just 2. Redo the sum with this correction, on the real data (n = 6):</p>
+
+<div class="tbl">
+<table>
+<tr><th>Quantity</th><th>Value</th></tr>
+<tr><td>$\sum_{i\neq j}(p_{j|i}+p_{i|j})$</td><td class="mono">12.000 (= 2n, always, by the row-stochastic argument above)</td></tr>
+<tr><td>Divide by 2n = 12</td><td class="mono good">12.000 / 12 = 1.000 ✓</td></tr>
+</table>
+</div>
+
+<div class="callout good"><span class="lbl">Verified on the real matrix</span>Summing every one of the 30 off-diagonal entries of our real symmetrized $P$ (6 points, 2 per row × 6 rows counted... every ordered pair) gives exactly <span class="mono">1.0000000000000002</span> — a genuine probability distribution over the <em>entire set of pairs at once</em>, not 6 separate per-point distributions any more.</div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">Step 4 — what "if not" actually looks like</h3>
+
+<p>If you skip the <span class="mono">n</span> and only divide by 2 (the naive average), here's the concrete failure: gradient descent later on will use these <span class="mono">$p_{ij}$</span> values directly as targets. If they sum to <span class="mono">n</span> instead of 1, every single one of them is <span class="mono">n</span>-times too large — the KL divergence loss (Section 11) stops being a valid divergence between two probability distributions altogether, because one side (Q) sums to 1 and the other (the un-fixed P) sums to n. The comparison becomes meaningless the moment either side isn't a real distribution.</p>
+
+<div class="tbl">
+<table>
+<tr><th>Version</th><th>Formula</th><th>Sums to</th><th>Usable as a probability?</th></tr>
+<tr><td>Naive average</td><td class="mono">(p_{j|i}+p_{i|j}) / 2</td><td class="mono bad">n</td><td class="bad">No</td></tr>
+<tr><td>t-SNE's actual fix</td><td class="mono">(p_{j|i}+p_{i|j}) / 2n</td><td class="mono good">1</td><td class="good">Yes</td></tr>
+</table>
+</div>
+
+<p>Applied to our A, B example from Step 1, but now with the real dataset's n = 6:</p>
+
+<div class="formula">
+<div class="eq">$$p_{AB} = \dfrac{p_{B|A}+p_{A|B}}{2n} = \dfrac{0.5017+0.4954}{12} = 0.08309$$</div>
+</div>
+
+<div class="callout good"><span class="lbl">Now we have exactly one number per pair</span>There is no longer an A→B version and a B→A version. $p_{AB}=p_{BA}=0.08309$, a single symmetric relationship, and the complete set of these numbers — one per unordered pair — is what we now call $P$ going forward.</div>
+
+<div class="tbl">
+<table>
+<tr><th>Pair</th><th>p(j|i)</th><th>p(i|j)</th><th>p_ij = (sum)/(2n), n=6</th></tr>
+<tr><td class="mono">A – B</td><td class="mono">0.5017</td><td class="mono">0.4954</td><td class="mono hl">0.08309</td></tr>
+<tr><td class="mono">A – C</td><td class="mono">0.4983</td><td class="mono">0.5059</td><td class="mono hl">0.08270</td></tr>
+<tr><td class="mono">B – C</td><td class="mono">0.5046</td><td class="mono">0.4941</td><td class="mono hl">0.08420</td></tr>
+<tr><td class="mono">D – E</td><td class="mono">0.4883</td><td class="mono">0.5477</td><td class="mono hl">0.08633</td></tr>
+<tr><td class="mono">D – F</td><td class="mono">0.5117</td><td class="mono">0.5596</td><td class="mono hl">0.08927</td></tr>
+<tr><td class="mono">E – F</td><td class="mono">0.4518</td><td class="mono">0.4395</td><td class="mono hl">0.07427</td></tr>
+<tr><td class="mono">any cross-cluster pair (e.g. A – D)</td><td class="mono">≈0</td><td class="mono">≈0</td><td class="mono">≈0.00001 — essentially zero</td></tr>
+</table>
+</div>
+
+<div class="callout info"><span class="lbl">Sanity check the shape of the result</span>The six within-cluster pairs each carry roughly 7–9% of the total probability mass; all cross-cluster pairs carry a combined total under 0.1%. This is exactly the structure we want a good $P$ to have — real neighbors get almost all the weight, unrelated points get almost none — just now expressed as <b>one</b> number per pair instead of two competing ones.</div>
+
+</section>
+
+<section class="block" id="s05-new-goal">
+<div class="eyebrow">05 · switching gears</div>
+<h2>P is done — the new goal</h2>
+<p class="lead">Every number from here on is about a completely different object.</p>
+
+<div class="formula">
+<div class="tag">the question this section answers, precisely</div>
+<div class="eq">$$X \in \mathbb{R}^{10{,}000 \times 100} \;\longrightarrow\; Y \in \mathbb{R}^{10{,}000 \times 2}$$</div>
+</div>
+
+<p>We started with 10,000 points in 100 dimensions. $P$ — everything built so far — is a $10{,}000 \times 10{,}000$ table of relationships computed <em>from</em> that original data. But $P$ is not itself a picture. We still need an actual 2D point for every single one of those 10,000 original points.</p>
+
+<div class="tbl">
+<table>
+<tr><th>Object</th><th>Shape</th><th>What it holds</th></tr>
+<tr><td class="mono">X</td><td class="mono">10,000 × 100</td><td>the original data — untouched, still sitting in 100D</td></tr>
+<tr><td class="mono">P</td><td class="mono">10,000 × 10,000</td><td>relationships computed from X — "who should be near whom"</td></tr>
+<tr><td class="mono">Y</td><td class="mono">10,000 × 2</td><td class="hl">the thing we still have to create — one new 2D coordinate per original point</td></tr>
+</table>
+</div>
+
+<div class="callout warn"><span class="lbl">A distinction worth being precise about</span>PCA computes $Z = XW$ — a fixed, one-shot mathematical projection of the <em>original coordinates</em> onto new axes. t-SNE does something structurally different: it never projects X anywhere. It only ever used X to compute distances, which fed into $P$. From here on, $X$ is done being useful — t-SNE <b>manufactures</b> a brand new set of 2D coordinates $Y=\{y_1,\dots,y_n\}$ from scratch and then <em>moves</em> them, repeatedly, until they satisfy $P$. Nothing about $Y$'s starting position needs to bear any resemblance to $X$'s geometry.</div>
+
+<div class="formula">
+<div class="tag">what a single row looks like</div>
+<div class="eq">$$x_i \in \mathbb{R}^{100} \quad\longrightarrow\quad y_i \in \mathbb{R}^{2} \qquad \text{e.g. } x_1 \to y_1=(2.1,\ 0.7)$$</div>
+</div>
+
+<p>If there are 10,000 original points, t-SNE will create 10,000 new 2D points — one per row. The only question left before any optimization can start: <b>where do these 2D points initially come from?</b></p>
+
+</section>
+
+<section class="block" id="s06-init-y">
+<div class="eyebrow">06 · the starting position</div>
+<h2>Initializing Y — random vs. PCA</h2>
+<p class="lead">t-SNE does not know in advance where the 2D points should go. It has to start <em>somewhere</em> and then let gradient descent do the work. There are two standard ways to pick that starting point.</p>
+
+<div class="grid2">
+<div class="co-card">
+<div class="name">1 · Random initialization</div>
+<p>Every $y_i$ is drawn from a small random distribution — typically $y_i \sim \mathcal{N}(0, 10^{-4})$ — placing all 10,000 points in a tiny, essentially structureless cloud near the origin. No information from $X$ is used at all; it is a pure guess.</p>
+</div>
+<div class="co-card">
+<div class="name">2 · PCA initialization <span class="badge b-c2">t-SNE's default</span></div>
+<p>Run ordinary PCA on $X$, keep only the top 2 principal components, and use <em>that</em> 2D projection as the starting $Y$. This injects real, if imperfect, global structure from the very first step — same PCA machinery from Class 08–09, just now used as a warm-start rather than a final answer.</p>
+</div>
+</div>
+
+<div class="callout good"><span class="lbl">Say it plainly</span><b>PCA initialization is the default in modern t-SNE implementations</b> (including scikit-learn since recent versions). Random initialization still exists and is occasionally used deliberately (e.g. to check that a result isn't an artifact of one particular starting layout), but if you don't specify otherwise, you are getting the PCA-based start.</div>
+
+<p>See both, computed for real, on our 6-point dataset:</p>
+
+<div class="tbl">
+<table>
+<tr><th>Point</th><th>Random init (seed=7, scale 0.01)</th><th>PCA init (top-2 PCs of the real 3D data)</th></tr>
+<tr><td class="mono">A</td><td class="mono">(0.00001, 0.00299)</td><td class="mono">(−7.073, 0.128)</td></tr>
+<tr><td class="mono">B</td><td class="mono">(−0.00274, −0.00891)</td><td class="mono">(−6.493, 0.159)</td></tr>
+<tr><td class="mono">C</td><td class="mono">(−0.00455, −0.00992)</td><td class="mono">(−6.501, −0.209)</td></tr>
+<tr><td class="mono">D</td><td class="mono">(0.00060, 0.01340)</td><td class="mono">(6.780, −0.167)</td></tr>
+<tr><td class="mono">E</td><td class="mono">(−0.00492, −0.00620)</td><td class="mono">(7.102, 1.260)</td></tr>
+<tr><td class="mono">F</td><td class="mono">(0.00490, 0.00357)</td><td class="mono">(6.184, −1.171)</td></tr>
+</table>
+</div>
+
+<div class="callout info"><span class="lbl">Look at what each starting point already "knows"</span>Under random init, all six points are crammed into a cloud roughly 0.02 units wide — A and D (from completely different clusters) start almost on top of each other, purely by chance. Under PCA init, the top 2 components already explain <b>98.8%</b> of this data's variance, so the two true clusters are <em>already</em> sitting on opposite sides of the plot (A/B/C near x≈−7, D/E/F near x≈+7) before gradient descent has taken a single step. This is precisely why PCA init tends to converge faster and more reliably — Section 15 verifies this with the actual optimization trajectory.</div>
+
+</section>
+
+<section class="block" id="s07-q-lowd">
+<div class="eyebrow">07 · P's mirror image</div>
+<h2>From Y to Q — similarity in low dimensions</h2>
+<p class="lead">Once $Y$ exists (random or PCA-initialized), we can ask the exact same question we asked in high-D: "given where these 2D points currently sit, how similar are they to each other?" That answer is called $Q$.</p>
+
+<div class="tbl">
+<table>
+<tr><th></th><th>High-dimensional world</th><th>2D world</th></tr>
+<tr><td>Coordinates</td><td class="mono">X (10,000 × 100)</td><td class="mono">Y (10,000 × 2)</td></tr>
+<tr><td>Relationships we want / currently have</td><td class="mono hl">P — relationships we WANT to preserve</td><td class="mono hl">Q — relationships we CURRENTLY have</td></tr>
+<tr><td>Built from</td><td>Gaussian similarity</td><td class="teal">Student-t similarity (next)</td></tr>
+</table>
+</div>
+
+<div class="callout good"><span class="lbl">The picture to hold in your head</span>$P$ is fixed — it was computed once from the original data and never changes again. $Q$ is <em>alive</em> — every time gradient descent moves a point in $Y$, every entry of $Q$ can change. The entire rest of t-SNE is: compare $P$ (fixed target) against $Q$ (moving current state), and nudge $Y$ so $Q$ drifts toward $P$.</div>
+
+<p>The obvious first guess: reuse the exact same Gaussian formula that built $P$.</p>
+
+<div class="formula">
+<div class="tag">the tempting (but ultimately wrong) reuse</div>
+<div class="eq">$$\text{similarity}(i,j) \overset{?}{=} e^{-\|y_i-y_j\|^2/2\sigma^2}$$</div>
+</div>
+
+<p>We could do this mathematically — nothing stops us. But t-SNE deliberately does <b>not</b> use a Gaussian on the low-D side. It switches to a completely different distribution, and that switch is not a stylistic choice — it exists to fix a specific, geometric problem that shows up only once you actually try to squeeze high-D relationships into 2D. That problem is the crowding problem.</p>
+
+</section>
+
+<section class="block" id="s08-crowding">
+<div class="eyebrow">08 · the problem that forces a new distribution</div>
+<h2>The crowding problem</h2>
+<p class="lead">Before any formula: a simple geometric fact that has nothing to do with t-SNE specifically. It's just what happens when you compress space.</p>
+
+<p>Take four points arranged as a perfect square in 2D, side length 2:</p>
+
+<div class="diagram">
+<svg viewBox="0 0 300 220" width="100%" height="210">
+<rect x="60" y="30" width="120" height="120" fill="none" stroke="#e2836c" stroke-width="2"/>
+<circle cx="60" cy="150" r="5" fill="#e2836c"/><text x="45" y="172" fill="#e2836c" font-family="IBM Plex Mono" font-size="12">A</text>
+<circle cx="180" cy="150" r="5" fill="#e2836c"/><text x="190" y="172" fill="#e2836c" font-family="IBM Plex Mono" font-size="12">B</text>
+<circle cx="180" cy="30" r="5" fill="#e2836c"/><text x="190" y="25" fill="#e2836c" font-family="IBM Plex Mono" font-size="12">C</text>
+<circle cx="60" cy="30" r="5" fill="#e2836c"/><text x="45" y="25" fill="#e2836c" font-family="IBM Plex Mono" font-size="12">D</text>
+<text x="118" y="168" fill="#9aa1ab" font-family="IBM Plex Mono" font-size="10">2</text>
+<text x="195" y="92" fill="#9aa1ab" font-family="IBM Plex Mono" font-size="10">2</text>
+<line x1="60" y1="150" x2="180" y2="30" stroke="#6b7480" stroke-dasharray="3 3"/>
+<text x="105" y="82" fill="#6b7480" font-family="IBM Plex Mono" font-size="10">2.83</text>
+</svg>
+<div class="cap">A perfect 2D square: four equal sides of length 2, and two diagonals of length 2.83 — six pairwise distances, only two distinct values.</div>
+</div>
+
+<p>Now try to lay these same four points on a single 1D line — squeezing one dimension away, exactly what t-SNE does going from 100D (or even just 3D) down to 2D:</p>
+
+<div class="diagram">
+<svg viewBox="0 0 400 100" width="100%" height="100">
+<line x1="30" y1="60" x2="370" y2="60" stroke="#242a34" stroke-width="1.3"/>
+<circle cx="60" cy="60" r="5" fill="#7f9adf"/><text x="60" y="82" text-anchor="middle" fill="#7f9adf" font-family="IBM Plex Mono" font-size="11">A</text>
+<circle cx="200" cy="60" r="5" fill="#7f9adf"/><text x="200" y="82" text-anchor="middle" fill="#7f9adf" font-family="IBM Plex Mono" font-size="11">B</text>
+<circle cx="340" cy="60" r="5" fill="#7f9adf"/><text x="340" y="82" text-anchor="middle" fill="#7f9adf" font-family="IBM Plex Mono" font-size="11">C</text>
+<text x="130" y="45" text-anchor="middle" fill="#9aa1ab" font-family="IBM Plex Mono" font-size="10">2</text>
+<text x="270" y="45" text-anchor="middle" fill="#9aa1ab" font-family="IBM Plex Mono" font-size="10">2</text>
+<text x="200" y="20" text-anchor="middle" fill="#e2836c" font-family="IBM Plex Mono" font-size="10">where does D go?</text>
+</svg>
+<div class="cap">Place A, B, C correctly spaced (2 apart each). D needs to be simultaneously 2 away from A, 2.83 away from B, and 2 away from C — impossible on a single line. Something has to give.</div>
+</div>
+
+<div class="callout warn"><span class="lbl">This is the crowding problem, stated plainly</span>A 1D line simply does not have enough "room" to honor all six of the square's pairwise distances at once. Wherever you place D, at least one of its distances gets distorted — usually by getting squashed <em>too close</em> to its neighbors, because a lower-dimensional space runs out of directions to spread points apart in. <b>You cannot faithfully locate all the data points from a higher dimension inside a lower one</b> — some relationships are forced to crowd together that weren't crowded before.</div>
+
+<div class="callout info"><span class="lbl">Why this gets dramatically worse from 100D → 2D, not just 2D → 1D</span>The <b>kissing number</b> — the maximum number of equidistant neighbors a single point can have — grows explosively with dimension: <span class="mono">2 in 2D, 12 in 3D, 24 in 4D, and 240 in 8D</span>. In a 100-dimensional space, a point can have an enormous number of genuinely equidistant "close" neighbors at once. Force that same point down into 2D, where only 6 points can ever be mutually equidistant from it, and most of those neighbors are mathematically forced to crowd into the same small region — there simply isn't enough room in 2D to keep them all appropriately spread out and distinct.</div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">Why a Gaussian on the low-D side makes crowding worse, not better</h3>
+
+<p>A Gaussian similarity decays <em>very</em> fast — it treats "moderately far" almost the same as "extremely far" (both ≈ 0). Watch what that means once points are forced into crowded 2D space:</p>
+
+<div class="tbl">
+<table>
+<tr><th>Distance d (σ=1)</th><th>Gaussian similarity <span class="mono">e^(−d²/2)</span></th></tr>
+<tr><td class="mono">1</td><td class="mono">0.6065</td></tr>
+<tr><td class="mono">2</td><td class="mono">0.1353</td></tr>
+<tr><td class="mono">3</td><td class="mono">0.0111</td></tr>
+<tr><td class="mono">5</td><td class="mono bad">0.000004 — essentially zero</td></tr>
+</table>
+</div>
+
+<div class="callout warn">If the 2D similarities also decayed this fast, then once crowding forces some points to sit only moderately far apart (rather than perfectly spaced), the Gaussian would <em>already</em> call them "basically unrelated" — collapsing genuinely-different levels of closeness into one indistinguishable blob of near-zero similarity. There would be no useful gradient signal left to push points into the right relative arrangement: everything not extremely close just reads as "equally irrelevant." We need the low-D similarity function to stay <em>meaningfully non-zero</em> for longer, so points that end up moderately far apart (forced there by crowding) still get a usable, distinguishable similarity value. That is precisely what the Student-t distribution provides.</div>
+
+</section>
+
+<section class="block" id="s09-student-t">
+<div class="eyebrow">09 · optional, self-read — end to end</div>
+<h2>The Student-t distribution <span class="scopetag scope-opt">optional</span></h2>
+<p class="lead">Everything about why t-SNE uses this specific curve on the low-D side, from its formula to its name to its shape — none of this is required to use or explain t-SNE at a working level, but it removes any remaining mystery around the "t" in t-SNE.</p>
+
+<div class="formula">
+<div class="tag">t-SNE's low-D similarity function</div>
+<div class="eq">$$\text{similarity}(i,j) = \dfrac{1}{1+\|y_i-y_j\|^2}$$</div>
+</div>
+
+<p>This is the Student-t distribution's density shape with exactly <b>one degree of freedom</b> ($\nu=1$) — the specific special case of the Student-t family that is simple enough to have this clean closed form, with no exponential anywhere in it.</p>
+
+<div class="tbl">
+<table>
+<tr><th>Question</th><th>Answer</th></tr>
+<tr><td>What is the Student-t distribution, generally?</td><td>A family of bell-shaped probability distributions, controlled by a "degrees of freedom" parameter $\nu$. Originally derived to describe the sampling distribution of a mean estimated from a <em>small</em> sample, where the true variance is unknown and must itself be estimated.</td></tr>
+<tr><td>Where does the name come from?</td><td>Statistician William Sealy Gosset developed it while working at the Guinness brewery, and published it in 1908 under the pen name <b>"Student"</b> (Guinness restricted employees from publishing under their own names) — hence "Student's t-distribution."</td></tr>
+<tr><td>How does it differ from a Gaussian, shape-wise?</td><td>Both are symmetric and bell-shaped, but the Student-t has <b>heavier tails</b> — it assigns meaningfully more probability to values far from the center. As $\nu \to \infty$, the Student-t converges exactly to the standard Gaussian; smaller $\nu$ means heavier tails.</td></tr>
+<tr><td>Why df = 1, specifically?</td><td>$\nu=1$ is the <em>heaviest-tailed</em> member of the whole Student-t family (this special case is also called the <b>Cauchy distribution</b>). t-SNE wants the heaviest reasonable tails available, to solve crowding as aggressively as possible — so it goes straight to the extreme end of the family, and gets a bonus: at $\nu=1$ the formula collapses to the very simple $\frac{1}{1+d^2}$, with no exponential to evaluate, which is also computationally cheaper at scale.</td></tr>
+</table>
+</div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">Made concrete: the same four real pairs, marked on both curves</h3>
+
+<p>Rather than a generic table of round-number distances, mark the <em>actual</em> distances that show up in our own running example — real neighbor pairs, and a hypothetical pair forced together by crowding — directly on both curves, so "for the same pair, what does each distribution actually say" has one unambiguous picture.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 480 260" width="100%" height="250">
+<line x1="40" y1="190" x2="460" y2="190" stroke="#242a34" stroke-width="1.3"/>
+<line x1="40" y1="20" x2="40" y2="190" stroke="#242a34" stroke-width="1.3"/>
+<text x="440" y="205" fill="#6b7480" font-family="IBM Plex Mono" font-size="10">distance</text>
+<text x="10" y="15" fill="#6b7480" font-family="IBM Plex Mono" font-size="10">similarity</text>
+<polyline points="40.0,20.0 43.5,21.3 47.1,25.3 50.6,31.6 54.1,40.1 57.6,50.3 61.2,61.8 64.7,74.2 68.2,87.0 71.8,99.7 75.3,112.1 78.8,123.8 82.4,134.5 85.9,144.1 89.4,152.6 92.9,159.9 96.5,166.0 100.0,171.1 103.5,175.2 107.1,178.5 110.6,181.0 114.1,182.9 117.6,184.4 121.2,185.5 124.7,186.3 128.2,186.8 131.8,187.2 135.3,187.5 138.8,187.7 142.4,187.8 149.4,187.9 160.0,188.0 200.0,188.0 250.0,188.0 300.0,188.0 350.0,188.0 400.0,188.0 428.0,188.0 460.0,188.0" fill="none" stroke="#7f9adf" stroke-width="2.4"/>
+<polyline points="40.0,20.0 43.5,22.6 47.1,30.0 50.6,41.0 54.1,54.1 57.6,67.8 61.2,81.1 64.7,93.5 68.2,104.7 71.8,114.5 75.3,123.1 78.8,130.5 82.4,136.9 85.9,142.4 89.4,147.2 92.9,151.3 96.5,154.8 100.0,158.0 103.5,160.7 107.1,163.1 110.6,165.2 114.1,167.0 117.6,168.7 121.2,170.1 124.7,171.5 128.2,172.6 131.8,173.7 135.3,174.6 138.8,175.5 149.4,177.7 160.0,179.3 200.0,183.1 250.0,185.1 300.0,185.9 350.0,186.5 400.0,187.0 428.0,187.1 460.0,187.3" fill="none" stroke="#d9ab5c" stroke-width="2.4" stroke-dasharray="5 3"/>
+<text x="55" y="35" fill="#7f9adf" font-family="IBM Plex Mono" font-size="10">Gaussian, σ=1</text>
+<text x="300" y="178" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="10">Student-t, df=1</text>
+
+<circle cx="56.3" cy="46.1" r="4" fill="#93c084"/><circle cx="56.3" cy="62.4" r="4" fill="#93c084"/>
+<line x1="56.3" y1="20" x2="56.3" y2="207" stroke="#93c084" stroke-width="1" stroke-dasharray="2 2" opacity="0.5"/>
+<text x="56.3" y="220" fill="#93c084" font-family="IBM Plex Mono" font-size="9" text-anchor="middle">A–B</text>
+<text x="56.3" y="232" fill="#93c084" font-family="IBM Plex Mono" font-size="9" text-anchor="middle">(0.58)</text>
+
+<circle cx="81.0" cy="130.4" r="4" fill="#5fbfae"/><circle cx="81.0" cy="134.5" r="4" fill="#5fbfae"/>
+<line x1="81.0" y1="20" x2="81.0" y2="190" stroke="#5fbfae" stroke-width="1" stroke-dasharray="2 2" opacity="0.5"/>
+<text x="110" y="200" fill="#5fbfae" font-family="IBM Plex Mono" font-size="9" text-anchor="middle">D–E</text>
+<text x="110" y="212" fill="#5fbfae" font-family="IBM Plex Mono" font-size="9" text-anchor="middle">(1.46)</text>
+<line x1="81.0" y1="190" x2="105" y2="197" stroke="#5fbfae" stroke-width="0.8" opacity="0.6"/>
+
+<circle cx="138.0" cy="187.6" r="4" fill="#e2836c"/><circle cx="138.0" cy="175.3" r="4" fill="#e2836c"/>
+<line x1="138.0" y1="20" x2="138.0" y2="207" stroke="#e2836c" stroke-width="1" stroke-dasharray="2 2" opacity="0.5"/>
+<text x="138.0" y="220" fill="#e2836c" font-family="IBM Plex Mono" font-size="9" text-anchor="middle">"crowded"</text>
+<text x="138.0" y="232" fill="#e2836c" font-family="IBM Plex Mono" font-size="9" text-anchor="middle">(3.5)</text>
+
+<circle cx="428.0" cy="188.0" r="4" fill="#9aa3ad"/><circle cx="428.0" cy="187.1" r="4" fill="#9aa3ad"/>
+<line x1="428.0" y1="20" x2="428.0" y2="207" stroke="#9aa3ad" stroke-width="1" stroke-dasharray="2 2" opacity="0.5"/>
+<text x="428.0" y="220" fill="#9aa3ad" font-family="IBM Plex Mono" font-size="9" text-anchor="middle">A–D</text>
+<text x="428.0" y="232" fill="#9aa3ad" font-family="IBM Plex Mono" font-size="9" text-anchor="middle">(13.86)</text>
+</svg>
+<div class="cap">Same four pairs, same two curves. At the two real intra-cluster distances (green, teal) the curves nearly overlap. At d=13.86 (grey) both curves look equally flat to the eye — the real gap between them, ~10³⁹×, only shows up in the actual numbers below, not on a linear plot.</div>
+</div>
+
+<div class="tbl">
+<table>
+<tr><th>Pair</th><th>Distance (2D, PCA-init)</th><th>Gaussian, σ=1</th><th>Student-t, df=1</th><th>Ratio (t / Gaussian)</th></tr>
+<tr><td class="mono">A – B <span style="color:var(--paper-faint)">(real neighbors)</span></td><td class="mono">0.581</td><td class="mono">0.8447</td><td class="mono">0.7476</td><td class="mono">0.89×</td></tr>
+<tr><td class="mono">D – E <span style="color:var(--paper-faint)">(real neighbors)</span></td><td class="mono">1.463</td><td class="mono">0.3429</td><td class="mono">0.3184</td><td class="mono">0.93×</td></tr>
+<tr><td class="mono">hypothetical "crowded" pair</td><td class="mono">3.5</td><td class="mono">0.00219</td><td class="mono good">0.0755</td><td class="mono good">≈35×</td></tr>
+<tr><td class="mono">A – D <span style="color:var(--paper-faint)">(genuinely unrelated)</span></td><td class="mono">13.856</td><td class="mono bad">2.04 × 10⁻⁴²</td><td class="mono good">0.00518</td><td class="mono good">≈2.5 × 10³⁹</td></tr>
+</table>
+</div>
+
+<div class="callout good"><span class="lbl">Reading these four rows as one story</span>For the two <em>real</em> neighbor pairs (A–B, D–E) — the cases that matter most for a correct embedding — Gaussian and Student-t barely disagree (ratio ≈0.9); switching distributions doesn't change how close-together points are treated. The entire point of the switch shows up only once a pair is forced <em>moderately</em> far apart by crowding: at d=3.5, Student-t still reports real, usable similarity (0.076) while Gaussian has already all but zeroed it out (0.002) — a ~35× gap. Push out to a genuinely unrelated pair's real distance (A–D, 13.86), and Gaussian has underflowed to a number smaller than anything meaningful (2×10⁻⁴²), while Student-t still returns a small, well-behaved, nonzero 0.0052. That last row is precisely why a gradient computed from Student-t similarities still has real, usable signal at long range, while a Gaussian-based gradient there would be numerically dead.</div>
+
+</section>
+
+<section class="block" id="s10-q-matrix">
+<div class="eyebrow">10 · putting it together</div>
+<h2>The Q matrix, computed — and no symmetrization step here</h2>
+<p class="lead">Exactly like $P$, raw similarity scores must be normalized into a genuine probability distribution before they're usable.</p>
+
+<div class="formula">
+<div class="tag">normalized low-D similarity</div>
+<div class="eq">$$q_{ij} = \dfrac{(1+\|y_i-y_j\|^2)^{-1}}{\displaystyle\sum_{k\neq i}(1+\|y_k-y_i\|^2)^{-1}}$$</div>
+</div>
+
+<p>Computed for real, using the PCA-initialized $Y$ from Section 06:</p>
+
+<div class="tbl">
+<table>
+<tr><th></th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th></tr>
+<tr><td class="mono hl">A</td><td>—</td><td class="mono">0.1153</td><td class="mono">0.1070</td><td class="mono">0.0008</td><td class="mono">0.0008</td><td class="mono">0.0009</td></tr>
+<tr><td class="mono hl">B</td><td class="mono">0.1153</td><td>—</td><td class="mono">0.1358</td><td class="mono">0.0009</td><td class="mono">0.0008</td><td class="mono">0.0009</td></tr>
+<tr><td class="mono hl">C</td><td class="mono">0.1070</td><td class="mono">0.1358</td><td>—</td><td class="mono">0.0009</td><td class="mono">0.0008</td><td class="mono">0.0010</td></tr>
+<tr><td class="mono hl">D</td><td class="mono">0.0008</td><td class="mono">0.0009</td><td class="mono">0.0009</td><td>—</td><td class="mono">0.0491</td><td class="mono">0.0653</td></tr>
+<tr><td class="mono hl">E</td><td class="mono">0.0008</td><td class="mono">0.0008</td><td class="mono">0.0008</td><td class="mono">0.0491</td><td>—</td><td class="mono">0.0199</td></tr>
+<tr><td class="mono hl">F</td><td class="mono">0.0009</td><td class="mono">0.0009</td><td class="mono">0.0010</td><td class="mono">0.0653</td><td class="mono">0.0199</td><td>—</td></tr>
+</table>
+</div>
+
+<div class="callout good">Sum of every entry: exactly <span class="mono">1.0000</span> — a genuine joint probability distribution over pairs, just like the symmetrized $P$.</div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">Why doesn't Q need a symmetrization step like P did?</h3>
+
+<p>Recall exactly <em>why</em> $P$ needed fixing in Sections 03–04: $p_{j|i}$ and $p_{i|j}$ used two <em>different</em> denominators, because they were each normalized using a <em>different</em> point's own $\sigma$ ($\sigma_i$ vs $\sigma_j$) — that mismatch is what created two disagreeing numbers for one relationship in the first place.</p>
+
+<div class="tbl">
+<table>
+<tr><th></th><th>P (high-D)</th><th>Q (low-D)</th></tr>
+<tr><td>Built from</td><td>a per-point conditional, normalized using that point's own σᵢ</td><td>a single, already-symmetric 2D distance $\|y_i-y_j\|^2 = \|y_j-y_i\|^2$</td></tr>
+<tr><td>Is there a "direction"?</td><td class="bad">Yes — p(j|i) genuinely differs from p(i|j)</td><td class="good">No — there was never an asymmetry to begin with</td></tr>
+<tr><td>Denominator</td><td class="bad">Different per row (each row normalizes against that row's own σᵢ)</td><td class="good">One shared global denominator $Z=\sum_{k\neq l}(1+\|y_k-y_l\|^2)^{-1}$, same for every pair</td></tr>
+<tr><td>Needs symmetrizing?</td><td class="bad">Yes — Sections 03–04</td><td class="good">No — $q_{ij}=q_{ji}$ automatically, by construction</td></tr>
+</table>
+</div>
+
+<div class="callout info"><span class="lbl">The structural reason, one more time</span>Q has no per-point σ at all — there is a <em>single, shared</em> normalization constant $Z$ across the whole matrix, not one denominator per row. With one shared denominator and a distance function that's already symmetric ($\|y_i-y_j\|=\|y_j-y_i\|$), $q_{ij}$ and $q_{ji}$ were never two different computations to begin with — they were the same computation all along. Verified directly on the real matrix above: $|Q - Q^T|_{\max} = 0.0$, exactly.</div>
+
+<div class="tbl">
+<table>
+<tr><th>High-dimensional side</th><th>Low-dimensional side</th></tr>
+<tr><td class="mono">P → p_ij, via Gaussian-based similarities, symmetrized by hand (÷2n)</td><td class="mono">Q → q_ij, via Student-t-based similarities, symmetric for free</td></tr>
+</table>
+</div>
+
+</section>
+
+<section class="block" id="s11-kl">
+<div class="eyebrow">11 · optional, self-read — from first principles</div>
+<h2>KL divergence <span class="scopetag scope-opt">optional</span></h2>
+<p class="lead">We now have two full probability distributions over the exact same set of pairs — $P$ (what we want) and $Q$ (what we currently have). We need one single number that says how different they are. That number is the Kullback–Leibler divergence.</p>
+
+<div class="formula">
+<div class="tag">Kullback–Leibler (KL) divergence</div>
+<div class="eq">$$KL(P\|Q) = \sum_{i\neq j} p_{ij}\,\log\dfrac{p_{ij}}{q_{ij}}$$</div>
+</div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">Reading the formula piece by piece</h3>
+
+<div class="tbl">
+<table>
+<tr><th>Piece</th><th>What it does</th></tr>
+<tr><td class="mono">p_ij / q_ij</td><td>The ratio of "what we want" to "what we currently have," for one pair. If they match exactly, this ratio is 1.</td></tr>
+<tr><td class="mono">log(p_ij / q_ij)</td><td>Log of that ratio. $\log(1)=0$ — a perfect match for that pair contributes exactly zero to the total.</td></tr>
+<tr><td class="mono">p_ij · log(...)</td><td>Weight each pair's log-ratio by how <em>important</em> t-SNE considers that pair (its target probability $p_{ij}$). A pair P says is very important gets a heavily-weighted contribution; a pair P says is irrelevant contributes almost nothing, no matter how wrong Q is about it.</td></tr>
+<tr><td class="mono">Σ over all pairs</td><td>Add every pair's contribution into one single scalar.</td></tr>
+</table>
+</div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">What happens when P and Q agree, or disagree</h3>
+
+<div class="tbl">
+<table>
+<tr><th>Case</th><th>p_ij vs q_ij</th><th>p_ij / q_ij</th><th>log(p_ij/q_ij)</th><th>Contribution</th></tr>
+<tr><td>Perfect agreement</td><td class="mono">p = q</td><td class="mono">1</td><td class="mono">0</td><td class="mono good">0 — no penalty</td></tr>
+<tr><td>Q under-estimates a real relationship</td><td class="mono">p = 0.1, q = 0.02</td><td class="mono">5</td><td class="mono good">+1.609</td><td class="mono good">positive, and large</td></tr>
+<tr><td>Q over-estimates a relationship P says is weak</td><td class="mono">p = 0.02, q = 0.1</td><td class="mono">0.2</td><td class="mono bad">−1.609</td><td class="mono bad">negative, but tiny weight (p is small)</td></tr>
+</table>
+</div>
+
+<p>Verified on the real data — the (A,D) pair, a genuinely unrelated cross-cluster pair, at the PCA-initialized starting point:</p>
+
+<div class="formula">
+<div class="eq">$$p_{AD} \approx 0.00001, \quad q_{AD} \approx 0.0008 \quad\Rightarrow\quad p_{AD}\log\!\dfrac{p_{AD}}{q_{AD}} \approx -0.0000024$$</div>
+</div>
+
+<div class="callout info">Even though Q substantially <em>over</em>-estimates this pair's similarity (0.0008 vs a target of essentially 0 — nearly 100× too high, in ratio terms), the contribution to the total loss is tiny, simply because $p_{ij}$ itself is tiny. This is a deliberate, important asymmetry in how KL divergence behaves — explored fully in Section 12.</div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">Can KL divergence ever be negative?</h3>
+
+<p>Individual terms in the sum absolutely can be negative (see the table above, row 3). The question is whether the <em>total</em>, summed over every pair, can ever go negative. It cannot — and this is provable, not just observed.</p>
+
+<div class="callout good"><span class="lbl">Why the total is always ≥ 0 (Gibbs' inequality)</span>This is a general mathematical fact about any two valid probability distributions, not specific to t-SNE. Intuition: $-\log(x)$ is a convex function, and Jensen's inequality for a convex function applied to the expectation $\mathbb{E}_p\!\left[-\log\frac{q}{p}\right]$ gives $KL(P\|Q) = \mathbb{E}_p\!\left[\log\frac{p}{q}\right] \geq -\log\left(\mathbb{E}_p\!\left[\frac{q}{p}\right]\right) = -\log\left(\sum_i q_i\right) = -\log(1) = 0$, using the fact that $Q$ also sums to exactly 1. Equality holds only when $P$ and $Q$ are identical everywhere.</div>
+
+<div class="formula">
+<div class="tag">the bound, stated simply</div>
+<div class="eq">$$KL(P\|Q) \geq 0, \qquad \text{with equality if and only if } P = Q \text{ everywhere}$$</div>
+</div>
+
+<div class="callout warn"><span class="lbl">So — negative or positive, overall?</span>Individual pair-wise terms can go either way (positive when Q underestimates, negative when Q overestimates a low-weight pair) — but they can never combine into a negative total. $KL(P\|Q)$ behaves exactly like a "distance": always zero or positive, zero only for a perfect match, and it grows the more $Q$ departs from $P$ on the pairs $P$ considers important. (Technically it is <em>not</em> a true mathematical distance — it isn't symmetric, $KL(P\|Q)\neq KL(Q\|P)$ in general — but it behaves like one for our purposes: something to drive toward zero.)</div>
+
+</section>
+
+<section class="block" id="s12-why-minimize">
+<div class="eyebrow">12 · the choice that shapes everything</div>
+<h2>Why minimize KL(P‖Q), and not the reverse?</h2>
+<p class="lead">t-SNE's loss function is $KL(P\|Q)$ — P first, Q second. This ordering is not arbitrary, and swapping it produces a genuinely different (worse) algorithm.</p>
+
+<div class="formula">
+<div class="tag">t-SNE's actual objective</div>
+<div class="eq">$$\min_{Y} KL(P\|Q) = \min_Y \sum_{i\neq j} p_{ij}\log\dfrac{p_{ij}}{q_{ij}}$$</div>
+</div>
+
+<p>Because each term is weighted by $p_{ij}$ (not $q_{ij}$), the loss only really "cares" about pairs that $P$ says are important — i.e., pairs that were genuinely close in the original high-D space.</p>
+
+<div class="grid2">
+<div class="co-card">
+<div class="name">If P says "close" (large p_ij) but Q says "far" (small q_ij)</div>
+<p>$p_{ij}/q_{ij}$ is large, $\log(\cdot)$ is large and positive, and it's multiplied by a large weight $p_{ij}$ — a <b>big</b> penalty. This is exactly the mistake we most want to punish: losing a real neighbor.</p>
+</div>
+<div class="co-card">
+<div class="name">If P says "far" (tiny p_ij) but Q says "close" (larger q_ij)</div>
+<p>$p_{ij}/q_{ij}$ is small, $\log(\cdot)$ is negative — but multiplied by a <em>tiny</em> weight $p_{ij}\approx 0$, so the contribution to the total is negligible <b>regardless of how wrong Q is</b>.</p>
+</div>
+</div>
+
+<div class="callout warn"><span class="lbl">In one sentence</span>$KL(P\|Q)$ is heavily penalized for failing to preserve <b>true neighbors</b> (false negatives), but almost indifferent to accidentally placing two unrelated points near each other in 2D (false positives). t-SNE, by design, cares enormously more about the first kind of mistake than the second.</div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">What the reverse, KL(Q‖P), would optimize for instead</h3>
+
+<div class="formula">
+<div class="eq">$$KL(Q\|P) = \sum_{i\neq j} q_{ij}\log\dfrac{q_{ij}}{p_{ij}}$$</div>
+</div>
+
+<p>Now every term is weighted by $q_{ij}$ — the <em>current</em>, 2D-based similarity — instead of the target $p_{ij}$.</p>
+
+<div class="tbl">
+<table>
+<tr><th></th><th>KL(P‖Q) — what t-SNE actually uses</th><th>KL(Q‖P) — the reverse</th></tr>
+<tr><td>Weighted by</td><td class="mono hl">p_ij (the target)</td><td class="mono">q_ij (the current 2D state)</td></tr>
+<tr><td>Punishes hardest</td><td class="good">Losing a true high-D neighbor in 2D</td><td class="bad">Placing any two points close in 2D that weren't close in high-D</td></tr>
+<tr><td>Practical effect</td><td class="good">Pulls true clusters tightly together — the visually clean, well-separated maps t-SNE is known for</td><td class="bad">Becomes obsessed with avoiding <em>any</em> accidental closeness, at the cost of spreading real clusters out and blurring them together</td></tr>
+<tr><td>Used in practice for visualization?</td><td class="good">Yes — this is t-SNE</td><td class="bad">Rarely — this direction is more associated with certain other variational-inference settings, not neighbor-embedding</td></tr>
+</table>
+</div>
+
+<div class="callout good"><span class="lbl">Why this is exactly the right choice for a visualization tool</span>The entire point of t-SNE (recap: Class 09, Sections 00–03) is "if two points were neighbors in high-D, keep them neighbors in 2D." $KL(P\|Q)$ directly encodes that priority — it is unforgiving about broken true-neighbor relationships and lenient about incidental 2D crowding. That's precisely the trade-off a good cluster-visualization tool should make.</div>
+
+</section>
+
+<section class="block" id="s13-gradient">
+<div class="eyebrow">13 · from loss to motion</div>
+<h2>Gradient descent — the update rule</h2>
+<p class="lead">We now have a number, $KL(P\|Q)$, that tells us how wrong the current 2D layout is. The only question left: how do we actually change the 2D coordinates to make that number smaller?</p>
+
+<div class="formula">
+<div class="tag">the question, and its one-word answer</div>
+<div class="eq">$$\text{"How do we reduce } KL(P\|Q) \text{?"} \qquad\longrightarrow\qquad \textbf{Gradient Descent}$$</div>
+</div>
+
+<p>The idea, in the simplest possible words: the gradient of a loss function points in the direction that makes the loss <em>increase</em> fastest. So to <em>decrease</em> the loss, move every coordinate a small step in exactly the opposite direction.</p>
+
+<div class="formula">
+<div class="tag">the update rule</div>
+<div class="eq">$$Y_{\text{new}} = Y_{\text{old}} - \eta \, \nabla_Y KL(P\|Q)$$</div>
+</div>
+
+<div class="tbl">
+<table>
+<tr><th>Symbol</th><th>Meaning</th></tr>
+<tr><td class="mono">Y</td><td>all the 2D coordinates, all n points at once</td></tr>
+<tr><td class="mono">∇_Y KL</td><td>the gradient of the KL loss with respect to those coordinates — one 2D vector per point, telling that point which way to move</td></tr>
+<tr><td class="mono">η</td><td>the learning rate — how big a step to take each iteration</td></tr>
+</table>
+</div>
+
+<p>Working this out (calculus, not shown — the derivation isn't required, only the result and what it means) gives a specific, computable formula for the gradient at a single point $i$:</p>
+
+<div class="formula">
+<div class="tag">the t-SNE gradient</div>
+<div class="eq">$$\dfrac{\partial\, KL(P\|Q)}{\partial y_i} = 4\sum_{j} (p_{ij}-q_{ij})(y_i-y_j)\big(1+\|y_i-y_j\|^2\big)^{-1}$$</div>
+</div>
+
+<div class="callout good"><span class="lbl">The one thing worth extracting from this formula right now</span>Don't memorize it — the important message is structural: the gradient at point $i$ is a <b>sum, over every other point $j$</b>, of a term that depends on <span class="mono">(p_ij − q_ij)</span> — exactly how wrong the current relationship between $i$ and $j$ is — times the direction $(y_i - y_j)$ between them. Section 14 unpacks exactly what that sign does.</div>
+
+</section>
+
+<section class="block" id="s14-attract-repel">
+<div class="eyebrow">14 · unpacking the sign</div>
+<h2>Attraction &amp; repulsion, in real numbers</h2>
+<p class="lead">The gradient's sign — whether $(p_{ij}-q_{ij})$ is positive or negative — decides whether point $i$ gets pulled toward $j$ or pushed away from it.</p>
+
+<div class="tbl">
+<table>
+<tr><th>Case</th><th>What it means</th><th>Effect on the update $Y_{new}=Y_{old}-\eta\nabla$</th></tr>
+<tr><td class="mono good">p_ij &gt; q_ij</td><td>P wants these two points more similar than Q currently has them — they're not close enough yet</td><td class="good"><b>Attraction</b> — i is pulled toward j</td></tr>
+<tr><td class="mono bad">p_ij &lt; q_ij</td><td>Q currently treats these two as more similar than P wants — they're too close</td><td class="bad"><b>Repulsion</b> — i is pushed away from j</td></tr>
+</table>
+</div>
+
+<p>To see this cleanly, use the <b>random initialization</b> from Section 06, where all six points start crammed in a tiny cloud near the origin — every pairwise $q_{ij}$ starts out almost perfectly uniform (≈1/30 ≈ 0.0333 for every pair), which makes it easy to see exactly which pairs get pulled and which get pushed on the very first step:</p>
+
+<div class="tbl">
+<table>
+<tr><th>Pair</th><th>Relationship</th><th>p_ij (target)</th><th>q_ij (random init, ≈uniform)</th><th>p vs q</th><th>Effect</th></tr>
+<tr><td class="mono">A – B</td><td>same (dense) cluster</td><td class="mono good">0.0831</td><td class="mono">0.0333</td><td class="mono good">p &gt; q</td><td class="mono good"><b>Attract</b></td></tr>
+<tr><td class="mono">D – E</td><td>same (sparse) cluster</td><td class="mono good">0.0863</td><td class="mono">0.0333</td><td class="mono good">p &gt; q</td><td class="mono good"><b>Attract</b></td></tr>
+<tr><td class="mono">A – D</td><td>different clusters</td><td class="mono bad">≈0.00000</td><td class="mono">0.0333</td><td class="mono bad">p &lt; q</td><td class="mono bad"><b>Repel</b></td></tr>
+<tr><td class="mono">B – E</td><td>different clusters</td><td class="mono bad">0.00002</td><td class="mono">0.0333</td><td class="mono bad">p &lt; q</td><td class="mono bad"><b>Repel</b></td></tr>
+</table>
+</div>
+
+<div class="callout good"><span class="lbl">Exactly the story the formula promises</span>From a random, structureless starting cloud, the very first gradient computation already "knows" — purely from comparing P against the current near-uniform Q — that A and B (real neighbors) should be pulled together, while A and D (unrelated) should be pushed apart. Nobody told the algorithm which points were originally clustered; it falls straight out of comparing $p_{ij}$ against $q_{ij}$, pair by pair.</div>
+
+<div class="diagram">
+<svg viewBox="0 0 500 190" width="100%" height="185">
+<circle cx="120" cy="90" r="5" fill="#7f9adf"/><text x="120" y="75" text-anchor="middle" fill="#7f9adf" font-family="IBM Plex Mono" font-size="11">A</text>
+<circle cx="160" cy="110" r="5" fill="#7f9adf"/><text x="160" y="135" text-anchor="middle" fill="#7f9adf" font-family="IBM Plex Mono" font-size="11">B</text>
+<path d="M 122 93 L 155 108" stroke="#93c084" stroke-width="2" marker-end="url(#arrA)"/>
+<path d="M 158 107 L 125 92" stroke="#93c084" stroke-width="2" marker-end="url(#arrA)"/>
+<text x="140" y="70" fill="#93c084" font-family="IBM Plex Mono" font-size="10">attract (p&gt;q)</text>
+<circle cx="380" cy="90" r="5" fill="#e2836c"/><text x="380" y="75" text-anchor="middle" fill="#e2836c" font-family="IBM Plex Mono" font-size="11">D</text>
+<defs><marker id="arrA" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#93c084"/></marker>
+<marker id="arrR" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#e2836c"/></marker></defs>
+<path d="M 195 100 L 145 100" stroke="#e2836c" stroke-width="2" marker-end="url(#arrR)"/>
+<path d="M 345 100 L 395 100" stroke="#e2836c" stroke-width="2" marker-end="url(#arrR)"/>
+<text x="270" y="60" fill="#e2836c" font-family="IBM Plex Mono" font-size="10">repel (p&lt;q)</text>
+<line x1="220" y1="20" x2="220" y2="170" stroke="#242a34" stroke-dasharray="3 3"/>
+<line x1="320" y1="20" x2="320" y2="170" stroke="#242a34" stroke-dasharray="3 3"/>
+</svg>
+<div class="cap">A and B pull toward each other (they're true neighbors, not close enough yet); the A/D pair pushes apart (unrelated, too close by accident under random init).</div>
+</div>
+
+</section>
+
+<section class="block" id="s15-full-loop">
+<div class="eyebrow">15 · putting the whole engine together</div>
+<h2>The full loop, until convergence</h2>
+<p class="lead">One gradient step barely moves anything. The real algorithm just repeats the same four moves, over and over, until the layout settles.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 560 200" width="100%" height="195">
+<defs><marker id="lp-arr" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#6b7480"/></marker></defs>
+<rect x="20" y="20" width="150" height="34" rx="8" fill="#181c24" stroke="#242a34"/><text x="95" y="41" text-anchor="middle" fill="#eef0ee" font-family="IBM Plex Mono" font-size="10.5">compute Q from Y</text>
+<line x1="170" y1="37" x2="215" y2="37" stroke="#6b7480" marker-end="url(#lp-arr)"/>
+<rect x="217" y="20" width="150" height="34" rx="8" fill="#181c24" stroke="#242a34"/><text x="292" y="41" text-anchor="middle" fill="#eef0ee" font-family="IBM Plex Mono" font-size="10.5">compare P, Q → KL</text>
+<line x1="367" y1="37" x2="412" y2="37" stroke="#6b7480" marker-end="url(#lp-arr)"/>
+<rect x="414" y="20" width="130" height="34" rx="8" fill="#1f4239" stroke="#5fbfae"/><text x="479" y="41" text-anchor="middle" fill="#5fbfae" font-family="IBM Plex Mono" font-size="10.5">gradient (∇Y KL)</text>
+<line x1="479" y1="54" x2="479" y2="90" stroke="#6b7480" marker-end="url(#lp-arr)"/>
+<rect x="404" y="92" width="140" height="34" rx="8" fill="#181c24" stroke="#242a34"/><text x="474" y="113" text-anchor="middle" fill="#eef0ee" font-family="IBM Plex Mono" font-size="10.5">update Y (move points)</text>
+<path d="M 404 109 C 250 145 130 130 95 90 L 95 56" stroke="#d9ab5c" stroke-width="1.4" fill="none" stroke-dasharray="4 3" marker-end="url(#lp-arr)"/>
+<text x="220" y="155" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="10.5">repeat, using the NEW Y</text>
+<rect x="200" y="168" width="160" height="28" rx="14" fill="var(--gold-dim)" stroke="none"/><text x="280" y="187" text-anchor="middle" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="10.5" font-weight="600">until KL stops shrinking</text>
+</svg>
+<div class="cap">Compute Q → compare against fixed P via KL → take the gradient → move every point a little → recompute Q from the new positions → repeat.</div>
+</div>
+
+<p>Run this for real on our 6-point dataset, comparing both initializations from Section 06 (same target P, same gradient formula, same learning-rate family — only the starting point differs):</p>
+
+<div class="grid2">
+<div class="card">
+<b style="color:var(--gold);">Random init</b> (η=4)
+<div class="tbl"><table>
+<tr><th>Step</th><th>KL(P‖Q)</th></tr>
+<tr><td class="mono">0 (start)</td><td class="mono bad">0.9156</td></tr>
+<tr><td class="mono">3</td><td class="mono">0.7128</td></tr>
+<tr><td class="mono">10</td><td class="mono">0.1042</td></tr>
+<tr><td class="mono">20</td><td class="mono">0.0668</td></tr>
+<tr><td class="mono hl">34</td><td class="mono good">0.0492 — first time under 0.05</td></tr>
+<tr><td class="mono">40</td><td class="mono good">0.0452</td></tr>
+</table></div>
+</div>
+<div class="card">
+<b style="color:var(--teal);">PCA init</b> (η=2)
+<div class="tbl"><table>
+<tr><th>Step</th><th>KL(P‖Q)</th></tr>
+<tr><td class="mono">0 (start)</td><td class="mono">0.1707</td></tr>
+<tr><td class="mono hl">2</td><td class="mono good">0.0387 — already under 0.05</td></tr>
+<tr><td class="mono">5</td><td class="mono good">0.0273</td></tr>
+<tr><td class="mono">10</td><td class="mono good">0.0163</td></tr>
+<tr><td class="mono">15</td><td class="mono good">0.0117</td></tr>
+<tr><td></td><td></td></tr>
+</table></div>
+</div>
+</div>
+
+<div class="callout good"><span class="lbl">This is the real, computed reason PCA initialization is the default</span>Both runs converge to a similarly good final layout — but random init needed <b>34 steps</b> to first drop under KL = 0.05, while PCA init got there in just <b>2 steps</b>, because it started with real global structure already roughly in place (Section 06). This isn't a general guarantee for every dataset, but it's the mechanism, made concrete: a better starting guess means gradient descent has less work left to do.</div>
+
+<div class="callout warn"><span class="lbl">Nothing here is optional to understand, but the calculus is</span>What matters for using and reasoning about t-SNE: the loop repeats until $KL(P\|Q)$ stops meaningfully decreasing (or a fixed iteration budget is reached — 1,000 iterations is a common default). Deriving the exact gradient formula by hand is not something you need to be able to redo — knowing that it exists, what it depends on, and what its sign means (Section 14) is enough.</div>
+
+</section>
+
+<section class="block" id="s16-tsne-recap">
+<div class="eyebrow">16 · everything, together</div>
+<h2>t-SNE end to end, one picture</h2>
+<p class="lead">All 16 sections across two classes, compressed to five lines. Full end-to-end math is <b>not</b> mandatory to reproduce — being able to walk through this flow, in order, and explain what each step is doing and why, is more than enough.</p>
+
+<div class="formula">
+<div class="tag">the five things to remember</div>
+<div class="eq">
+<div style="text-align:left; font-size:1rem; line-height:2.1;">
+1. Distance in both spaces is (usually) ordinary Euclidean distance.<br>
+2. High-D similarity uses a <b>Gaussian</b> — bounded, smooth, one σ per point.<br>
+3. Low-D similarity uses a <b>Student-t (df=1)</b> — heavier tails, fixes crowding.<br>
+4. <b>P</b> = original relationships (fixed target). <b>Q</b> = current 2D relationships (moves every step).<br>
+5. Minimize <b>KL(P‖Q)</b> by moving the 2D coordinates via gradient descent.
+</div>
+</div>
+</div>
+
+<div class="diagram">
+<svg viewBox="0 0 620 400" width="100%" height="400">
+<defs><marker id="rc-arr" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#6b7480"/></marker></defs>
+<g font-family="IBM Plex Mono" font-size="11" fill="#eef0ee">
+<rect x="160" y="10" width="300" height="26" rx="6" fill="#181c24" stroke="#242a34"/><text x="310" y="28" text-anchor="middle">Original data X (n × d)</text>
+<line x1="310" y1="36" x2="310" y2="52" stroke="#6b7480" marker-end="url(#rc-arr)"/>
+<rect x="160" y="54" width="300" height="26" rx="6" fill="#181c24" stroke="#242a34"/><text x="310" y="72" text-anchor="middle">Pairwise distances (high-D)</text>
+<line x1="310" y1="80" x2="310" y2="96" stroke="#6b7480" marker-end="url(#rc-arr)"/>
+<rect x="160" y="98" width="300" height="26" rx="6" fill="#181c24" stroke="#242a34"/><text x="310" y="116" text-anchor="middle">Gaussian similarity, σᵢ per point</text>
+<line x1="310" y1="124" x2="310" y2="140" stroke="#6b7480" marker-end="url(#rc-arr)"/>
+<rect x="160" y="142" width="300" height="26" rx="6" fill="#181c24" stroke="#242a34"/><text x="310" y="160" text-anchor="middle">σᵢ chosen via target perplexity</text>
+<line x1="310" y1="168" x2="310" y2="184" stroke="#6b7480" marker-end="url(#rc-arr)"/>
+<rect x="160" y="186" width="300" height="26" rx="6" fill="#181c24" stroke="#242a34"/><text x="310" y="204" text-anchor="middle">Conditional p(j|i), then symmetrize ÷2n</text>
+<line x1="310" y1="212" x2="310" y2="228" stroke="#6b7480" marker-end="url(#rc-arr)"/>
+<rect x="160" y="230" width="300" height="26" rx="6" fill="#1f4239" stroke="#5fbfae"/><text x="310" y="248" text-anchor="middle" fill="#5fbfae" font-weight="600">P matrix — fixed target (n × n)</text>
+<line x1="310" y1="256" x2="310" y2="272" stroke="#6b7480" marker-end="url(#rc-arr)"/>
+<rect x="160" y="274" width="300" height="26" rx="6" fill="#181c24" stroke="#242a34"/><text x="310" y="292" text-anchor="middle">Initialize Y (random or PCA)</text>
+<line x1="310" y1="300" x2="310" y2="316" stroke="#6b7480" marker-end="url(#rc-arr)"/>
+<rect x="160" y="318" width="300" height="26" rx="6" fill="#181c24" stroke="#242a34"/><text x="310" y="336" text-anchor="middle">Student-t similarity → Q matrix</text>
+<line x1="240" y1="344" x2="200" y2="360" stroke="#6b7480" marker-end="url(#rc-arr)"/>
+<line x1="380" y1="344" x2="420" y2="360" stroke="#6b7480" marker-end="url(#rc-arr)"/>
+<rect x="100" y="362" width="180" height="26" rx="6" fill="#181c24" stroke="#242a34"/><text x="190" y="380" text-anchor="middle">Compare P,Q → KL(P‖Q)</text>
+<rect x="340" y="362" width="180" height="26" rx="6" fill="#181c24" stroke="#242a34"/><text x="430" y="380" text-anchor="middle">Gradient → update Y → repeat</text>
+</g>
+<path d="M 100 375 C 40 340 40 250 155 200" stroke="#d9ab5c" stroke-width="1.2" fill="none" stroke-dasharray="4 3"/>
+<path d="M 520 375 C 590 340 590 250 465 320" stroke="#d9ab5c" stroke-width="1.2" fill="none" stroke-dasharray="4 3"/>
+</svg>
+<div class="cap">The complete t-SNE computation graph, top to bottom, with the loop at the very end feeding back into itself until convergence.</div>
+</div>
+
+<div class="mental-model">
+<div class="card-title">The one-paragraph version, worth memorizing in your own words</div>
+<p>t-SNE first describes the original high-dimensional data purely in terms of neighbor probabilities — Gaussian similarity, tuned per point via a single global perplexity setting, then symmetrized into one probability distribution $P$ over pairs. It then manufactures a fresh set of 2D points, starting either from noise or a PCA projection, and describes <em>their</em> relationships the same way — but with a heavier-tailed Student-t distribution instead of a Gaussian, specifically to leave room for the crowding that's unavoidable when compressing very high-dimensional structure into just two dimensions. It measures the gap between the two descriptions with KL divergence — a loss that punishes losing true neighbors far more than it punishes accidental 2D closeness — and repeatedly nudges the 2D points with gradient descent, attracting true neighbors together and repelling unrelated points apart, until the two descriptions agree as closely as they're going to.</p>
+</div>
+
+<div class="callout good"><span class="lbl">The promise from Class 09, delivered — why "t-SNE"?</span>Class 09 unpacked three of the four words in "t-distributed Stochastic Neighbor Embedding" and asked you to hold onto the fourth until this class. Now that the whole picture is built: <b>Neighbor</b> — every part of this, from $P$ to $Q$ to the gradient, is about who's close to whom, never about raw coordinates. <b>Stochastic</b> — $P$ and $Q$ are literally probability distributions, and different random initializations (Section 06) can lead to different, if locally-similar, final layouts. <b>Embedding</b> — the same data, represented fresh in a new, lower-dimensional space. And now, finally: <b>t-distributed</b> — the low-dimensional side, $Q$, is built with a Student-t distribution (df=1) instead of a Gaussian (Sections 07–09), specifically to solve the crowding problem (Section 08). Put the four words together and the name stops being a label to memorize: t-SNE embeds neighbor relationships stochastically, using a t-distribution to describe the low-D side.</div>
+
+</section>
+
+<section class="block" id="s17-tsne-limits">
+<div class="eyebrow">17 · the bridge to something newer</div>
+<h2>Limitations of t-SNE</h2>
+<p class="lead">t-SNE is powerful, but everything about how it works (Sections 00–16) has direct practical costs. These are exactly what motivated UMAP.</p>
+
+<div class="grid2">
+<div class="co-card"><div class="name">Slow at scale</div><p>Computing full pairwise distances, then a binary search per point, then a gradient over every pair, every iteration — this is roughly $O(n^2)$ per iteration in its plain form. On tens or hundreds of thousands of points, this gets genuinely slow.</p></div>
+<div class="co-card"><div class="name">No natural way to embed new points</div><p>t-SNE optimizes the 2D coordinates $Y$ directly, for the specific dataset it was run on. There is no built-in $X\to Y$ function to reuse on a brand-new point later — a fresh point normally means rerunning the whole algorithm.</p></div>
+<div class="co-card"><div class="name">Global distances aren't meaningful</div><p>Recall from Class 09 (Section 05): two different t-SNE runs preserve local neighbors well but land in different rotations. Relatedly, the <em>size</em> of the gap between two distant clusters, or a cluster's absolute size on the page, isn't reliably meaningful — only relative local closeness is.</p></div>
+<div class="co-card"><div class="name">Sensitive to perplexity, and to initialization</div><p>Class 09, Section 15 showed real pictures where too-low or too-high perplexity visibly fractures or blurs true structure. Different random initializations can also converge to meaningfully different-looking (if locally-similar) layouts.</p></div>
+</div>
+
+<div class="callout info"><span class="lbl">A practical-vs-guaranteed distinction worth holding onto</span>Some of these are <em>usually</em> true in practice (t-SNE runs slower than UMAP on most real datasets) without being <em>mathematically guaranteed</em> in every case; others (no natural out-of-sample extension in the plain formulation) are structural. UMAP's design directly targets several of these — but, as Section 18 will show, it doesn't erase every trade-off, it makes different ones.</div>
+
+</section>
+
+<section class="block" id="s18-umap-highlevel">
+<div class="eyebrow">18 · the high-level flow — this part is not optional</div>
+<h2>Meet UMAP — the high-level flow</h2>
+<p class="lead">UMAP = <b>U</b>niform <b>M</b>anifold <b>A</b>pproximation and <b>P</b>rojection. Same job as t-SNE — dimensionality reduction, primarily for visualization — built on a different mathematical foundation (topology and graph theory rather than probability-distribution matching), aimed squarely at t-SNE's weak points. (What those four words actually mean will make far more sense once you've seen the whole flow — that reveal is waiting at the end of Section 20.)</p>
+
+<div class="formula">
+<div class="tag">the shape of the problem UMAP is still solving</div>
+<div class="eq">$$\text{High-D data} \;\longrightarrow\; \text{"who is a neighbor of whom?"} \;\longrightarrow\; \text{a 2D/3D layout that keeps neighbors close}$$</div>
+</div>
+
+<p>That's identical to t-SNE. What changes is <em>how</em> "who is a neighbor" gets represented, and how the two spaces get compared.</p>
+
+<div class="tbl">
+<table>
+<tr><th></th><th>t-SNE's version</th><th>UMAP's version</th></tr>
+<tr><td>High-D relationships represented as</td><td>a probability distribution, $P$</td><td>a <b>weighted graph</b> — points are nodes, edges carry a "connection strength" weight</td></tr>
+<tr><td>Low-D relationships represented as</td><td>a probability distribution, $Q$</td><td>a second weighted graph, built the same way but on the 2D layout</td></tr>
+<tr><td>Comparison / loss</td><td>KL divergence between $P$ and $Q$</td><td><b>cross-entropy</b> between the two graphs' edge weights</td></tr>
+<tr><td>Optimized via</td><td>gradient descent over all pairs</td><td>gradient descent, but sped up using far fewer pairs per step (negative sampling, borrowed from the same trick used in word2vec)</td></tr>
+</table>
+</div>
+
+<div class="diagram">
+<svg viewBox="0 0 620 260" width="100%" height="250">
+<defs><marker id="um-arr" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#6b7480"/></marker></defs>
+<g font-family="IBM Plex Mono" font-size="11" fill="#eef0ee">
+<rect x="30" y="15" width="220" height="28" rx="6" fill="#181c24" stroke="#242a34"/><text x="140" y="34" text-anchor="middle">High-dimensional data</text>
+<line x1="140" y1="43" x2="140" y2="60" stroke="#6b7480" marker-end="url(#um-arr)"/>
+<rect x="30" y="62" width="220" height="28" rx="6" fill="#181c24" stroke="#242a34"/><text x="140" y="81" text-anchor="middle">Find k nearest neighbors</text>
+<line x1="140" y1="90" x2="140" y2="107" stroke="#6b7480" marker-end="url(#um-arr)"/>
+<rect x="30" y="109" width="220" height="28" rx="6" fill="#1f4239" stroke="#5fbfae"/><text x="140" y="128" text-anchor="middle" fill="#5fbfae" font-weight="600">Weighted graph G_high</text>
+<line x1="140" y1="137" x2="140" y2="154" stroke="#6b7480" marker-end="url(#um-arr)"/>
+<rect x="30" y="156" width="220" height="28" rx="6" fill="#181c24" stroke="#242a34"/><text x="140" y="175" text-anchor="middle">Initialize low-D layout</text>
+<line x1="140" y1="184" x2="140" y2="200" stroke="#6b7480" marker-end="url(#um-arr)"/>
+<rect x="30" y="202" width="220" height="28" rx="6" fill="#181c24" stroke="#242a34"/><text x="140" y="221" text-anchor="middle">Build G_low the same way</text>
+
+<line x1="255" y1="216" x2="340" y2="216" stroke="#6b7480" marker-end="url(#um-arr)"/>
+<rect x="342" y="202" width="240" height="28" rx="6" fill="#181c24" stroke="#242a34"/><text x="462" y="221" text-anchor="middle">Compare G_high vs G_low: cross-entropy</text>
+<line x1="462" y1="202" x2="462" y2="185" stroke="#6b7480" marker-end="url(#um-arr)"/>
+<rect x="342" y="157" width="240" height="28" rx="6" fill="#181c24" stroke="#242a34"/><text x="462" y="176" text-anchor="middle">Gradient step, move low-D points</text>
+<path d="M 462 157 C 462 100 300 60 250 76" stroke="#d9ab5c" stroke-width="1.3" fill="none" stroke-dasharray="4 3" marker-end="url(#um-arr)"/>
+<text x="330" y="105" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="9">repeat — rebuild G_low, compare again</text>
+</g>
+<rect x="342" y="15" width="240" height="28" rx="14" fill="var(--gold-dim)"/><text x="462" y="34" text-anchor="middle" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="11" font-weight="600">Final UMAP embedding</text>
+<line x1="462" y1="157" x2="462" y2="45" stroke="#3a4150" stroke-dasharray="3 3"/>
+</svg>
+<div class="cap">Same overall shape as t-SNE's loop — build a high-D representation once, build a low-D one that changes, compare, update, repeat — but every box uses graphs and cross-entropy instead of probability distributions and KL divergence.</div>
+</div>
+
+<div class="tbl">
+<table>
+<tr><th>What changed vs. t-SNE</th><th>Why it helps</th></tr>
+<tr><td>k nearest neighbors instead of a full Gaussian over every point</td><td>Only a small, fixed number of neighbors per point need real computation — much cheaper than t-SNE's every-pair similarity</td></tr>
+<tr><td>A graph (with edges) instead of a dense probability matrix</td><td>Graphs are sparse — most pairs simply have no edge at all, rather than a tiny-but-nonzero probability</td></tr>
+<tr><td>Negative sampling during optimization</td><td>Each gradient step only touches a small random sample of "non-neighbor" pairs instead of literally all of them — a major speed-up at scale</td></tr>
+<tr><td>A firmer mathematical foundation (topology) for why nearby points should stay nearby</td><td>Provides some additional theoretical grounding for preserving more of the global structure, not just local neighborhoods (Section 19 has the details)</td></tr>
+</table>
+</div>
+
+<div class="callout warn"><span class="lbl">The two knobs you actually turn in practice</span>Everything in UMAP is controlled through two hyperparameters — introduced here at a high level, fully unpacked with real numbers in Section 19: <b>n_neighbors</b> (how many neighbors each point connects to when building $G_{high}$ — small values chase tight local detail, large values pull in more global structure — t-SNE's perplexity plays almost exactly this role) and <b>min_dist</b> (how tightly points are allowed to pack together in the final low-D plot — small values produce tight, dense clusters, large values spread everything out more evenly).</div>
+
+<div class="callout good"><span class="lbl">The one-paragraph version to actually remember</span>UMAP asks the same question as t-SNE — preserve neighbors, not variance — but answers it by building an explicit <b>graph</b> of nearest-neighbor connections in high-D, building the same kind of graph in low-D, and pushing the low-D graph to match the high-D one using cross-entropy instead of KL divergence. The k-nearest-neighbor and sparse-graph structure, plus negative sampling during optimization, are what make UMAP noticeably faster than t-SNE on large datasets, and give it a natural (if still imperfect) way to place a new point without rerunning everything.</div>
+
+</section>
+
+<section class="block" id="s19-umap-detailed">
+<div class="eyebrow">19 · optional, self-read — not required for interviews</div>
+<h2>UMAP, step by step — the easy version, with real numbers <span class="scopetag scope-opt">optional</span></h2>
+<p class="lead">Section 18 already gives you everything needed to explain UMAP, compare it to t-SNE, and use it correctly. This section goes one level deeper — not to make you re-derive the algorithm, but so that "how does that box actually work?" has an answer, using real numbers computed on our own 6-point dataset.</p>
+
+<div class="callout warn"><span class="lbl">Read this before anything else in this section</span>Some of what's below (spectral graph embedding, curve-fitting for min_dist) is genuinely graduate-level math. Full derivations are <b>not</b> expected of you, and they are <b>not</b> interview material — spending hours making sure you can reproduce them by hand isn't time well spent. What <em>is</em> worth taking away from every step below: what it computes, what that means in plain English, what it looks like, and how it lines up against the equivalent t-SNE step. The exact formulas are still here, clearly separated, for whoever wants them — treat them as optional reading, not a checklist.</div>
+
+<p>Three hyperparameters do all the real work across the steps below — worth having as a map before diving in:</p>
+
+<div class="tbl">
+<table>
+<tr><th>Hyperparameter</th><th>What it actually controls</th></tr>
+<tr><td class="mono hl">n_neighbors</td><td>How many close neighbors each point insists on when the high-D graph is built (Step 1). Small → tight, sharp local detail; large → a smoother, more global shape. This is UMAP's version of t-SNE's perplexity.</td></tr>
+<tr><td class="mono hl">min_dist</td><td>How close two points are allowed to sit in the final 2D picture (Step 6). Small → dense, tightly-packed clusters; large → looser, more evenly-spread-out clusters. t-SNE has no equivalent knob.</td></tr>
+<tr><td class="mono hl">n_components</td><td>How many output dimensions the final layout has (Step 6). Almost always 2 (occasionally 3) for a plot; UMAP is also commonly run at 10–50+ purely as a fast feature-reduction step before another ML model.</td></tr>
+</table>
+</div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">Step 1 — find each point's neighbors <span class="mono">(hyperparameter: n_neighbors)</span></h3>
+<p>For every point, look at the original high-D data and find its <span class="mono">n_neighbors</span> closest points (commonly 5–50 in real use; we use $k=3$ here, matching t-SNE's target perplexity = 2 on this same tiny dataset). Think of it like deciding, at a party, how many people count as "close enough to matter": say 3, and you get small, sharply-defined friend groups; say 50, and you get a blurrier, more "everyone's sort of connected" sense of the whole room. Small n_neighbors → sharp local detail (but can fragment bigger structures); large n_neighbors → a smoother global shape (but can blur fine detail). Same underlying trade-off as t-SNE's perplexity, different mechanism underneath.</p>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">Step 2 — decide how far "close" is, per point</h3>
+<p>Not every point's neighborhood looks the same size — a point buried in a dense cluster has neighbors right on top of it; a point out in a sparse patch has to reach much further to find any. UMAP handles this with two per-point numbers, $\rho_i$ and $\sigma_i$:</p>
+<div class="formula">
+<div class="tag">two per-point numbers, both purely local</div>
+<div class="eq">$$\rho_i = \min_j\, d(x_i, x_j) \qquad \text{(distance to i's single nearest neighbor)}$$</div>
+</div>
+<p>$\rho_i$ is a guarantee, not something to compute by hand: whoever a point's single closest neighbor is, that neighbor always counts as a full-strength (weight = 1) connection — no point is ever left disconnected just because its neighborhood happens to be sparse. $\sigma_i$ is then found the same way t-SNE finds its per-point $\sigma$ (Class 09) — a quick per-point search — and controls how fast connection strength fades out for the 2nd, 3rd, ... neighbor. That's the whole idea; here's what it produces for our 6 points:</p>
+
+<div class="tbl">
+<table>
+<tr><th>Point</th><th>ρᵢ</th><th>σᵢ</th></tr>
+<tr><td class="mono">A</td><td class="mono">0.6164</td><td class="mono">0.1152</td></tr>
+<tr><td class="mono">B</td><td class="mono">0.3742</td><td class="mono">0.4518</td></tr>
+<tr><td class="mono">C</td><td class="mono">0.3742</td><td class="mono">0.5671</td></tr>
+<tr><td class="mono">D</td><td class="mono">1.2247</td><td class="mono">0.5133</td></tr>
+<tr><td class="mono">E</td><td class="mono">1.5000</td><td class="mono">2.0314</td></tr>
+<tr><td class="mono">F</td><td class="mono">1.2247</td><td class="mono">2.4833</td></tr>
+</table>
+</div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">Step 3 — turn distances into connection strengths</h3>
+<div class="formula">
+<div class="tag">weight of the edge from i to its neighbor j</div>
+<div class="eq">$$w_{j|i} = \exp\!\left(-\dfrac{d(x_i,x_j)-\rho_i}{\sigma_i}\right)$$</div>
+</div>
+<p>This plays the same role as t-SNE's $p_{j|i}$ — a number saying "how confidently is this an edge" — but it's a graph edge weight (any number in [0,1]) rather than a probability required to sum to 1 across a row. Here's the complete, real matrix for our 6 points; every non-neighbor pair is a hard, exact <b>0</b> — not computed at all:</p>
+
+<div class="tbl">
+<table>
+<tr><th>w(col | row)</th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th></tr>
+<tr><td class="mono hl">A</td><td>—</td><td class="mono good">1.0000</td><td class="mono good">0.5850</td><td class="mono">0</td><td class="mono">0</td><td class="mono">0</td></tr>
+<tr><td class="mono hl">B</td><td class="mono good">0.5850</td><td>—</td><td class="mono good">1.0000</td><td class="mono">0</td><td class="mono">0</td><td class="mono">0</td></tr>
+<tr><td class="mono hl">C</td><td class="mono good">0.5850</td><td class="mono good">1.0000</td><td>—</td><td class="mono">0</td><td class="mono">0</td><td class="mono">0</td></tr>
+<tr><td class="mono hl">D</td><td class="mono">0</td><td class="mono">0</td><td class="mono">0</td><td>—</td><td class="mono good">0.5850</td><td class="mono good">1.0000</td></tr>
+<tr><td class="mono hl">E</td><td class="mono">0</td><td class="mono teal">0.0025</td><td class="mono">0</td><td class="mono good">1.0000</td><td>—</td><td class="mono good">0.5824</td></tr>
+<tr><td class="mono hl">F</td><td class="mono">0</td><td class="mono">0</td><td class="mono teal">0.0098</td><td class="mono good">1.0000</td><td class="mono good">0.5752</td><td>—</td></tr>
+</table>
+</div>
+
+<div class="callout info">Read row-by-row, not symmetrically yet: row A says "from A's perspective, B is a full-strength neighbor (1.0) and C is a 0.585-strength neighbor" — but row B says B's own strongest neighbor is C (1.0), with A only at 0.585. Exactly the same kind of disagreement as t-SNE's $p_{j|i}\neq p_{i|j}$ (Section 03), for the same underlying reason: each row was built using its <em>own</em> point's ρ and σ. Notice, too, that E and F each end up with a real (if tiny) third edge into the <em>other</em> cluster — 0.0025 from E to B, 0.0098 from F to C — because E and F's larger σ (2.03, 2.48) stretches just far enough to register a non-zero, if minuscule, connection. This tiny cross-cluster thread is what keeps the whole graph connected end to end, rather than splitting into two totally isolated islands — important for Step 5.</div>
+
+<div class="callout good"><span class="lbl">This answers a question worth being explicit about: does UMAP look at "all points," like t-SNE?</span>Look closely at the zeros in the table above: they're <em>exact</em> zeros, not tiny rounded-down numbers. UMAP only ever computes a weight for a point's own n_neighbors nearest neighbors — everything else is never touched. Compare that to t-SNE's dense $P$ matrix (Sections 00–04): even a far-apart, unrelated cross-cluster pair like A–D still got a real, if minuscule, probability (≈0.00001) — a Gaussian is never exactly zero at any finite distance. So: <b>t-SNE considers every pair, always</b> (distant pairs just end up with a near-invisible weight); <b>UMAP only ever considers each point's actual neighbors</b> (everything else is a structural, exact zero). That's the real substance behind "graph" vs. "dense probability matrix" from Section 18's table — and it's exactly why UMAP's per-step cost stays close to $O(n)$ instead of t-SNE's $O(n^2)$.</div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">Step 4 — combine both directions into one graph (symmetrize)</h3>
+<p>Just like t-SNE, $w_{i|j}$ and $w_{j|i}$ can disagree — each was built using its own point's ρ and σ. UMAP's fix is structurally different from t-SNE's $\div 2n$ average:</p>
+<div class="formula">
+<div class="tag">the probabilistic OR</div>
+<div class="eq">$$w_{ij} = w_{i|j} + w_{j|i} - w_{i|j}\cdot w_{j|i}$$</div>
+</div>
+<div class="callout info">This is the formula for the union of two probabilities (treating each weight as "the probability this edge exists"): "connected from either direction" rather than "the average strength of both directions." It guarantees the combined weight is at least as large as either individual weight — an edge survives if <em>either</em> point considers the other a neighbor, rather than being diluted by averaging against a possibly-low reverse weight.</div>
+
+<p>Applying this to every pair in the matrix above gives the final, symmetric high-D graph — this <em>is</em> $G_{high}$, in full:</p>
+
+<div class="tbl">
+<table>
+<tr><th>W (symmetrized)</th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th></tr>
+<tr><td class="mono hl">A</td><td>—</td><td class="mono good">1.0000</td><td class="mono good">0.8277</td><td class="mono">0</td><td class="mono">0</td><td class="mono">0</td></tr>
+<tr><td class="mono hl">B</td><td class="mono good">1.0000</td><td>—</td><td class="mono good">1.0000</td><td class="mono">0</td><td class="mono teal">0.0025</td><td class="mono">0</td></tr>
+<tr><td class="mono hl">C</td><td class="mono good">0.8277</td><td class="mono good">1.0000</td><td>—</td><td class="mono">0</td><td class="mono">0</td><td class="mono teal">0.0098</td></tr>
+<tr><td class="mono hl">D</td><td class="mono">0</td><td class="mono">0</td><td class="mono">0</td><td>—</td><td class="mono good">1.0000</td><td class="mono good">1.0000</td></tr>
+<tr><td class="mono hl">E</td><td class="mono">0</td><td class="mono teal">0.0025</td><td class="mono">0</td><td class="mono good">1.0000</td><td>—</td><td class="mono good">0.8226</td></tr>
+<tr><td class="mono hl">F</td><td class="mono">0</td><td class="mono">0</td><td class="mono teal">0.0098</td><td class="mono good">1.0000</td><td class="mono good">0.8226</td><td>—</td></tr>
+</table>
+</div>
+
+<div class="callout good"><span class="lbl">A, B specifically — worked by hand</span>$w_{B|A}=1.000$, $w_{A|B}=0.585$ → union $= 1.000+0.585-(1.000)(0.585)=1.000+0.585-0.585=\mathbf{1.000}$. A simple average would have given $(1.000+0.585)/2=0.793$ instead — diluting a near-certain edge just because the reverse direction was weaker. UMAP's union rule deliberately protects strong one-directional evidence from that dilution.</div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">Step 5 — give the 2D layout a smart starting position</h3>
+<p>UMAP doesn't start from random noise, and it doesn't start from PCA either (that's t-SNE's move, Section 06) — it starts from a layout built directly out of the graph from Step 4. The method is called <b>spectral embedding</b>, and the intuition is simpler than the name sounds: imagine every edge in the graph is a rubber band, pulled tight in proportion to its weight — near-1.0 edges (true neighbors) pull hard, the two razor-thin 0.0025/0.0098 cross-cluster threads barely pull at all. Let the six points settle into whatever low-energy resting position that tug-of-war naturally produces. <em>That</em> settled position — computed once, directly, with no trial and error — is where gradient descent gets to start from, instead of starting blind.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 460 260" width="100%" height="250">
+<line x1="230" y1="15" x2="230" y2="245" stroke="#242a34" stroke-dasharray="3 3"/>
+<line x1="20" y1="130" x2="440" y2="130" stroke="#242a34" stroke-dasharray="3 3"/>
+<circle cx="351" cy="65" r="6" fill="#7f9adf"/><text x="351" y="52" text-anchor="middle" fill="#7f9adf" font-family="IBM Plex Mono" font-size="11">A</text>
+<circle cx="356" cy="126" r="6" fill="#7f9adf"/><text x="372" y="130" fill="#7f9adf" font-family="IBM Plex Mono" font-size="11">B</text>
+<circle cx="350" cy="189" r="6" fill="#7f9adf"/><text x="350" y="206" text-anchor="middle" fill="#7f9adf" font-family="IBM Plex Mono" font-size="11">C</text>
+<circle cx="103" cy="128" r="6" fill="#e2836c"/><text x="103" y="145" text-anchor="middle" fill="#e2836c" font-family="IBM Plex Mono" font-size="11">D</text>
+<circle cx="109" cy="42" r="6" fill="#e2836c"/><text x="109" y="29" text-anchor="middle" fill="#e2836c" font-family="IBM Plex Mono" font-size="11">E</text>
+<circle cx="109" cy="220" r="6" fill="#e2836c"/><text x="109" y="237" text-anchor="middle" fill="#e2836c" font-family="IBM Plex Mono" font-size="11">F</text>
+<text x="230" y="14" text-anchor="middle" fill="#6b7480" font-family="IBM Plex Mono" font-size="9">spectral coordinate 2</text>
+<text x="440" y="242" text-anchor="end" fill="#6b7480" font-family="IBM Plex Mono" font-size="9">spectral coordinate 1</text>
+</svg>
+<div class="cap">The real, computed spectral-init layout: the two clusters have already separated to opposite sides before any gradient descent runs at all — the same "free head start" story as PCA init for t-SNE (Section 06), just built from the graph instead of from raw variance.</div>
+</div>
+
+<div class="callout good"><span class="lbl">How this compares to t-SNE</span>This plays exactly the role PCA-init played for t-SNE (Section 06) — a free, structure-aware head start before real optimization begins — just built from the connection graph instead of from raw variance. Both exist for the same reason: a good starting point converges faster and more reliably than starting blind, and both are the library default for exactly that reason.</div>
+
+<p><b>The exact recipe, for anyone curious</b> — genuinely optional, not required for interviews:</p>
+
+<div class="step">
+<div class="num">1</div>
+<div class="body"><p>Treat the symmetrized weight matrix $W$ (the table above) as the adjacency matrix of a graph — 6 nodes, edges weighted by connection strength.</p></div>
+</div>
+<div class="step">
+<div class="num">2</div>
+<div class="body"><p>Compute the <b>degree</b> of each node — the sum of its row in $W$ — and place these on the diagonal of a degree matrix $D_{deg}$.</p></div>
+</div>
+<div class="step">
+<div class="num">3</div>
+<div class="body"><p>Form the <b>normalized graph Laplacian</b>: $L_{sym} = I - D_{deg}^{-1/2}\,W\,D_{deg}^{-1/2}$. This single matrix encodes the entire graph's connectivity structure.</p></div>
+</div>
+<div class="step">
+<div class="num">4</div>
+<div class="body"><p>Compute its eigenvalues and eigenvectors. The <em>smallest</em> eigenvalue is always 0 (its eigenvector is trivial — constant everywhere, carries no layout information). The eigenvectors belonging to the <b>next-smallest</b> eigenvalues are the ones that vary as little as possible <em>between connected nodes</em> — exactly the property we want in a 2D layout: strongly-connected points should end up with similar coordinates.</p></div>
+</div>
+<div class="step">
+<div class="num">5</div>
+<div class="body"><p>Take the eigenvectors for the 2nd and 3rd-smallest eigenvalues as the point's two initial low-D coordinates.</p></div>
+</div>
+
+<div class="tbl">
+<table>
+<tr><th>Eigenvalue rank</th><th>Value</th><th>Used for</th></tr>
+<tr><td class="mono">1st (smallest)</td><td class="mono">0.0000</td><td class="mono" style="color:var(--paper-faint);">discarded — trivial, constant eigenvector</td></tr>
+<tr><td class="mono hl">2nd</td><td class="mono hl">0.00433</td><td class="mono good">→ low-D coordinate 1</td></tr>
+<tr><td class="mono hl">3rd</td><td class="mono hl">1.44786</td><td class="mono good">→ low-D coordinate 2</td></tr>
+<tr><td class="mono">4th – 6th</td><td class="mono">1.4536, 1.5461, 1.5482</td><td class="mono" style="color:var(--paper-faint);">discarded — only the 2 smallest non-trivial eigenvalues are kept for a 2D embedding</td></tr>
+</table>
+</div>
+
+<div class="callout info"><span class="lbl">Why the 2nd eigenvalue is so tiny (0.00433), and what that means</span>The 2nd-smallest eigenvalue being close to 0 is a direct signature of our graph being <em>almost</em>, but not quite, two separate disconnected pieces — exactly right, since A/B/C and D/E/F are only barely connected by those two tiny cross-cluster threads (E–B = 0.0025, F–C = 0.0098) from Step 3. The corresponding eigenvector ends up doing almost exactly one job: splitting the two clusters apart along one axis, before any fine-grained layout happens at all.</div>
+
+<div class="tbl">
+<table>
+<tr><th>Point</th><th>Spectral coordinate 1</th><th>Spectral coordinate 2</th></tr>
+<tr><td class="mono">A</td><td class="mono">3.459</td><td class="mono">3.430</td></tr>
+<tr><td class="mono">B</td><td class="mono">3.613</td><td class="mono">0.170</td></tr>
+<tr><td class="mono">C</td><td class="mono">3.442</td><td class="mono">−3.598</td></tr>
+<tr><td class="mono">D</td><td class="mono">−3.624</td><td class="mono">0.100</td></tr>
+<tr><td class="mono">E</td><td class="mono">−3.456</td><td class="mono">4.905</td></tr>
+<tr><td class="mono">F</td><td class="mono">−3.444</td><td class="mono">−5.000</td></tr>
+</table>
+</div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">Step 6 — build G_low, and control spacing with min_dist</h3>
+
+<p>With a low-D layout in hand, UMAP needs a similarity curve for the 2D side too — its analogue of t-SNE's Student-t. But it adds a control t-SNE simply doesn't have: <span class="mono">min_dist</span>, literally "how close am I allowed to let two points sit, at minimum, in the final picture." Think of it as a personal-space rule at a party: a small min_dist says "stand shoulder-to-shoulder if you want" — dense, tightly-packed clusters; a large min_dist says "keep some visible space, even from your best friend" — a looser, more evenly-spread-out picture. Nothing about <em>which</em> points are neighbors changes — only how tightly the final picture is allowed to pack them together.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 480 220" width="100%" height="210">
+<line x1="40" y1="190" x2="460" y2="190" stroke="#242a34" stroke-width="1.3"/>
+<line x1="40" y1="20" x2="40" y2="190" stroke="#242a34" stroke-width="1.3"/>
+<text x="440" y="205" fill="#6b7480" font-family="IBM Plex Mono" font-size="10">2D distance</text>
+<text x="10" y="15" fill="#6b7480" font-family="IBM Plex Mono" font-size="10">weight</text>
+<polyline points="40,20 52,20.4 64,22.7 76,29.2 88,41.9 100,60.5 112,82.2 124,103.6 136,121.9 148,135.9 160,146 172,153.1 184,158 196,161.4 208,163.8 220,165.4 232,166.6 244,167.4 256,168 268,168.4 280,168.7 300,169.1 320,169.3 340,169.5 360,169.6 380,169.7 400,169.7 420,169.8 440,169.8 460,169.8" fill="none" stroke="#93c084" stroke-width="2.2"/>
+<polyline points="40,20 55,20.9 70,25.5 85,40 100,68.5 115,102.5 130,131.5 145,151 160,163 175,170.5 190,175 205,177.8 220,179.6 235,180.7 250,181.5 265,182 280,182.4 300,182.8 320,183.1 340,183.3 360,183.4 380,183.5 400,183.6 420,183.7 440,183.7 460,183.8" fill="none" stroke="#d9ab5c" stroke-width="2.2"/>
+<polyline points="40,20 60,20.2 90,21.5 120,29 150,52 180,90 210,124 240,146 270,158.5 300,165 330,168.5 360,170.5 390,171.7 420,172.4 460,172.9" fill="none" stroke="#e2836c" stroke-width="2.2" stroke-dasharray="5 3"/>
+<text x="55" y="35" fill="#93c084" font-family="IBM Plex Mono" font-size="9">min_dist=0.10 (tight)</text>
+<text x="260" y="160" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="9">min_dist=0.25</text>
+<text x="300" y="185" fill="#e2836c" font-family="IBM Plex Mono" font-size="9">min_dist=1.00 (loose)</text>
+</svg>
+<div class="cap">All three curves start at weight 1 and decay to 0 — but a larger min_dist makes the curve drop off sooner, at shorter distances, forcing points apart more aggressively in the final embedding. A smaller min_dist lets the curve stay near 1 for longer, permitting much tighter, denser-looking clusters.</div>
+</div>
+
+<p>Practically: a smaller min_dist (the library default is 0.1) tends to produce the tight, "blobby" clusters UMAP is often recognized by; pushing it up trades that tightness for a more evenly-spread layout — useful when you also care about structure <em>within</em> a cluster, not just which points belong to it.</p>
+
+<p><b>The exact recipe, for anyone curious</b> — again, optional and not interview material:</p>
+
+<div class="formula">
+<div class="tag">the target shape, before any fitting</div>
+<div class="eq">$$f(d) = \begin{cases} 1 & d \le \text{min\_dist} \\ \exp\big(-(d-\text{min\_dist})\big) & d > \text{min\_dist} \end{cases}$$</div>
+</div>
+
+<p>Points closer than <span class="mono">min_dist</span> apart are treated as <em>maximally</em> similar (weight exactly 1, no further reward for squeezing them even closer); beyond that, similarity decays smoothly. UMAP then fits a smooth two-parameter curve to approximate this piecewise shape (smooth curves are much easier to differentiate for gradient descent than a curve with a sharp corner in it):</p>
+
+<div class="formula">
+<div class="tag">the fitted low-D similarity curve</div>
+<div class="eq">$$w'_{ij} = \dfrac{1}{1+a\,\|y_i-y_j\|^{2b}}$$</div>
+</div>
+
+<p>$a$ and $b$ are found by least-squares curve-fitting against the piecewise target above — real numbers, computed here with <span class="mono">scipy.optimize.curve_fit</span>, for three different min_dist settings:</p>
+
+<div class="tbl">
+<table>
+<tr><th>min_dist</th><th>Fitted a</th><th>Fitted b</th><th>Effect</th></tr>
+<tr><td class="mono">0.10 <span style="color:var(--paper-faint);">(library default)</span></td><td class="mono">1.577</td><td class="mono">0.895</td><td>Points can pack in very tightly — dense, compact clusters</td></tr>
+<tr><td class="mono">0.25</td><td class="mono">1.124</td><td class="mono">1.078</td><td>A moderate amount of enforced spacing</td></tr>
+<tr><td class="mono">1.00 <span style="color:var(--paper-faint);">(used below, to match our layout's scale)</span></td><td class="mono">0.120</td><td class="mono">1.881</td><td>Points are pushed apart more — looser, more evenly-spread clusters</td></tr>
+</table>
+</div>
+
+<p>Using <span class="mono">min_dist = 1.0</span> (chosen here because it matches the ±5-unit scale of our spectral coordinates — in a real run, UMAP auto-scales the layout so its library default of 0.1 behaves sensibly), compute the actual $G_{low}$ from the spectral-init coordinates above:</p>
+
+<div class="tbl">
+<table>
+<tr><th>2D distance</th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th></tr>
+<tr><td class="mono hl">A</td><td>—</td><td class="mono">3.264</td><td class="mono">7.028</td><td class="mono">7.826</td><td class="mono">7.070</td><td class="mono">10.895</td></tr>
+<tr><td class="mono hl">B</td><td class="mono">3.264</td><td>—</td><td class="mono">3.771</td><td class="mono">7.237</td><td class="mono">8.508</td><td class="mono">8.748</td></tr>
+<tr><td class="mono hl">C</td><td class="mono">7.028</td><td class="mono">3.771</td><td>—</td><td class="mono">7.975</td><td class="mono">10.949</td><td class="mono">7.028</td></tr>
+<tr><td class="mono hl">D</td><td class="mono">7.826</td><td class="mono">7.237</td><td class="mono">7.975</td><td>—</td><td class="mono">4.808</td><td class="mono">5.103</td></tr>
+<tr><td class="mono hl">E</td><td class="mono">7.070</td><td class="mono">8.508</td><td class="mono">10.949</td><td class="mono">4.808</td><td>—</td><td class="mono">9.905</td></tr>
+<tr><td class="mono hl">F</td><td class="mono">10.895</td><td class="mono">8.748</td><td class="mono">7.028</td><td class="mono">5.103</td><td class="mono">9.905</td><td>—</td></tr>
+</table>
+</div>
+
+<div class="tbl">
+<table>
+<tr><th>w'_ij (a=0.120, b=1.881)</th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th></tr>
+<tr><td class="mono hl">A</td><td>—</td><td class="mono">0.0885</td><td class="mono">0.0054</td><td class="mono">0.0036</td><td class="mono">0.0053</td><td class="mono">0.0010</td></tr>
+<tr><td class="mono hl">B</td><td class="mono">0.0885</td><td>—</td><td class="mono">0.0534</td><td class="mono">0.0048</td><td class="mono">0.0026</td><td class="mono">0.0024</td></tr>
+<tr><td class="mono hl">C</td><td class="mono">0.0054</td><td class="mono">0.0534</td><td>—</td><td class="mono">0.0034</td><td class="mono">0.0010</td><td class="mono">0.0054</td></tr>
+<tr><td class="mono hl">D</td><td class="mono">0.0036</td><td class="mono">0.0048</td><td class="mono">0.0034</td><td>—</td><td class="mono">0.0221</td><td class="mono">0.0177</td></tr>
+<tr><td class="mono hl">E</td><td class="mono">0.0053</td><td class="mono">0.0026</td><td class="mono">0.0010</td><td class="mono">0.0221</td><td>—</td><td class="mono">0.0015</td></tr>
+<tr><td class="mono hl">F</td><td class="mono">0.0010</td><td class="mono">0.0024</td><td class="mono">0.0054</td><td class="mono">0.0177</td><td class="mono">0.0015</td><td>—</td></tr>
+</table>
+</div>
+
+<div class="callout warn"><span class="lbl">Notice how different this looks from G_high, right now</span>$G_{high}$ says A–B should be a near-certain edge (weight 1.000). $G_{low}$, at this untouched spectral-init layout, currently only gives A–B a weight of <span class="mono">0.0885</span> — a huge mismatch. That gap is exactly what gradient descent (Step 7) exists to close, precisely the same role KL(P‖Q) played for t-SNE.</div>
+
+<div class="callout info"><span class="lbl">One more hyperparameter, briefly: n_components</span>Everything in this section built a <b>2D</b> layout — that's <span class="mono">n_components = 2</span>, the default, because the whole point here was a picture you can look at. But because UMAP is fast and produces a genuine, reusable $X\to Y$ transform (Section 18), it's also routinely run with <span class="mono">n_components = 10, 20, 50...</span> purely as a <em>feature-reduction</em> step before feeding the result into another downstream model — a use-case t-SNE is rarely a good fit for. Sections 22–24 come back to exactly this "reusable pipeline" angle.</div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">Comparing G_high and G_low: the cross-entropy loss, computed for real</h3>
+<p>In plain terms before the numbers: $G_{high}$ (Step 4) is confident and crisp — mostly 0, 0.83, or 1.0. $G_{low}$ (Step 6, before any optimization) is uniformly weak. UMAP measures that mismatch with cross-entropy — the same job KL divergence did for t-SNE, just written for graphs instead of probability distributions:</p>
+
+<div class="formula">
+<div class="tag">UMAP's loss function</div>
+<div class="eq">$$C = \sum_{(i,j)} \Big[\, w_{ij}\log\dfrac{w_{ij}}{w'_{ij}} + (1-w_{ij})\log\dfrac{1-w_{ij}}{1-w'_{ij}} \,\Big]$$</div>
+</div>
+
+<div class="tbl">
+<table>
+<tr><th>Pair</th><th>w_ij (G_high)</th><th>w'_ij (G_low)</th><th>Cross-entropy term</th></tr>
+<tr><td class="mono">A – B</td><td class="mono">1.0000</td><td class="mono">0.0885</td><td class="mono bad">2.425</td></tr>
+<tr><td class="mono">A – C</td><td class="mono">0.8277</td><td class="mono">0.0054</td><td class="mono bad">3.865</td></tr>
+<tr><td class="mono">D – E</td><td class="mono">1.0000</td><td class="mono">0.0221</td><td class="mono bad">3.812</td></tr>
+<tr><td class="mono">A – D</td><td class="mono">0.0000</td><td class="mono">0.0036</td><td class="mono good">0.004</td></tr>
+<tr><td class="mono">B – E</td><td class="mono">0.0025</td><td class="mono">0.0026</td><td class="mono good">0.000</td></tr>
+<tr><td class="mono hl"><b>Total, all 15 pairs</b></td><td></td><td></td><td class="mono hl"><b>21.976</b></td></tr>
+</table>
+</div>
+
+<div class="callout good"><span class="lbl">Reading this exactly like t-SNE's KL trajectory</span>The real neighbor pairs (A–B, A–C, D–E) dominate the loss right now, because $G_{low}$ hasn't caught up to the strong connections $G_{high}$ demands — exactly like t-SNE's initial KL(P‖Q) before any gradient steps (Section 15). The already-unrelated pairs (A–D, B–E) contribute almost nothing, since both graphs already roughly agree they're weak or absent. Gradient descent — using this exact loss, but touching only a sampled subset of pairs each step (Step 7) — would now shrink that total 21.976 the same way t-SNE's KL trajectory shrank in Section 15, just with sampled pairs instead of all of them.</div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">Step 7 — optimize with negative sampling</h3>
+<p>Computing the full cross-entropy sum over every possible pair, every iteration, would be just as expensive as t-SNE. Instead, at each step UMAP updates real edges plus a small random sample of "negative" (non-edge) pairs — borrowed directly from the same trick that makes word2vec fast — turning an $O(n^2)$-per-step problem into something closer to $O(n)$.</p>
+
+</section>
+
+<section class="block" id="s20-umap-toy">
+<div class="eyebrow">20 · the payoff — seeing both graphs at once</div>
+<h2>G_high vs. G_low — drawn, and compared</h2>
+<p class="lead">Section 19 built every number by hand. Here they are as actual graphs — nodes and weighted edges — so "compare G_high to G_low" stops being an abstract phrase.</p>
+
+<div class="grid2">
+<div class="diagram">
+<svg viewBox="0 0 460 240" width="100%" height="240">
+<line x1="70" y1="110" x2="130" y2="80" stroke="#93c084" stroke-width="4.5"/>
+<line x1="70" y1="110" x2="90" y2="160" stroke="#93c084" stroke-width="3.8"/>
+<line x1="130" y1="80" x2="90" y2="160" stroke="#93c084" stroke-width="4.5"/>
+<line x1="390" y1="110" x2="330" y2="80" stroke="#93c084" stroke-width="4.5"/>
+<line x1="390" y1="110" x2="370" y2="160" stroke="#93c084" stroke-width="4.5"/>
+<line x1="330" y1="80" x2="370" y2="160" stroke="#93c084" stroke-width="3.7"/>
+<line x1="130" y1="80" x2="330" y2="80" stroke="#6b7480" stroke-width="0.6" stroke-dasharray="2 3" opacity="0.6"/>
+<line x1="90" y1="160" x2="370" y2="160" stroke="#6b7480" stroke-width="0.9" stroke-dasharray="2 3" opacity="0.6"/>
+<circle cx="70" cy="110" r="7" fill="#7f9adf"/><text x="51" y="106" text-anchor="middle" fill="#7f9adf" font-family="IBM Plex Mono" font-size="13" font-weight="600">A</text>
+<circle cx="130" cy="80" r="7" fill="#7f9adf"/><text x="144" y="64" text-anchor="middle" fill="#7f9adf" font-family="IBM Plex Mono" font-size="13" font-weight="600">B</text>
+<circle cx="90" cy="160" r="7" fill="#7f9adf"/><text x="87" y="182" text-anchor="middle" fill="#7f9adf" font-family="IBM Plex Mono" font-size="13" font-weight="600">C</text>
+<circle cx="390" cy="110" r="7" fill="#e2836c"/><text x="409" y="106" text-anchor="middle" fill="#e2836c" font-family="IBM Plex Mono" font-size="13" font-weight="600">D</text>
+<circle cx="330" cy="80" r="7" fill="#e2836c"/><text x="316" y="64" text-anchor="middle" fill="#e2836c" font-family="IBM Plex Mono" font-size="13" font-weight="600">E</text>
+<circle cx="370" cy="160" r="7" fill="#e2836c"/><text x="373" y="182" text-anchor="middle" fill="#e2836c" font-family="IBM Plex Mono" font-size="13" font-weight="600">F</text>
+<text x="230" y="72" fill="#6b7480" font-family="IBM Plex Mono" font-size="9" text-anchor="middle">0.0025</text>
+<text x="230" y="176" fill="#6b7480" font-family="IBM Plex Mono" font-size="9" text-anchor="middle">0.0098</text>
+<text x="230" y="222" text-anchor="middle" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="11" font-weight="600">G_high</text>
+</svg>
+<div class="cap">The real, computed high-D graph. Node positions here are purely illustrative (G_high has no 2D layout of its own — only edges); edge thickness = weight (exact values: A–B=1.00, B–C=1.00, A–C=0.83 within the left cluster; D–E=1.00, D–F=1.00, E–F=0.82 within the right cluster — see the Step 3–4 tables above for every decimal). Only two razor-thin cross-cluster threads exist at all (0.0025, 0.0098, labeled) — every other cross-cluster pair is an exact 0, no edge whatsoever.</div>
+</div>
+
+<div class="diagram">
+<svg viewBox="0 0 460 280" width="100%" height="260">
+<line x1="351" y1="98" x2="356" y2="157" stroke="#d9ab5c" stroke-width="3.5"/>
+<line x1="356" y1="157" x2="350" y2="225" stroke="#d9ab5c" stroke-width="2.1"/>
+<line x1="103" y1="158" x2="109" y2="72" stroke="#d9ab5c" stroke-width="0.9"/>
+<line x1="103" y1="158" x2="109" y2="250" stroke="#d9ab5c" stroke-width="0.7"/>
+<circle cx="351" cy="98" r="7" fill="#7f9adf"/><text x="351" y="85" text-anchor="middle" fill="#7f9adf" font-family="IBM Plex Mono" font-size="12">A</text>
+<circle cx="356" cy="157" r="7" fill="#7f9adf"/><text x="374" y="161" fill="#7f9adf" font-family="IBM Plex Mono" font-size="12">B</text>
+<circle cx="350" cy="225" r="7" fill="#7f9adf"/><text x="350" y="243" text-anchor="middle" fill="#7f9adf" font-family="IBM Plex Mono" font-size="12">C</text>
+<circle cx="103" cy="158" r="7" fill="#e2836c"/><text x="103" y="176" text-anchor="middle" fill="#e2836c" font-family="IBM Plex Mono" font-size="12">D</text>
+<circle cx="109" cy="72" r="7" fill="#e2836c"/><text x="109" y="59" text-anchor="middle" fill="#e2836c" font-family="IBM Plex Mono" font-size="12">E</text>
+<circle cx="109" cy="250" r="7" fill="#e2836c"/><text x="109" y="266" text-anchor="middle" fill="#e2836c" font-family="IBM Plex Mono" font-size="12">F</text>
+<text x="365" y="130" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="8.5">0.089</text>
+<text x="365" y="195" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="8.5">0.053</text>
+<text x="85" y="110" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="8.5">0.022</text>
+<text x="60" y="210" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="8.5">0.018</text>
+<text x="230" y="265" text-anchor="middle" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="11" font-weight="600">G_low (spectral init, before optimization)</text>
+</svg>
+<div class="cap">The real, computed low-D graph, using each point's <em>actual</em> spectral coordinate (Step 5). Only edges above weight 0.01 are drawn — even A–B, a true neighbor pair, only manages 0.089 right now. Every other pair falls below 0.01 and isn't drawn at all.</div>
+</div>
+</div>
+
+<div class="callout warn"><span class="lbl">The comparison, stated the way the loss function sees it</span>Lay the two pictures on top of each other: $G_{high}$ is confident and crisp (weights basically 0, 0.83, or 1.0 — almost no middle ground); $G_{low}$, before any optimization, is uniformly weak (its strongest edge, A–B, is only 0.089). This is exactly the mismatch the cross-entropy total of <b>21.976</b> (Section 19) is measuring, and exactly what gradient descent — attracting true neighbors closer, repelling everything else, using only a sampled subset of pairs per step — spends its iterations closing. It is the same story as t-SNE's KL(P‖Q) trajectory (Section 15), told through graphs and cross-entropy instead of probability distributions and KL divergence.</div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">One more angle on the fuzzy union, side by side with t-SNE's average</h3>
+
+<div class="tbl">
+<table>
+<tr><th>Pair</th><th>w(j given i)</th><th>w(i given j)</th><th>UMAP fuzzy union: w_i|j + w_j|i − w_i|j·w_j|i</th><th>t-SNE-style average (for contrast): (p_i|j+p_j|i)/2</th></tr>
+<tr><td class="mono">A, B</td><td class="mono">1.000 (B is A's #1 neighbor)</td><td class="mono">0.585 (A is B's #2 neighbor)</td><td class="mono hl">1.000 + 0.585 − 0.585 = <b>1.000</b></td><td class="mono">(1.000+0.585)/2 = 0.793</td></tr>
+<tr><td class="mono">A, C</td><td class="mono">0.585 (C is A's #2 neighbor)</td><td class="mono">0.585 (A is C's #2 neighbor)</td><td class="mono hl">0.585 + 0.585 − 0.342 = <b>0.828</b></td><td class="mono">(0.585+0.585)/2 = 0.585</td></tr>
+</table>
+</div>
+
+<div class="callout info"><span class="lbl">Why this matters, made concrete</span>For (A, B), UMAP's union gives exactly <span class="mono">1.0</span> — full confidence, because at least one side (A→B) was already maximally sure. A simple average would have diluted that near-certainty down to 0.793 just because the reverse direction (B→A) was weaker. UMAP's fuzzy-union rule deliberately protects strong one-directional evidence from being watered down — a real, structural difference from t-SNE's ÷2n averaging, not just a cosmetic formula change.</div>
+
+<h3 style="font-family:var(--display); font-size:1.15rem; color:var(--gold); margin:26px 0 6px;">Now that the whole flow is built: what does "UMAP" actually mean?</h3>
+<p>Section 18 gave you the expansion up front — <b>U</b>niform <b>M</b>anifold <b>A</b>pproximation and <b>P</b>rojection — as a label to hang the algorithm on. Now that you've walked through every step, here's what each word is actually pointing at:</p>
+
+<div class="tbl">
+<table>
+<tr><th>Word</th><th>What it's actually referring to</th></tr>
+<tr><td class="hl">Manifold</td><td>The working assumption that your high-D data isn't scattered randomly through every dimension — it actually lies on (or near) some lower-dimensional curved surface tucked inside that high-D space. The graph-building steps (1–4) are an attempt to trace out that hidden surface using only the neighbor connections that can actually be observed.</td></tr>
+<tr><td class="hl">Uniform</td><td>The specific assumption that data is spread <em>evenly</em> across that manifold, if you measure distance the right way — exactly why $\rho_i$ (Step 2) rescales every point's neighborhood using its <em>own</em> local distances rather than one global scale. Locally, around any single point, the neighborhood is treated as if it were uniform.</td></tr>
+<tr><td class="hl">Approximation</td><td>The true manifold is never directly visible — only finitely many sampled points from it are. The fuzzy graph built in Steps 1–4 ($G_{high}$) is UMAP's best <em>approximation</em> of that unseen manifold's structure, built entirely from those samples.</td></tr>
+<tr><td class="hl">Projection</td><td>The final stretch (Steps 5–7): taking that approximated high-D structure and finding a low-dimensional layout — starting from spectral initialization, refined by gradient descent — that <em>projects</em> it down into a 2D or 3D picture you can actually look at.</td></tr>
+</table>
+</div>
+
+<div class="callout good"><span class="lbl">One sentence, now that it's earned</span>UMAP approximates the shape of the (assumed locally-uniform) manifold your data lives on, using a neighbor graph, then projects that approximated shape down into a low-dimensional picture — which is exactly the seven steps you just walked through, given its full name.</div>
+
+</section>
+
+<section class="block" id="s21-when-dimred">
+<div class="eyebrow">21 · zooming all the way out</div>
+<h2>When do you even need dimensionality reduction?</h2>
+<p class="lead">Before choosing PCA, t-SNE, or UMAP — the more basic question: what problem is dimensionality reduction actually solving?</p>
+
+<div class="grid2">
+<div class="co-card"><div class="name">You need to see the data</div><p>Nobody can look at a 100-dimensional scatter plot. Any time the goal is a human looking at a picture to sanity-check structure, spot outliers, or explain results to stakeholders, you need to get down to 2D or 3D.</p></div>
+<div class="co-card"><div class="name">You want to fight the curse of dimensionality</div><p>In very high dimensions, distances between points become less meaningful, models overfit more easily, and training gets slower. Reducing dimensions first can make downstream models more stable and faster.</p></div>
+<div class="co-card"><div class="name">Your features are redundant or correlated</div><p>Many real feature sets have heavy redundancy (multiple sensors measuring related quantities, many one-hot columns, etc.). A compact lower-dimensional representation can carry almost all the real signal.</p></div>
+<div class="co-card"><div class="name">You want to denoise before clustering or classifying</div><p>Keeping only the dimensions that carry real structure (PCA's top components, or a well-tuned manifold embedding) can strip out noise dimensions that would otherwise confuse a downstream algorithm.</p></div>
+</div>
+
+<div class="callout warn"><span class="lbl">The one thing to never forget from Classes 08–10</span>All three algorithms in this module answer the question <b>"fewer dimensions, but keep what?"</b> differently: PCA keeps <b>global variance</b>. t-SNE and UMAP keep <b>local neighbor relationships</b>. That single distinction (first raised all the way back in Class 09, Section 03) is what should drive every choice from here on.</div>
+
+</section>
+
+<section class="block" id="s22-supervised">
+<div class="eyebrow">22 · inside a real ML pipeline, part 1</div>
+<h2>Using it inside supervised learning</h2>
+<p class="lead">Supervised learning means you eventually need to <em>predict</em> — on brand-new data the model has never seen. That single requirement rules some of today's tools in, and some out.</p>
+
+<div class="formula">
+<div class="tag">the scenario</div>
+<div class="eq">$$X \;(\text{500 features}) \;\longrightarrow\; \text{predict } y$$</div>
+</div>
+
+<p>500 raw features might be slow to train on, mostly redundant, or simply too many relative to your row count. The fix: reduce to a smaller set of dimensions <em>before</em> handing features to the model — but this has to be done correctly with respect to your train/validation/test split.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 600 230" width="100%" height="225">
+<defs><marker id="sp-arr" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#6b7480"/></marker></defs>
+<g font-family="IBM Plex Mono" font-size="10.5" fill="#eef0ee">
+<rect x="20" y="20" width="150" height="28" rx="6" fill="#1f4239" stroke="#5fbfae"/><text x="95" y="39" text-anchor="middle" fill="#5fbfae">X_train</text>
+<line x1="170" y1="34" x2="215" y2="34" stroke="#6b7480" marker-end="url(#sp-arr)"/>
+<rect x="217" y="20" width="180" height="28" rx="6" fill="#181c24" stroke="#242a34"/><text x="307" y="39" text-anchor="middle">PCA.fit_transform(X_train)</text>
+<line x1="397" y1="34" x2="440" y2="34" stroke="#6b7480" marker-end="url(#sp-arr)"/>
+<rect x="442" y="20" width="140" height="28" rx="6" fill="#181c24" stroke="#242a34"/><text x="512" y="39" text-anchor="middle">Train model</text>
+
+<rect x="20" y="70" width="150" height="28" rx="6" fill="#181c24" stroke="#242a34"/><text x="95" y="89" text-anchor="middle">X_val</text>
+<line x1="170" y1="84" x2="215" y2="84" stroke="#6b7480" marker-end="url(#sp-arr)"/>
+<rect x="217" y="70" width="180" height="28" rx="6" fill="#181c24" stroke="#e2836c"/><text x="307" y="89" text-anchor="middle" fill="#e2836c">PCA.transform(X_val)</text>
+<text x="307" y="104" text-anchor="middle" fill="#6b7480" font-size="9">(NOT fit_transform!)</text>
+
+<rect x="20" y="120" width="150" height="28" rx="6" fill="#181c24" stroke="#242a34"/><text x="95" y="139" text-anchor="middle">X_test</text>
+<line x1="170" y1="134" x2="215" y2="134" stroke="#6b7480" marker-end="url(#sp-arr)"/>
+<rect x="217" y="120" width="180" height="28" rx="6" fill="#181c24" stroke="#e2836c"/><text x="307" y="139" text-anchor="middle" fill="#e2836c">PCA.transform(X_test)</text>
+<text x="307" y="154" text-anchor="middle" fill="#6b7480" font-size="9">(NOT fit_transform!)</text>
+</g>
+<rect x="20" y="185" width="560" height="30" rx="8" fill="var(--coral-dim)"/><text x="300" y="205" text-anchor="middle" fill="#e2836c" font-family="IBM Plex Mono" font-size="10.5" font-weight="600">fit ONCE on training data only — reuse that exact same fitted transform everywhere else</text>
+</svg>
+<div class="cap">The one rule that matters: <span class="mono">fit</span> (learn the projection / manifold) only on training data; every other split only ever calls <span class="mono">transform</span> with that already-fitted object.</div>
+</div>
+
+<div class="callout warn"><span class="lbl">Why fitting on val/test is a real bug, not a style preference</span>If you re-fit PCA (or anything else) on your validation or test set, the reduced features for those rows now depend on information (their own variance, their own axes) that a real, deployed model would never have access to at prediction time. This is <b>data leakage</b> — it can make validation/test metrics look better than the model will actually perform in production, because the transformation itself "peeked" at those rows.</div>
+
+<div class="tbl">
+<table>
+<tr><th>Method</th><th>Has a real, reusable transform() for brand-new points?</th><th>Usable as a supervised-learning preprocessing step?</th></tr>
+<tr><td class="mono">PCA</td><td class="good">Yes — a fixed linear projection, $Z = XW$, apply to anything</td><td class="good">Yes — the standard choice</td></tr>
+<tr><td class="mono">UMAP</td><td class="teal">Yes, approximately — UMAP learns a model it can reapply to new points (Section 18–19), though it's an approximation, not an exact closed-form projection</td><td class="teal">Sometimes — used in practice, with care</td></tr>
+<tr><td class="mono">t-SNE</td><td class="bad">No — in its standard form it only ever produces coordinates for the exact points it was run on</td><td class="bad">Not really — new points normally require rerunning the whole algorithm</td></tr>
+</table>
+</div>
+
+<div class="callout good"><span class="lbl">The practical rule of thumb for supervised pipelines</span>Reach for <b>PCA</b> (or, if the relationship to $y$ matters more than just compressing $X$, supervised alternatives like PLS) as a genuine preprocessing step feeding into a downstream model. Save t-SNE and UMAP for <em>looking at</em> your data and your model's learned representations — not for manufacturing the actual input features a production model consumes.</div>
+
+</section>
+
+<section class="block" id="s23-unsupervised">
+<div class="eyebrow">23 · inside a real ML pipeline, part 2</div>
+<h2>Using it inside unsupervised learning</h2>
+<p class="lead">Unsupervised learning has no labels to protect from leakage, so the trap here is different: confusing "a nice-looking picture" with "the actual clustering."</p>
+
+<div class="vs">
+<div class="side left">
+<div class="t">Scenario 1 — cluster first, visualize second <span class="badge b-c2">recommended</span></div>
+Run clustering (K-Means, DBSCAN, GMM, …) on the <b>original data</b> or a <b>PCA-reduced</b> version of it. Evaluate the clustering properly (silhouette score, WCSS/elbow, domain judgment). <em>Then</em> use t-SNE or UMAP purely to draw a 2D picture of those already-decided cluster labels, to show someone.
+</div>
+<div class="mid">vs</div>
+<div class="side right">
+<div class="t">Scenario 2 — cluster directly on a t-SNE/UMAP embedding <span class="badge b-c3">use with caution</span></div>
+Run t-SNE or UMAP down to 2D first, then run K-Means (or eyeball it) directly on those 2 coordinates. Visually persuasive, but risky: neither method reliably preserves relative cluster <em>density</em> or <em>size</em>, and both can visually manufacture apparent separation that isn't really there, or merge genuinely distinct groups.
+</div>
+</div>
+
+<div class="callout warn"><span class="lbl">Why Scenario 2 is risky, concretely</span>Recall Class 09, Section 05: two different t-SNE runs, same data, preserved <b>local</b> neighbor structure well (~74% fidelity) but landed in visually different global arrangements — and neither run's inter-cluster gaps or cluster sizes are meant to be read literally. A K-Means run directly on 2D t-SNE/UMAP coordinates is clustering on a representation that was never optimized to preserve the specific things K-Means depends on (Euclidean density and relative distances, globally) — it was only optimized to preserve local neighbor identity.</div>
+
+<div class="callout good"><span class="lbl">If asked directly: "if two points land close together in the 2D plot, does that mean they're in the same cluster?"</span>Locally: usually yes — that's the one thing both algorithms are explicitly built to preserve. But the reverse inference is unsafe: two points landing <em>far apart</em> doesn't necessarily mean they were far apart originally (crowding, Section 08, can force this), and the visual <em>size</em> of the gap between two clusters carries little to no reliable meaning in either method. Treat the picture as strong evidence for "these two specific points are related," and weak evidence for anything about absolute distances or gaps.</div>
+
+</section>
+
+<section class="block" id="s24-decision-guide">
+<div class="eyebrow">24 · putting it all into one lookup</div>
+<h2>Decision guide — which algorithm, which scenario</h2>
+<p class="lead">Every version of "which one should I use" collapses into a handful of concrete questions. Answer these, and the choice mostly makes itself.</p>
+
+<div class="tbl">
+<table>
+<tr><th>Your situation</th><th>What to reach for</th><th>Why</th></tr>
+<tr><td>You need a reusable, deterministic transform to feed a supervised model</td><td class="hl">PCA</td><td>Only method here with a true, exact, reusable linear transform</td></tr>
+<tr><td>You want to compress features and still roughly reconstruct the original data</td><td class="hl">PCA</td><td>PCA is invertible (approximately) — t-SNE/UMAP are not designed to be reconstructed back to X</td></tr>
+<tr><td>You want the cleanest possible 2D picture of local cluster structure, dataset is small-to-medium</td><td class="hl">t-SNE</td><td>Purpose-built for exactly this; the KL(P‖Q) objective aggressively protects true local neighbors</td></tr>
+<tr><td>Your dataset is large (100k+ rows) and t-SNE is too slow</td><td class="hl">UMAP</td><td>k-NN graph + negative sampling scales much better than dense pairwise Gaussians</td></tr>
+<tr><td>You need to place new, unseen points into an existing embedding</td><td class="hl">UMAP (or PCA)</td><td>UMAP has an approximate reusable transform; t-SNE does not</td></tr>
+<tr><td>You care about preserving some global structure (not just local neighborhoods), not only local clusters</td><td class="hl">UMAP</td><td>Cross-entropy loss (Section 19) explicitly penalizes false-positive closeness, unlike KL(P‖Q)</td></tr>
+<tr><td>You want to actually cluster the data (assign group labels)</td><td class="hl">Cluster in original or PCA space</td><td>Use t-SNE/UMAP only to visualize the result afterward (Section 23)</td></tr>
+<tr><td>You just want quick intuition/EDA on a small dataset and speed doesn't matter</td><td class="hl">t-SNE or UMAP, either</td><td>Both will show local structure well at small scale; try both, they're cheap to compare</td></tr>
+</table>
+</div>
+
+</section>
+
+<section class="block" id="s25-three-flows">
+<div class="eyebrow">25 · the picture to never forget</div>
+<h2>PCA vs. t-SNE vs. UMAP — three flows, side by side</h2>
+<p class="lead">Compress the entire module — Classes 08 through 10 — into one lookup you can redraw from memory.</p>
+
+<div class="threecol">
+<div class="flowcard">
+<div class="fc-title pca">PCA</div>
+<div class="flowstep">Standardize X</div><div class="flowarrow">↓</div>
+<div class="flowstep">Covariance matrix</div><div class="flowarrow">↓</div>
+<div class="flowstep">Eigenvectors / eigenvalues</div><div class="flowarrow">↓</div>
+<div class="flowstep">Rank by variance explained</div><div class="flowarrow">↓</div>
+<div class="flowstep" style="background:var(--slate-blue-dim); border-color:var(--slate-blue);">Project: Z = XW</div>
+<div class="flowwhen"><b>Use when:</b> you need speed, a reusable/invertible linear transform, feature compression before a supervised model, or a first look at global variance structure. <b>It answers:</b> "which directions carry the most spread?"</div>
+</div>
+
+<div class="flowcard">
+<div class="fc-title tsne">t-SNE</div>
+<div class="flowstep">Standardize X</div><div class="flowarrow">↓</div>
+<div class="flowstep">Distance → Gaussian similarity</div><div class="flowarrow">↓</div>
+<div class="flowstep">σᵢ via perplexity → P</div><div class="flowarrow">↓</div>
+<div class="flowstep">Init Y, Student-t → Q</div><div class="flowarrow">↓</div>
+<div class="flowstep">Minimize KL(P‖Q)</div><div class="flowarrow">↓</div>
+<div class="flowstep" style="background:var(--gold-dim); border-color:var(--gold);">Gradient descent → final map</div>
+<div class="flowwhen"><b>Use when:</b> the goal is a clean visual of local cluster structure on a small-to-medium dataset, and you don't need to embed new points later. <b>It answers:</b> "which points are each other's real neighbors?"</div>
+</div>
+
+<div class="flowcard">
+<div class="fc-title umap">UMAP</div>
+<div class="flowstep">Standardize X</div><div class="flowarrow">↓</div>
+<div class="flowstep">k-NN graph (high-D)</div><div class="flowarrow">↓</div>
+<div class="flowstep">ρᵢ, σᵢ → fuzzy weights → G_high</div><div class="flowarrow">↓</div>
+<div class="flowstep">Init layout, build G_low</div><div class="flowarrow">↓</div>
+<div class="flowstep">Minimize cross-entropy</div><div class="flowarrow">↓</div>
+<div class="flowstep" style="background:var(--teal-dim); border-color:var(--teal);">Sampled gradient descent → final map</div>
+<div class="flowwhen"><b>Use when:</b> the dataset is large, you need speed, or you need to embed new points later. <b>It answers:</b> the same question as t-SNE, faster, and with a bit more attention to global shape.</div>
+</div>
+</div>
+
+<div class="callout warn"><span class="lbl">Standardization belongs at the top of all three, not just PCA</span>All three methods start from a distance or a distance-derived quantity — PCA's covariance matrix, t-SNE's Euclidean distances feeding the Gaussian, UMAP's k-NN search feeding ρᵢ/σᵢ. Every one of those is sensitive to feature scale: a single feature measured in the thousands (e.g. income) will silently dominate a feature measured in single digits (e.g. age) purely because of its units, not because it's actually more important. Standardizing X (zero mean, unit variance per feature — the same $z=\frac{x-\mu}{\sigma}$ from Class 08) belongs before the very first step of <b>all three</b> pipelines, every time, unless every feature is already on a genuinely comparable scale.</div>
+
+</section>
+
+<section class="block" id="s26-industry">
+<div class="eyebrow">26 · where these actually show up at work</div>
+<h2>In industry — which one, and why</h2>
+<p class="lead">All three genuinely coexist in real pipelines — they aren't really in competition, because they usually aren't solving the same step of the same problem.</p>
+
+<div class="tbl">
+<table>
+<tr><th>Method</th><th>Common real-world uses</th><th>Why it wins there</th></tr>
+<tr><td class="mono hl">PCA</td><td>Preprocessing before classical ML models; noise reduction on sensor/telemetry data; compressing embeddings before storage or a downstream nearest-neighbor index; whitening features for models sensitive to scale/correlation; a fast first-pass anomaly-detection signal (reconstruction error, Class 07)</td><td>Deterministic, invertible, cheap, and has a precise, provable optimality guarantee (maximum variance) that stakeholders and auditors can reason about</td></tr>
+<tr><td class="mono hl">t-SNE</td><td>Exploratory data analysis on small-to-medium datasets; visualizing learned embeddings (word vectors, image embeddings) during model debugging; one-off reports and papers where the sharpest possible visual cluster separation matters more than speed</td><td>Its aggressive local-neighbor preservation (KL(P‖Q)'s asymmetric penalty) tends to produce the most visually crisp, well-separated clusters of the three, when speed isn't the constraint</td></tr>
+<tr><td class="mono hl">UMAP</td><td>Now the de facto standard for visualizing very large, high-dimensional datasets — most prominently single-cell genomics/bioinformatics pipelines (visualizing hundreds of thousands of cells' gene-expression profiles), large-scale embedding visualization at tech companies, and increasingly used as a genuine preprocessing step (not just visualization) before clustering, thanks to its reusable transform</td><td>Scales to dataset sizes t-SNE struggles with, supports embedding new points, and its two-term cross-entropy loss tends to preserve a little more of the global layout alongside local neighborhoods</td></tr>
+</table>
+</div>
+
+<div class="callout good"><span class="lbl">A fair summary, stated once</span>Reach for PCA first, by default, for almost any preprocessing task — it's the cheapest and most defensible choice. Reach for t-SNE or UMAP specifically when the deliverable is a <em>picture</em> of structure for a human to look at, or when you're debugging what a model has learned. Between those two, UMAP has become the more common default at scale in recent years, purely on speed and reusability grounds — but t-SNE remains extremely widely used and is not "obsolete."</div>
+
+</section>
+
+<div class="divider"></div>
+
+<section class="block" id="s27-final-recap">
+<div class="eyebrow">27 · everything, one last time</div>
+<h2>Everything, one last time</h2>
+
+<div class="timeline">
+<div class="titem"><div class="tsec">Sections 00–02</div><div class="ttext">Revised the full high-D pipeline (distance → Gaussian → normalize → σᵢ via perplexity → P), then made perplexity completely visual: same target perplexity, wildly different σ for a dense point (2.442) vs. a sparse one (2.832), same resulting distribution shape.</div></div>
+<div class="titem hl"><div class="tsec">Sections 03–04</div><div class="ttext">p(j|i) ≠ p(i|j) in general, because each direction is normalized with a different point's own σ. The fix isn't a simple average — dividing by 2n (not just 2) is what's required to make the symmetrized P a genuine probability distribution over pairs, summing to exactly 1.</div></div>
+<div class="titem"><div class="tsec">Sections 05–06</div><div class="ttext">With P finished, the real remaining job is manufacturing a brand-new 2D coordinate Y for every point — never a projection of X. Random initialization is a pure guess; PCA initialization (the default) starts from real global structure and, verified on real numbers, converges dramatically faster.</div></div>
+<div class="titem hl"><div class="tsec">Sections 07–10</div><div class="ttext">A Gaussian on the low-D side would make the unavoidable "crowding problem" worse (illustrated with a 2D square that can't be faithfully placed on a 1D line). Student-t with 1 degree of freedom — the heaviest-tailed member of its family — keeps moderately-far points meaningfully distinguishable instead of flattening them all to zero. Q needs no symmetrization step: one shared denominator, already-symmetric distances.</div></div>
+<div class="titem"><div class="tsec">Sections 11–12</div><div class="ttext">KL(P‖Q) measures the mismatch between the two distributions, is always ≥ 0 (Gibbs' inequality), and — because every term is weighted by the target p_ij — punishes losing real neighbors far more than it punishes accidental low-D closeness. That asymmetry is a deliberate design choice, not an accident.</div></div>
+<div class="titem hl"><div class="tsec">Sections 13–16</div><div class="ttext">Gradient descent moves each point according to sign(p_ij − q_ij): attraction when P wants more closeness than Q currently has, repulsion otherwise — verified directly with real attract/repel numbers. Looped to convergence, comparing real KL trajectories: PCA init reached KL &lt; 0.05 in 2 steps vs. 34 for random init.</div></div>
+<div class="titem"><div class="tsec">Sections 17–20</div><div class="ttext">t-SNE's real costs (speed, no out-of-sample transform, sensitivity to perplexity/init) motivate UMAP: a k-NN graph instead of a dense probability matrix, fuzzy-set union instead of ÷2n averaging, and a two-term cross-entropy loss instead of KL divergence — verified with a real k=3 toy example on the same 6-point dataset.</div></div>
+<div class="titem hl"><div class="tsec">Sections 21–26</div><div class="ttext">Dimensionality reduction exists to let a human see the data, fight the curse of dimensionality, or denoise/compress. PCA is the safe default for supervised-learning preprocessing (it has a real, leakage-safe transform); t-SNE and UMAP are for visualization and EDA, with clustering ideally done in the original or PCA space first and t-SNE/UMAP used only to draw the picture afterward.</div></div>
+</div>
+
+<div class="mental-model">
+<div class="card-title">The one-paragraph version of the entire module</div>
+<p>PCA finds the directions of maximum variance and gives you an exact, reusable, invertible projection — the right default whenever a downstream model needs stable numeric features. t-SNE throws variance away entirely and instead asks, point by point, "who are my real neighbors?" — turning that question into matching probability distributions (Gaussian in high-D, heavy-tailed Student-t in low-D) via gradient descent on KL divergence, at the cost of speed and any way to place new points afterward. UMAP asks the same neighbor question but represents it as a weighted graph instead of a probability distribution, symmetrizes it with a fuzzy-set union instead of an average, and optimizes a two-term cross-entropy with negative sampling — landing on something faster, more scalable, and with a genuine (if approximate) way to embed new points, while still keeping most of t-SNE's visual cluster quality. None of the three is strictly "better" — each one is the right tool once you know exactly which of "compress," "preserve local neighbors," or "preserve local neighbors at scale" is actually the job.</p>
+</div>
+
+</section>
+
+</main>
+</div>
+</div>
+
+<div class="wrap">
+<div class="pagefoot">
+  <a href="#">&larr; Class 09: t-SNE I (neighbors, σᵢ, perplexity)</a>
+  <span class="relbox">Module: Unsupervised ML &middot; Class 10 (t-SNE II &amp; UMAP)</span>
+  <a href="#s00-recap">Back to top &uarr;</a>
+</div>
+</div>
+
+<script>
+document.querySelectorAll("nav a").forEach(a=>a.addEventListener("click",()=>{
+  document.querySelectorAll("nav a").forEach(x=>x.classList.remove("active"));
+  a.classList.add("active");
+}));
+</script>
+</body>
+</html>

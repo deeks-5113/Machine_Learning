@@ -1,0 +1,1060 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 08 — Principal Component Analysis | Unsupervised ML</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,ital@9..144,400;9..144,500;9..144,600;9..144,700;9..144,600italic&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'$',right:'$',display:false},{left:'\\(',right:'\\)',display:false}]});"></script>
+<style>
+:root{
+  --ink-0:#0a0c10; --ink-1:#12151b; --ink-2:#181c24;
+  --hair:#242a34; --hair-soft:#1a1e26;
+  --paper:#eef0ee; --paper-dim:#9aa3ad; --paper-faint:#6b7480;
+  --gold:#d9ab5c; --gold-dim:#4d3d22;
+  --teal:#5fbfae; --teal-dim:#1f4239;
+  --coral:#e2836c; --coral-dim:#4a2c22;
+  --slate-blue:#7f9adf; --slate-blue-dim:#252f4a;
+  --moss:#93c084; --moss-dim:#293c26;
+  --radius:12px;
+  --display:"Fraunces",Georgia,serif;
+  --sans:"Inter",-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0; background:var(--ink-0); color:var(--paper);
+  font-family:var(--sans); font-size:16px; line-height:1.6;
+  position:relative; overflow-x:hidden;
+}
+body::before{
+  content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background-image:radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size:22px 22px;
+  -webkit-mask-image:radial-gradient(circle at 30% 10%, rgba(0,0,0,0.9), transparent 70%);
+  mask-image:radial-gradient(circle at 30% 10%, rgba(0,0,0,0.9), transparent 70%);
+}
+body::after{
+  content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(600px 400px at 8% 0%, rgba(217,171,92,0.10), transparent 60%),
+    radial-gradient(700px 500px at 100% 30%, rgba(95,191,174,0.08), transparent 60%);
+}
+.wrap{max-width:1180px; margin:0 auto; padding:0 28px; position:relative; z-index:1;}
+a{color:var(--gold);}
+h1,h2,h3{font-family:var(--display); font-weight:600; margin:0;}
+em{font-style:italic; color:var(--gold);}
+.mono{font-family:var(--mono);}
+
+/* ---------- HERO ---------- */
+.hero{padding:76px 0 40px; display:grid; grid-template-columns:1.15fr 0.85fr; gap:40px; align-items:center; border-bottom:1px solid var(--hair);}
+.kicker{font-family:var(--mono); font-size:.78rem; letter-spacing:.12em; text-transform:uppercase; color:var(--teal); margin-bottom:16px;}
+.hero h1{font-size:2.7rem; line-height:1.12; color:var(--paper);}
+.hero p.sub{font-size:1.08rem; color:var(--paper-dim); max-width:46ch; margin-top:18px;}
+.meta{margin-top:26px; display:flex; flex-direction:column; gap:6px; font-family:var(--mono); font-size:.85rem; color:var(--paper-dim);}
+.meta b{color:var(--paper); font-weight:500;}
+.prereqs{display:flex; flex-wrap:wrap; gap:8px; margin-top:20px;}
+.pill{font-family:var(--mono); font-size:.76rem; padding:5px 12px; border-radius:20px; border:1px solid var(--hair); color:var(--paper-dim); background:var(--ink-1);}
+.hero-art{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:18px;}
+.hero-art .cap{font-family:var(--mono); font-size:.74rem; color:var(--paper-faint); text-align:center; margin-top:10px;}
+
+/* ---------- LAYOUT + TOC ---------- */
+.layout{display:grid; grid-template-columns:250px 1fr; gap:48px; padding:44px 0 100px; align-items:start;}
+nav.toc{position:sticky; top:20px; font-size:.86rem; max-height:calc(100vh - 40px); overflow-y:auto; padding-right:8px;}
+nav.toc .tt{font-family:var(--mono); text-transform:uppercase; letter-spacing:.1em; font-size:.7rem; color:var(--paper-faint); margin:20px 0 8px;}
+nav.toc .tt:first-child{margin-top:0;}
+nav.toc a{display:block; padding:5px 0; color:var(--paper-dim); text-decoration:none; border-left:2px solid transparent; padding-left:10px; margin-left:-2px; transition:color .15s, border-color .15s;}
+nav.toc a:hover{color:var(--paper);}
+nav.toc a.active{color:var(--gold); border-left-color:var(--gold);}
+
+main{min-width:0;}
+section.block{margin-bottom:60px; scroll-margin-top:20px;}
+.eyebrow{font-family:var(--mono); font-size:.76rem; letter-spacing:.08em; text-transform:uppercase; color:var(--coral); margin-bottom:10px;}
+section.block h2{font-size:1.7rem; color:var(--paper); margin-bottom:6px;}
+section.block h2 i{font-style:italic; color:var(--gold); font-weight:500;}
+p.lead{color:var(--paper-dim); font-size:1.02rem; max-width:70ch; margin-top:10px;}
+
+/* ---------- CARDS / GRIDS ---------- */
+.card{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:20px 22px; margin:16px 0;}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+.grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;}
+.grid4{display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:14px;}
+.grid6{display:grid; grid-template-columns:repeat(6,1fr); gap:10px;}
+.co-card{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:18px; display:flex; flex-direction:column;}
+.co-card .name{font-family:var(--display); font-weight:600; color:var(--gold); margin-bottom:6px;}
+.co-card p{margin:0; color:var(--paper-dim); font-size:.94rem; flex:1;}
+.co-card .why{margin-top:10px; padding-top:10px; border-top:1px solid var(--hair); font-size:.86rem; color:var(--teal);}
+
+/* ---------- CALLOUTS ---------- */
+.callout{background:var(--ink-1); border-left:3px solid var(--slate-blue); border-radius:0 var(--radius) var(--radius) 0; padding:14px 18px; margin:18px 0; font-size:.95rem;}
+.callout b{color:var(--paper);}
+.callout.warn{border-left-color:var(--coral);}
+.callout.info{border-left-color:var(--slate-blue);}
+.callout.good{border-left-color:var(--moss);}
+.callout .lbl{font-family:var(--mono); font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; color:var(--paper-faint); margin-bottom:6px; display:block;}
+
+/* ---------- FORMULA / STEPS ---------- */
+.formula{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:16px 24px 22px; margin:18px 0; text-align:center;}
+.formula.left{text-align:left;}
+.formula .tag{display:block; width:max-content; max-width:100%; text-align:left; background:var(--ink-2); border:1px solid var(--hair); font-family:var(--mono); font-size:.68rem; padding:2px 9px; border-radius:10px; color:var(--gold); margin:0 0 12px;}
+.formula .eq{overflow-x:auto; padding-bottom:2px;}
+.step{display:flex; gap:14px; margin:14px 0; align-items:flex-start;}
+.step .num{flex:0 0 30px; height:30px; border-radius:50%; background:var(--gold-dim); color:var(--gold); font-family:var(--mono); font-weight:600; font-size:.85rem; display:flex; align-items:center; justify-content:center;}
+.step .body{flex:1; padding-top:3px;}
+.step .body p{margin:4px 0 0;}
+
+/* ---------- TABLES ---------- */
+.tbl{overflow-x:auto; margin:18px 0;}
+.tbl table{width:100%; border-collapse:collapse; font-size:.9rem;}
+.tbl th,.tbl td{padding:9px 12px; border-bottom:1px solid var(--hair); text-align:left;}
+.tbl th{font-family:var(--mono); font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:var(--paper-faint);}
+.tbl td.hl{color:var(--gold); font-family:var(--mono);}
+.tbl td.good{color:var(--moss);}
+.tbl td.bad{color:var(--coral);}
+.tbl td.teal{color:var(--teal);}
+.tbl td.c1{background:rgba(217,171,92,0.06);}
+.tbl td.c2{background:rgba(95,191,174,0.06);}
+.tbl td.c3{background:rgba(226,131,108,0.06);}
+.tbl td.mono, .tbl th.mono{font-family:var(--mono);}
+
+/* ---------- CODE ---------- */
+.code{background:var(--ink-2); border:1px solid var(--hair); border-radius:var(--radius); padding:16px 18px; font-family:var(--mono); font-size:.84rem; overflow-x:auto; margin:16px 0; line-height:1.7;}
+.code .c{color:var(--paper-faint); font-style:italic;}
+.code .k{color:var(--slate-blue);}
+.code .n{color:var(--gold);}
+.code .s{color:var(--teal);}
+
+/* ---------- QUOTE ---------- */
+.quote{font-family:var(--display); font-style:italic; font-size:1.15rem; color:var(--paper); border-left:3px solid var(--gold); padding:6px 22px; margin:20px 0;}
+.quote .who{display:block; font-family:var(--mono); font-style:normal; font-size:.78rem; color:var(--paper-faint); margin-top:8px;}
+
+/* ---------- VS ---------- */
+.vs{display:grid; grid-template-columns:1fr auto 1fr; gap:0; align-items:stretch; margin:18px 0;}
+.vs .side{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:16px 18px;}
+.vs .side.left{border-top-right-radius:0; border-bottom-right-radius:0;}
+.vs .side.right{border-top-left-radius:0; border-bottom-left-radius:0;}
+.vs .mid{display:flex; align-items:center; justify-content:center; padding:0 16px; font-family:var(--mono); color:var(--paper-faint); font-size:.8rem;}
+.vs .side .t{font-family:var(--mono); text-transform:uppercase; font-size:.7rem; letter-spacing:.08em; color:var(--paper-faint); margin-bottom:8px;}
+
+/* ---------- DIAGRAM ---------- */
+.diagram{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:18px; margin:18px 0; text-align:center;}
+.diagram svg,.diagram img{max-width:100%;}
+.diagram .cap{font-family:var(--mono); font-size:.78rem; color:var(--paper-faint); margin-top:10px;}
+
+/* ---------- BADGE ---------- */
+.badge{display:inline-block; font-family:var(--mono); font-size:.72rem; padding:2px 9px; border-radius:10px; margin-right:6px;}
+.b-c1{background:var(--gold-dim); color:var(--gold);}
+.b-c2{background:var(--teal-dim); color:var(--teal);}
+.b-c3{background:var(--coral-dim); color:var(--coral);}
+
+/* ---------- OPTIONAL / DERIVATION ---------- */
+details.deriv{background:var(--ink-1); border:1px solid var(--hair-soft); border-left:3px solid var(--gold); border-radius:var(--radius); padding:14px 18px; margin:18px 0;}
+details.deriv summary{font-family:var(--sans); font-weight:700; color:var(--gold); cursor:pointer; list-style:none;}
+details.deriv summary::-webkit-details-marker{display:none;}
+details.deriv summary::marker{color:var(--gold);}
+details.deriv summary::before{content:"▸ "; font-family:var(--mono);}
+details.deriv[open] summary::before{content:"▾ ";}
+details.deriv .inner{margin-top:14px; padding-top:14px; border-top:1px solid var(--hair-soft);}
+
+/* ---------- KPI ---------- */
+.kpi-row{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:20px 0;}
+.kpi{background:var(--ink-1); border:1px solid var(--hair); border-radius:var(--radius); padding:16px; text-align:center;}
+.kpi .num{font-family:var(--display); font-size:1.9rem; color:var(--gold);}
+.kpi .lbl{font-family:var(--mono); font-size:.72rem; color:var(--paper-faint); margin-top:4px; text-transform:uppercase; letter-spacing:.05em;}
+
+/* ---------- TIMELINE (final unifying flow) ---------- */
+.timeline{position:relative; margin:24px 0 24px 10px; padding-left:26px;}
+.timeline::before{content:""; position:absolute; left:5px; top:6px; bottom:6px; width:2px; background:var(--hair);}
+.timeline .titem{position:relative; margin-bottom:20px;}
+.timeline .titem::before{content:""; position:absolute; left:-26px; top:4px; width:11px; height:11px; border-radius:50%; background:var(--gold); border:2px solid var(--ink-0);}
+.timeline .titem .tsec{font-family:var(--mono); font-size:.7rem; color:var(--paper-faint); text-transform:uppercase; letter-spacing:.05em;}
+.timeline .titem .ttext{margin-top:2px; font-size:.94rem;}
+.timeline .titem.hl::before{background:var(--teal);}
+.mental-model{background:var(--ink-1); border:1px solid var(--gold-dim); border-radius:var(--radius); padding:20px 24px; margin:24px 0;}
+.mental-model .card-title{font-family:var(--mono); text-transform:uppercase; font-size:.72rem; letter-spacing:.08em; color:var(--gold); margin-bottom:10px;}
+
+/* ---------- FOOTER ---------- */
+.pagefoot{display:flex; justify-content:space-between; padding:30px 0 60px; border-top:1px solid var(--hair); margin-top:20px; font-family:var(--mono); font-size:.85rem;}
+.pagefoot a{color:var(--paper-dim); text-decoration:none;}
+.pagefoot a:hover{color:var(--gold);}
+.relbox{color:var(--paper-faint);}
+.divider{border-top:1px solid var(--hair); margin:40px 0;}
+
+@media(max-width:920px){
+  .hero{grid-template-columns:1fr;}
+  .layout{grid-template-columns:1fr;}
+  nav.toc{position:relative; top:0; max-height:none;}
+  .grid2,.grid3,.grid4{grid-template-columns:1fr;}
+  .vs{grid-template-columns:1fr;}
+  .vs .mid{display:none;}
+  .kpi-row{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<section class="hero">
+  <div>
+    <div class="kicker">ML Coding · Unsupervised Learning · Class 08</div>
+    <h1>Principal Component Analysis <em>— finding the directions that matter</em></h1>
+    <p class="sub">Given a cloud of points in many dimensions, PCA asks one sharp question: which new axes describe this data with the least loss of information? We'll build the entire answer — variance, projection, covariance, Lagrange multipliers, eigenvectors — from first principles, one small step at a time.</p>
+    <div class="meta">
+      <div>Date: <b>9 September 2026</b></div>
+      <div>Module: <b>Unsupervised Learning</b></div>
+      <div>Prior classes: <b>01–06 Clustering · 07 Anomaly Detection</b></div>
+    </div>
+    <div class="prereqs">
+      <span class="pill">Curse of dimensionality</span>
+      <span class="pill">Distance-based algorithms</span>
+      <span class="pill">Variance &amp; std deviation</span>
+      <span class="pill">Basic matrix multiplication</span>
+    </div>
+  </div>
+  <div class="hero-art">
+    <svg viewBox="0 0 320 260" width="100%" height="260">
+      <!-- axes -->
+      <line x1="30" y1="130" x2="300" y2="130" stroke="#242a34" stroke-width="1.5"/>
+      <line x1="160" y1="20" x2="160" y2="240" stroke="#242a34" stroke-width="1.5"/>
+      <text x="292" y="122" fill="#6b7480" font-family="IBM Plex Mono" font-size="11">x₁</text>
+      <text x="166" y="30" fill="#6b7480" font-family="IBM Plex Mono" font-size="11">x₂</text>
+      <!-- elliptical point cloud along ~45deg -->
+      <g>
+        <circle cx="120" cy="150" r="4" fill="#7f9adf"/>
+        <circle cx="135" cy="140" r="4" fill="#7f9adf"/>
+        <circle cx="145" cy="148" r="4" fill="#7f9adf"/>
+        <circle cx="150" cy="128" r="4" fill="#7f9adf"/>
+        <circle cx="165" cy="132" r="4" fill="#7f9adf"/>
+        <circle cx="172" cy="118" r="4" fill="#7f9adf"/>
+        <circle cx="180" cy="122" r="4" fill="#7f9adf"/>
+        <circle cx="190" cy="105" r="4" fill="#7f9adf"/>
+        <circle cx="200" cy="112" r="4" fill="#7f9adf"/>
+        <circle cx="205" cy="95" r="4" fill="#7f9adf"/>
+        <circle cx="130" cy="160" r="4" fill="#7f9adf"/>
+        <circle cx="215" cy="100" r="4" fill="#7f9adf"/>
+      </g>
+      <!-- PC1 direction (gold), roughly along the spread -->
+      <line x1="100" y1="172" x2="235" y2="88" stroke="#d9ab5c" stroke-width="2.5"/>
+      <text x="238" y="86" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="12" font-weight="600">PC1</text>
+      <!-- PC2 direction (teal), perpendicular -->
+      <line x1="140" y1="90" x2="195" y2="170" stroke="#5fbfae" stroke-width="2.5"/>
+      <text x="198" y="176" fill="#5fbfae" font-family="IBM Plex Mono" font-size="12" font-weight="600">PC2</text>
+    </svg>
+    <div class="cap">The point cloud's natural long axis (PC1) and its perpendicular partner (PC2) — the two directions we'll derive from scratch.</div>
+  </div>
+</section>
+</div>
+
+<div class="wrap">
+<div class="layout">
+<nav class="toc">
+  <div class="tt">Recap &amp; motivation</div>
+  <a href="#s1-recap">01 · Curse of dimensionality, briefly</a>
+  <a href="#s2-why-pca">02 · Why PCA?</a>
+
+  <div class="tt">Variance &amp; selection vs. extraction</div>
+  <a href="#s3-variance">03 · What variance actually measures</a>
+  <a href="#s4-selection-vs-pca">04 · Feature selection vs. PCA</a>
+
+  <div class="tt">Hunting for the best direction</div>
+  <a href="#s5-infinite-directions">05 · Infinite directions, one winner</a>
+  <a href="#s6-candidates">06 · Three candidates, computed by hand</a>
+
+  <div class="tt">Building blocks</div>
+  <a href="#s7-vector-scalar">07 · Vector × scalar</a>
+  <a href="#s8-matrix-vector">08 · Matrix × vector</a>
+  <a href="#s9-eigen">09 · The special vector: eigenvectors</a>
+
+  <div class="tt">PCA from scratch</div>
+  <a href="#s10-standardize">10 · Should we standardize?</a>
+  <a href="#s11-project-unknown">11 · Projecting onto an unknown w</a>
+  <a href="#s12-covariance-derivation">12 · Variance → the covariance matrix</a>
+  <a href="#s13-objective">13 · The optimization objective</a>
+  <a href="#s14-constraint">14 · Why w&#7488;w = 1</a>
+  <a href="#s15-lagrange">15 · Lagrange multipliers</a>
+  <a href="#s16-solve">16 · Solving for w → &Sigma;w = &lambda;w</a>
+  <a href="#s17-lambda-variance">17 · &lambda; = variance → picking PC1</a>
+
+  <div class="tt">Loose ends</div>
+  <a href="#s18-n-minus-1">18 · Optional — why n&minus;1?</a>
+  <a href="#s19-d-eigenvectors">19 · Optional — how many eigenvectors?</a>
+
+  <div class="tt">Wrap-up</div>
+  <a href="#s20-chain">20 · The full chain, start to finish</a>
+</nav>
+<main>
+<section class="block" id="s1-recap">
+<div class="eyebrow">01 · quick recap</div>
+<h2>The curse of dimensionality, in one paragraph</h2>
+<p class="lead">This was covered in full detail in the previous module, so here's just the one-line version we need today.</p>
+
+<div class="callout info">
+<span class="lbl">Recap — covered in detail earlier</span>
+As the number of features (dimensions) grows, three things happen at once: the data needed to fill the space grows exponentially, every pair of points starts looking roughly <b>equally far apart</b> (distance stops being informative), and the data becomes almost impossible to <b>visualize or reason about</b> directly. Distance-based algorithms (k-NN, k-Means, DBSCAN, …) quietly degrade because their core assumption — "close points are similar" — stops being reliable.
+</div>
+
+<p>What we didn't fully answer earlier: if extra dimensions hurt us, why not just <em>use fewer of them</em>? That's exactly where today's class starts.</p>
+
+</section>
+
+<section class="block" id="s2-why-pca">
+<div class="eyebrow">02 · motivation</div>
+<h2>Why do we need PCA?</h2>
+<p class="lead">Two ways to have fewer dimensions. Only one of them keeps all the information.</p>
+
+<p>Suppose a dataset has 40 features. The curse of dimensionality tells us we'd be better off with far fewer — say 5–10. There are exactly two ways to get there:</p>
+
+<div class="grid2">
+  <div class="co-card">
+    <div class="name">Option A — drop columns</div>
+    <p>Pick 5 of the original 40 features and throw the other 35 away. Simple, and the surviving features stay in their original, interpretable units.</p>
+    <div class="why">Problem: whatever unique information lived only in the 35 dropped columns is gone. Forever.</div>
+  </div>
+  <div class="co-card">
+    <div class="name">Option B — build new axes</div>
+    <p>Keep information from <em>all</em> 40 features, but combine them into 5 brand-new axes, each a weighted blend of the originals.</p>
+    <div class="why">This is <b>feature extraction</b> — and PCA is the most widely used way to do it.</div>
+  </div>
+</div>
+
+<p>So the motivation for PCA is exactly the motivation for dimensionality reduction in general — fight the curse of dimensionality — but with a specific promise: reduce the number of dimensions <em>while throwing away as little information as possible</em>. Today's entire class is about making that promise mathematically precise: what does "information" mean here, and how do we build axes that keep the most of it?</p>
+
+</section>
+<section class="block" id="s3-variance">
+<div class="eyebrow">03 · the measuring stick</div>
+<h2>What variance actually measures</h2>
+<p class="lead">Before we can talk about "the direction with maximum information," we need a number that stands in for "information." PCA's choice is <b>variance</b>.</p>
+
+<div class="formula">
+<div class="tag">variance</div>
+$$\text{Var}(x) = \dfrac{1}{n-1}\sum_{i=1}^{n}(x_i - \bar{x})^2$$
+</div>
+
+<p>Variance measures <b>spread</b> — how far, on average, the points sit from the mean. Why does spread stand in for "information"? Think about the extreme case:</p>
+
+<div class="callout warn">
+<span class="lbl">The extreme case: zero variance</span>
+If every single student in a class scored exactly 80/100, that feature ("marks") has <b>zero variance</b> — and it tells you <em>nothing</em> that distinguishes one student from another. You couldn't use it to predict, cluster, or separate anyone. A feature (or a direction) with no spread carries no distinguishing information at all.
+</div>
+
+<p>Flip that around: the <em>more</em> spread a feature (or a direction we construct) has, the more it lets us tell individual points apart from each other. That's the working definition of "information" PCA commits to: <b>more variance along a direction = more of the data's structure preserved along that direction.</b> This is a deliberate modeling choice — not a law of nature — and we'll revisit its limits later (Section 24, optional FAQ), but it's precise, computable, and a very good default.</p>
+
+</section>
+
+<section class="block" id="s4-selection-vs-pca">
+<div class="eyebrow">04 · two philosophies</div>
+<h2>Feature selection vs. feature extraction — an analogy</h2>
+<p class="lead">Both shrink the number of columns you work with. They do it in opposite ways.</p>
+
+<div class="quote">Imagine a 40-page report. You need to compress it down to 5 pages.
+<span class="who">— the analogy we'll keep coming back to</span>
+</div>
+
+<div class="vs">
+  <div class="side left">
+    <div class="t">Feature selection</div>
+    <b>Tear out 5 of the 40 pages</b>, keep them exactly as written, throw the rest away. What survives is 100% original and easy to read — but anything that was <em>only</em> written on the discarded 35 pages is gone for good.
+  </div>
+  <div class="mid">vs</div>
+  <div class="side right">
+    <div class="t">Feature extraction (PCA)</div>
+    <b>Write a 5-page summary</b> that blends information from all 40 pages. Nothing is discarded outright — every original page contributed something — but the summary pages are no longer any single original page; they're combinations.
+  </div>
+</div>
+
+<div class="tbl">
+<table>
+<tr><th>Property</th><th>Feature selection</th><th>PCA (feature extraction)</th></tr>
+<tr><td>Output columns</td><td class="good">Original features, unchanged</td><td class="teal">New axes = weighted blends of all originals</td></tr>
+<tr><td>Interpretability</td><td class="good">High — "age", "income" still mean what they meant</td><td class="bad">Lower — "PC1" is a mix, not one clean concept</td></tr>
+<tr><td>Information kept</td><td class="bad">Only what survives in the kept columns</td><td class="good">Spread across all originals, concentrated by variance</td></tr>
+<tr><td>Uses the label y?</td><td class="teal">Often yes (e.g. RFE below)</td><td class="teal">No — PCA never looks at y</td></tr>
+</table>
+</div>
+
+<details class="deriv">
+<summary>Optional, self-read — Recursive Feature Elimination (RFE), end to end</summary>
+<div class="inner">
+<p>RFE is one popular <em>feature selection</em> method (the "tear out pages" side of the analogy), and it's worth walking through once so the contrast with PCA is concrete.</p>
+<div class="step"><div class="num">1</div><div class="body"><p><b>Start with all features.</b> Train a model (commonly one that naturally scores feature importance, e.g. a linear model's coefficients or a tree ensemble's importances) on the full feature set.</p></div></div>
+<div class="step"><div class="num">2</div><div class="body"><p><b>Rank features</b> by the importance score the model just assigned them.</p></div></div>
+<div class="step"><div class="num">3</div><div class="body"><p><b>Remove the single least important feature.</b> Only one — RFE is deliberately conservative about each step.</p></div></div>
+<div class="step"><div class="num">4</div><div class="body"><p><b>Retrain</b> the model from scratch on the remaining, smaller feature set.</p></div></div>
+<div class="step"><div class="num">5</div><div class="body"><p><b>Check cross-validated performance</b> on this smaller set.</p></div></div>
+<div class="step"><div class="num">6</div><div class="body"><p><b>Compare</b> to the previous round: if performance stayed the same or improved, that removal was safe — the feature was redundant or noisy.</p></div></div>
+<div class="step"><div class="num">7</div><div class="body"><p><b>If performance degraded</b>, that feature was actually carrying useful signal — this tells you you've cut too far, and the previous feature set (or this feature specifically) should be kept.</p></div></div>
+<div class="step"><div class="num">8</div><div class="body"><p><b>Repeat</b> steps 2–7, removing one more feature each round, until you reach a target feature count or performance starts dropping.</p></div></div>
+<p>Notice RFE repeatedly <em>uses the label y</em> (via cross-validated performance) to decide what to cut — this is why feature selection methods like RFE are often supervised, while PCA, by construction, never looks at y at all (it only ever looks at the spread of the features themselves).</p>
+</div>
+</details>
+
+</section>
+<section class="block" id="s5-infinite-directions">
+<div class="eyebrow">05 · the real problem</div>
+<h2>2D &rarr; 1D: infinite directions, only one question</h2>
+<p class="lead">Compress 2D data to 1D by projecting onto one line through the data. Which line?</p>
+
+<div class="diagram">
+<svg viewBox="0 0 300 270" width="100%" height="270">
+  <g stroke="#242a34" stroke-width="1.2" opacity="0.8">
+    <line x1="70" y1="230" x2="230" y2="70"/>
+    <line x1="110" y1="235" x2="190" y2="65"/>
+    <line x1="150" y1="240" x2="150" y2="60"/>
+    <line x1="190" y1="235" x2="110" y2="65"/>
+    <line x1="230" y1="230" x2="70" y2="70"/>
+  </g>
+  <!-- the point cloud, elongated along ~35deg -->
+  <circle cx="95" cy="195" r="4" fill="#eef0ee"/>
+  <circle cx="115" cy="175" r="4" fill="#eef0ee"/>
+  <circle cx="132" cy="162" r="4" fill="#eef0ee"/>
+  <circle cx="150" cy="150" r="4" fill="#eef0ee"/>
+  <circle cx="168" cy="132" r="4" fill="#eef0ee"/>
+  <circle cx="185" cy="118" r="4" fill="#eef0ee"/>
+  <circle cx="205" cy="100" r="4" fill="#eef0ee"/>
+  <!-- gold: the line matching the cloud's long axis -->
+  <line x1="65" y1="222" x2="235" y2="75" stroke="#d9ab5c" stroke-width="2.6"/>
+  <g fill="#d9ab5c">
+    <circle cx="88" cy="203" r="3"/><circle cx="118" cy="177" r="3"/><circle cx="150" cy="150" r="3"/><circle cx="182" cy="123" r="3"/><circle cx="212" cy="97" r="3"/>
+  </g>
+  <text x="238" y="72" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="11">along the cloud</text>
+  <text x="238" y="87" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="10">projections spread out</text>
+  <!-- coral: a line across the cloud (roughly perpendicular) -->
+  <line x1="95" y1="80" x2="215" y2="220" stroke="#e2836c" stroke-width="2.6"/>
+  <g fill="#e2836c">
+    <circle cx="147" cy="141" r="3"/><circle cx="151" cy="146" r="3"/><circle cx="154" cy="150" r="3"/><circle cx="157" cy="154" r="3"/><circle cx="150" cy="148" r="3"/>
+  </g>
+  <text x="200" y="235" fill="#e2836c" font-family="IBM Plex Mono" font-size="11">across the cloud</text>
+  <text x="188" y="250" fill="#e2836c" font-family="IBM Plex Mono" font-size="10">projections bunch together</text>
+</svg>
+<div class="cap">Same 7 points, two candidate lines. Drop each point onto the line (project) — along the cloud, the dropped points land far apart (high variance); across it, they land almost on top of each other (low variance). This is only a preview — real numbers, and the actual rule for finding the best line, come next.</div>
+</div>
+
+<div class="callout warn">
+<span class="lbl">Why minimum variance = zero information</span>
+If every student scored the same on a projected axis, that axis can't tell students apart — <b>zero distinguishing power.</b> More spread (variance) along a direction = more distinguishing power kept along that direction.
+</div>
+
+<div class="formula">
+<div class="tag">the goal</div>
+<div class="eq">Find the one direction &mdash; out of infinitely many &mdash; along which the projected data has <b>maximum variance</b>.</div>
+</div>
+
+</section>
+
+<section class="block" id="s6-candidates">
+<div class="eyebrow">06 · try it by hand first</div>
+<h2>Three candidates, computed step by step</h2>
+<p class="lead">6 students, 2 features: hours studied (X&#8321;), problems solved (X&#8322;). Standardized immediately (mean 0, std 1 per column — full reasoning why in Section 10) so scale never distorts the comparison.</p>
+
+<div class="tbl">
+<table>
+<tr><th>Student</th><th>X&#8321; (raw)</th><th>X&#8322; (raw)</th><th>x&#8321;<sup>std</sup></th><th>x&#8322;<sup>std</sup></th></tr>
+<tr><td>1</td><td class="mono">2</td><td class="mono">3</td><td class="mono">&minus;1.336</td><td class="mono">&minus;1.291</td></tr>
+<tr><td>2</td><td class="mono">3</td><td class="mono">4</td><td class="mono">&minus;0.802</td><td class="mono">&minus;0.645</td></tr>
+<tr><td>3</td><td class="mono">4</td><td class="mono">6</td><td class="mono">&minus;0.267</td><td class="mono">0.645</td></tr>
+<tr><td>4</td><td class="mono">5</td><td class="mono">4</td><td class="mono">0.267</td><td class="mono">&minus;0.645</td></tr>
+<tr><td>5</td><td class="mono">6</td><td class="mono">7</td><td class="mono">0.802</td><td class="mono">1.291</td></tr>
+<tr><td>6</td><td class="mono">7</td><td class="mono">6</td><td class="mono">1.336</td><td class="mono">0.645</td></tr>
+</table>
+</div>
+
+<div class="diagram">
+<svg viewBox="0 0 300 300" width="100%" height="280">
+  <line x1="150" y1="20" x2="150" y2="280" stroke="#242a34"/>
+  <line x1="20" y1="150" x2="280" y2="150" stroke="#242a34"/>
+  <line x1="40" y1="150" x2="260" y2="150" stroke="#7f9adf" stroke-width="2"/>
+  <text x="262" y="147" fill="#7f9adf" font-family="IBM Plex Mono" font-size="11">0&deg;</text>
+  <line x1="72.2" y1="227.8" x2="227.8" y2="72.2" stroke="#d9ab5c" stroke-width="2.4"/>
+  <text x="230" y="68" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="11">45&deg;</text>
+  <line x1="150" y1="260" x2="150" y2="40" stroke="#93c084" stroke-width="2"/>
+  <text x="155" y="36" fill="#93c084" font-family="IBM Plex Mono" font-size="11">90&deg;</text>
+  <g fill="#eef0ee">
+    <circle cx="89.9" cy="208.1" r="4"/><circle cx="113.9" cy="179.0" r="4"/><circle cx="138.0" cy="121.0" r="4"/>
+    <circle cx="162.0" cy="179.0" r="4"/><circle cx="186.1" cy="91.9" r="4"/><circle cx="210.1" cy="121.0" r="4"/>
+  </g>
+</svg>
+<div class="cap">The 6 standardized points, with the 3 candidate lines. Projecting = dropping each point onto a line (dot product).</div>
+</div>
+
+<div class="tbl">
+<table>
+<tr><th>Direction w</th><th>Projection z<sub>i</sub> = w&#8321;x&#8321;<sup>std</sup>+w&#8322;x&#8322;<sup>std</sup> (all 6 students)</th><th>Var(z)</th></tr>
+<tr><td class="mono">0&deg; = (1, 0)</td><td class="mono">&minus;1.336, &minus;0.802, &minus;0.267, 0.267, 0.802, 1.336</td><td class="mono">1.000</td></tr>
+<tr><td class="mono">45&deg; = (0.707, 0.707)</td><td class="mono">&minus;1.858, &minus;1.023, 0.267, &minus;0.267, 1.480, 1.401</td><td class="mono hl">1.759</td></tr>
+<tr><td class="mono">90&deg; = (0, 1)</td><td class="mono">&minus;1.291, &minus;0.645, 0.645, &minus;0.645, 1.291, 0.645</td><td class="mono">1.000</td></tr>
+</table>
+</div>
+
+<div class="diagram">
+<svg viewBox="0 0 320 140" width="100%" height="140">
+  <line x1="50" y1="120" x2="300" y2="120" stroke="#242a34"/>
+  <rect x="80" y="70" width="46" height="50" fill="#7f9adf"/>
+  <text x="103" y="135" text-anchor="middle" fill="#9aa3ad" font-family="IBM Plex Mono" font-size="10">0&deg;</text>
+  <text x="103" y="63" text-anchor="middle" fill="#eef0ee" font-family="IBM Plex Mono" font-size="11">1.00</text>
+  <rect x="155" y="32" width="46" height="88" fill="#d9ab5c"/>
+  <text x="178" y="135" text-anchor="middle" fill="#9aa3ad" font-family="IBM Plex Mono" font-size="10">45&deg;</text>
+  <text x="178" y="25" text-anchor="middle" fill="#eef0ee" font-family="IBM Plex Mono" font-size="11">1.76</text>
+  <rect x="230" y="70" width="46" height="50" fill="#93c084"/>
+  <text x="253" y="135" text-anchor="middle" fill="#9aa3ad" font-family="IBM Plex Mono" font-size="10">90&deg;</text>
+  <text x="253" y="63" text-anchor="middle" fill="#eef0ee" font-family="IBM Plex Mono" font-size="11">1.00</text>
+</svg>
+<div class="cap">Var(z) by direction — 45&deg; wins among these 3.</div>
+</div>
+
+<div class="callout warn">
+<span class="lbl">The catch</span>
+45&deg; wins here — but we only tried 3 of infinitely many directions, picked for convenience. A real method must find the best direction directly, not by guessing.
+</div>
+
+</section>
+<section class="block" id="s7-vector-scalar">
+<div class="eyebrow">07 · building blocks, part 1</div>
+<h2>Vector &times; scalar — pure expand / shrink / flip</h2>
+<p class="lead">$s\cdot v = (sv_1,\ sv_2)$ — same line, different length (or flipped).</p>
+
+<div class="grid2">
+<div class="diagram">
+<svg viewBox="0 0 300 260" width="100%" height="230">
+<defs>
+<marker id="a-teal" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#5fbfae"/></marker>
+<marker id="a-gold" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#d9ab5c"/></marker>
+<marker id="a-slate" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#7f9adf"/></marker>
+<marker id="a-coral" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#e2836c"/></marker>
+</defs>
+<line x1="20" y1="150" x2="280" y2="150" stroke="#242a34"/>
+<line x1="150" y1="20" x2="150" y2="240" stroke="#242a34"/>
+<line x1="150" y1="150" x2="106" y2="170" stroke="#e2836c" stroke-width="2.5" marker-end="url(#a-coral)"/>
+<line x1="150" y1="150" x2="170" y2="140" stroke="#7f9adf" stroke-width="2.5" marker-end="url(#a-slate)"/>
+<line x1="150" y1="150" x2="190" y2="130" stroke="#5fbfae" stroke-width="2.8" marker-end="url(#a-teal)"/>
+<line x1="150" y1="150" x2="230" y2="110" stroke="#d9ab5c" stroke-width="2.8" marker-end="url(#a-gold)"/>
+</svg>
+<div style="display:flex; flex-wrap:wrap; gap:12px; justify-content:center; font-family:var(--mono); font-size:.76rem; margin-top:4px;">
+<span style="color:#5fbfae">&#9679; v=(2,1)</span>
+<span style="color:#d9ab5c">&#9679; 2v=(4,2)</span>
+<span style="color:#7f9adf">&#9679; 0.5v=(1,0.5)</span>
+<span style="color:#e2836c">&#9679; &minus;v=(&minus;2,&minus;1)</span>
+</div>
+<div class="cap">2v doubles v, 0.5v halves it (same line), &minus;v flips it 180&deg;.</div>
+</div>
+
+<div class="diagram">
+<svg viewBox="0 0 220 240" width="100%" height="230">
+<defs>
+<marker id="b-teal" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#5fbfae"/></marker>
+<marker id="b-gold" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#d9ab5c"/></marker>
+<marker id="b-coral" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#e2836c"/></marker>
+</defs>
+<line x1="10" y1="190" x2="210" y2="190" stroke="#242a34"/>
+<line x1="110" y1="10" x2="110" y2="230" stroke="#242a34"/>
+<line x1="110" y1="190" x2="103" y2="213" stroke="#e2836c" stroke-width="2.5" marker-end="url(#b-coral)"/>
+<line x1="110" y1="190" x2="125" y2="145" stroke="#5fbfae" stroke-width="2.8" marker-end="url(#b-teal)"/>
+<line x1="110" y1="190" x2="155" y2="55" stroke="#d9ab5c" stroke-width="2.8" marker-end="url(#b-gold)"/>
+</svg>
+<div style="display:flex; flex-wrap:wrap; gap:12px; justify-content:center; font-family:var(--mono); font-size:.76rem; margin-top:4px;">
+<span style="color:#5fbfae">&#9679; v=(1,3)</span>
+<span style="color:#d9ab5c">&#9679; 3v=(3,9)</span>
+<span style="color:#e2836c">&#9679; &minus;0.5v=(&minus;0.5,&minus;1.5)</span>
+</div>
+<div class="cap">3v triples v; &minus;0.5v flips <em>and</em> halves it.</div>
+</div>
+</div>
+
+<div class="tbl">
+<table>
+<tr><th>v</th><th>s</th><th>s&middot;v</th><th>|v|</th><th>|s&middot;v|</th><th>Effect</th></tr>
+<tr><td class="mono">(2,1)</td><td class="mono">2</td><td class="mono">(4,2)</td><td class="mono">2.24</td><td class="mono">4.47</td><td class="good">expand, same direction</td></tr>
+<tr><td class="mono">(2,1)</td><td class="mono">0.5</td><td class="mono">(1,0.5)</td><td class="mono">2.24</td><td class="mono">1.12</td><td class="teal">shrink, same direction</td></tr>
+<tr><td class="mono">(2,1)</td><td class="mono">&minus;1</td><td class="mono">(&minus;2,&minus;1)</td><td class="mono">2.24</td><td class="mono">2.24</td><td class="bad">flip 180&deg;, same length</td></tr>
+<tr><td class="mono">(1,3)</td><td class="mono">3</td><td class="mono">(3,9)</td><td class="mono">3.16</td><td class="mono">9.49</td><td class="good">expand, same direction</td></tr>
+<tr><td class="mono">(1,3)</td><td class="mono">&minus;0.5</td><td class="mono">(&minus;0.5,&minus;1.5)</td><td class="mono">3.16</td><td class="mono">1.58</td><td class="bad">flip + shrink</td></tr>
+</table>
+</div>
+
+<div class="callout good">
+<span class="lbl">The one takeaway</span>
+A scalar <b>never changes the line</b> a vector sits on. Positive s: stretch/shrink, same way. Negative s: flip to the opposite way, same line. Keep this — it's about to become the definition of an eigenvector.
+</div>
+
+</section>
+<section class="block" id="s8-matrix-vector">
+<div class="eyebrow">08 · building blocks, part 2</div>
+<h2>Matrix &times; vector — direction usually changes too</h2>
+<p class="lead">$M=\begin{pmatrix}2&1\\1&2\end{pmatrix}$ applied to 4 different unit vectors:</p>
+
+<div class="tbl">
+<table>
+<tr><th>Direction</th><th>v</th><th>Mv</th><th>Same line as v?</th></tr>
+<tr><td class="mono">0&deg;</td><td class="mono">(1, 0)</td><td class="mono">(2, 1)</td><td class="bad">no — rotated</td></tr>
+<tr><td class="mono">45&deg;</td><td class="mono">(0.707, 0.707)</td><td class="mono">(2.121, 2.121)</td><td class="good">yes — scaled &times;3</td></tr>
+<tr><td class="mono">90&deg;</td><td class="mono">(0, 1)</td><td class="mono">(1, 2)</td><td class="bad">no — rotated</td></tr>
+<tr><td class="mono">135&deg;</td><td class="mono">(&minus;0.707, 0.707)</td><td class="mono">(&minus;0.707, 0.707)</td><td class="good">yes — scaled &times;1</td></tr>
+</table>
+</div>
+
+<div class="grid2">
+<div class="diagram">
+<svg viewBox="0 0 220 200" width="100%" height="190">
+<defs><marker id="m-teal" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#5fbfae"/></marker>
+<marker id="m-gold" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#d9ab5c"/></marker></defs>
+<line x1="15" y1="150" x2="205" y2="150" stroke="#242a34"/>
+<line x1="75" y1="30" x2="75" y2="190" stroke="#242a34"/>
+<line x1="75" y1="150" x2="108" y2="150" stroke="#5fbfae" stroke-width="2.8" marker-end="url(#m-teal)"/>
+<line x1="75" y1="150" x2="143" y2="115" stroke="#d9ab5c" stroke-width="2.8" marker-end="url(#m-gold)"/>
+</svg>
+<div style="display:flex; gap:14px; justify-content:center; font-family:var(--mono); font-size:.76rem;">
+<span style="color:#5fbfae">&#9679; v=(1,0)</span>
+<span style="color:#d9ab5c">&#9679; Mv=(2,1)</span>
+</div>
+<div class="cap">A generic vector: M rotates <em>and</em> stretches it — Mv points a different way than v.</div>
+</div>
+
+<div class="diagram">
+<svg viewBox="0 0 220 200" width="100%" height="190">
+<defs><marker id="e-teal" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#5fbfae"/></marker>
+<marker id="e-gold" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#d9ab5c"/></marker></defs>
+<line x1="15" y1="180" x2="205" y2="180" stroke="#242a34"/>
+<line x1="75" y1="20" x2="75" y2="190" stroke="#242a34"/>
+<line x1="75" y1="180" x2="93" y2="162" stroke="#5fbfae" stroke-width="3" marker-end="url(#e-teal)"/>
+<line x1="75" y1="180" x2="128" y2="127" stroke="#d9ab5c" stroke-width="2.4" marker-end="url(#e-gold)"/>
+</svg>
+<div style="display:flex; gap:14px; justify-content:center; font-family:var(--mono); font-size:.76rem;">
+<span style="color:#5fbfae">&#9679; v=(0.707,0.707)</span>
+<span style="color:#d9ab5c">&#9679; Mv=(2.121,2.121)</span>
+</div>
+<div class="cap">An eigenvector: Mv lands on the <em>exact same ray</em> as v — only 3&times; longer. No rotation at all.</div>
+</div>
+</div>
+
+<div class="callout good">
+<span class="lbl">The special vectors</span>
+Most directions get rotated by M. Two don't — 45&deg; (stretched &times;3) and 135&deg; (unchanged, &times;1). These are M's <b>eigenvectors</b>; 3 and 1 are its <b>eigenvalues</b>.
+</div>
+
+</section>
+<section class="block" id="s9-eigen">
+<div class="eyebrow">09 · naming the special case</div>
+<h2>Eigenvector &amp; eigenvalue — the definition</h2>
+<p class="lead">Section 08 showed it visually: 45&deg; and 135&deg; survive M unrotated, only rescaled. That's the whole definition.</p>
+
+<div class="formula">
+<div class="tag">definition</div>
+<div class="eq">$$Av = \lambda v$$</div>
+</div>
+
+<div class="tbl">
+<table>
+<tr><th>Term</th><th>Meaning</th></tr>
+<tr><td class="mono">v</td><td>a nonzero <b>eigenvector</b> of A — its direction (line) is unchanged by A</td></tr>
+<tr><td class="mono">&lambda;</td><td>the matching <b>eigenvalue</b> — how much A rescales v along that same line</td></tr>
+</table>
+</div>
+
+<p>Why this matters for PCA: finding the max-variance direction (Section 05) will turn out to be <em>exactly</em> the same problem as finding an eigenvector of a matrix built from the data — derived properly in Section 16, not asserted.</p>
+
+<details class="deriv">
+<summary>Optional, self-read — computing eigenvalues/eigenvectors by hand, plus general &amp; PCA-specific properties</summary>
+<div class="inner">
+
+<p>Given $M=\begin{pmatrix}2&1\\1&2\end{pmatrix}$ (Section 08's matrix), find $\lambda,v$ from $Mv=\lambda v$ alone:</p>
+
+<div class="tbl">
+<table>
+<tr><th>Step</th><th>Do this</th><th>Result</th></tr>
+<tr><td>1</td><td>Rewrite as $(M-\lambda I)v=0$</td><td>needs $M-\lambda I$ singular (else only $v=0$ solves it)</td></tr>
+<tr><td>2</td><td>Set $\det(M-\lambda I)=0$</td><td>$\begin{vmatrix}2-\lambda&1\\1&2-\lambda\end{vmatrix}=0$</td></tr>
+<tr><td>3</td><td>Expand</td><td>$(2-\lambda)^2-1=0 \Rightarrow \lambda^2-4\lambda+3=0$</td></tr>
+<tr><td>4</td><td>Solve the quadratic</td><td>$(\lambda-1)(\lambda-3)=0 \Rightarrow \lambda=1,\ 3$</td></tr>
+<tr><td>5</td><td>For $\lambda=3$: solve $(M-3I)v=0$</td><td>$-v_1+v_2=0 \Rightarrow v=(1,1)/\sqrt2$</td></tr>
+<tr><td>6</td><td>For $\lambda=1$: solve $(M-I)v=0$</td><td>$v_1+v_2=0 \Rightarrow v=(1,-1)/\sqrt2$</td></tr>
+</table>
+</div>
+
+<div class="callout good"><span class="lbl">Matches Section 08</span>Same two directions (45&deg;, 135&deg;) found by pure algebra, no guessing or plotting needed.</div>
+
+<div class="tbl">
+<table>
+<tr><th>General property</th><th>PCA-specific (for covariance matrix &Sigma;)</th></tr>
+<tr><td>A $d\times d$ matrix has exactly $d$ eigenvalues (Section 19)</td><td>&Sigma; is always symmetric &rArr; all eigenvalues real, never complex</td></tr>
+<tr><td>If $v$ is an eigenvector, so is $cv$ for any $c\ne0$ — direction, not one arrow</td><td>&Sigma; is positive semi-definite &rArr; every eigenvalue &ge; 0 (a variance can't be negative)</td></tr>
+<tr><td>Eigenvalues can be 0, negative, or complex in general</td><td>Eigenvectors of &Sigma; with different eigenvalues are always orthogonal &rArr; PC1 &perp; PC2 for free</td></tr>
+</table>
+</div>
+</div>
+</details>
+
+</section>
+<section class="block" id="s10-standardize">
+<div class="eyebrow">10 · building pca from scratch, step 1</div>
+<h2>Start with data X — do we need to standardize?</h2>
+<p class="lead">Yes — one feature with numerically bigger raw units would otherwise hijack the variance-maximizing objective.</p>
+
+<div class="tbl">
+<table>
+<tr><th>Feature</th><th>Variance (raw units)</th></tr>
+<tr><td>Age (years)</td><td class="mono">98.7</td></tr>
+<tr><td>Salary (&#8377;)</td><td class="mono bad">612,666,667</td></tr>
+</table>
+</div>
+
+<div class="diagram">
+<svg viewBox="0 0 300 110" width="100%" height="100">
+<rect x="30" y="70" width="16" height="20" fill="#7f9adf"/>
+<text x="38" y="100" text-anchor="middle" fill="#9aa3ad" font-family="IBM Plex Mono" font-size="10">Age</text>
+<rect x="120" y="20" width="16" height="70" fill="#e2836c"/>
+<text x="128" y="100" text-anchor="middle" fill="#9aa3ad" font-family="IBM Plex Mono" font-size="10">Salary</text>
+<text x="128" y="14" text-anchor="middle" fill="#e2836c" font-family="IBM Plex Mono" font-size="10">~6.2M&times; bigger</text>
+</svg>
+<div class="cap">Salary's raw variance dwarfs Age's — not because salary is more informative, purely because rupees are bigger numbers than years.</div>
+</div>
+
+<div class="callout warn"><span class="lbl">The problem</span>PCA maximizes variance. Handed raw units, it would align almost entirely with Salary — the <em>unit of measurement</em>, not real structure, would decide the answer.</div>
+
+<div class="formula">
+<div class="tag">standardization, per feature</div>
+<div class="eq">$$x_{std} = \dfrac{x-\mu}{\sigma}$$</div>
+</div>
+
+<p>Every feature ends up with mean 0, std 1 — no feature can dominate just by having bigger raw numbers. This is exactly what we already did to our running dataset in Section 06.</p>
+
+<div class="callout info"><span class="lbl">When it's optional</span>All features already on one comparable, meaningful scale (e.g. same physical unit) &rarr; standardizing is optional. Mixed units (default case) &rarr; standardize.</div>
+
+</section>
+
+<section class="block" id="s11-project-unknown">
+<div class="eyebrow">11 · step 2</div>
+<h2>Project X<sub>std</sub> onto an unknown direction w</h2>
+<p class="lead">Same dot-product projection as Section 06 — but now w is unknown, and finding it is the goal.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 260 180" width="100%" height="170">
+<line x1="20" y1="150" x2="240" y2="60" stroke="#d9ab5c" stroke-width="2.2"/>
+<text x="242" y="58" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="11">w</text>
+<circle cx="150" cy="40" r="4" fill="#e2836c"/>
+<text x="156" y="36" fill="#e2836c" font-family="IBM Plex Mono" font-size="11">x&#8342;</text>
+<line x1="150" y1="40" x2="176" y2="99" stroke="#6b7480" stroke-width="1.2" stroke-dasharray="3 3"/>
+<circle cx="176" cy="99" r="4" fill="#5fbfae"/>
+<text x="182" y="104" fill="#5fbfae" font-family="IBM Plex Mono" font-size="11">z&#8342; = w&#7488;x&#8342;</text>
+</svg>
+<div class="cap">Drop each point x&#8342; perpendicularly onto line w &rarr; one number z&#8342; per point. We want the spread of all the z&#8342;'s to be maximum.</div>
+</div>
+
+<div class="formula">
+<div class="tag">projection of one point</div>
+<div class="eq">$$z_i = w^\top x_i = w_1 x_{i1} + w_2 x_{i2}$$</div>
+</div>
+
+<p>Goal: choose w so that $\text{Var}(z_1,\dots,z_n)$ is as large as possible. Next section expands that variance and watches the covariance matrix appear.</p>
+
+</section>
+<section class="block" id="s12-covariance-derivation">
+<div class="eyebrow">12 · the most important derivation today</div>
+<h2>From Var(z) to the covariance matrix</h2>
+<p class="lead">Expand Var(z) term by term until a matrix &Sigma; falls out on its own — nothing skipped.</p>
+
+<div class="tbl">
+<table>
+<tr><th>Step</th><th>Do this</th><th>Result</th></tr>
+<tr><td>1</td><td>Definition of variance of $z_1,\dots,z_n$</td><td>$\text{Var}(z)=\frac{1}{n-1}\sum_i(z_i-\bar z)^2$</td></tr>
+<tr><td>2</td><td>$\bar z=0$ (data is centered, from standardizing) &rarr; drop it</td><td>$\text{Var}(z)=\frac{1}{n-1}\sum_i z_i^2$</td></tr>
+<tr><td>3</td><td>Substitute $z_i=w^\top x_i$</td><td>$\text{Var}(z)=\frac{1}{n-1}\sum_i (w^\top x_i)^2$</td></tr>
+<tr><td>4</td><td>$(w^\top x_i)$ is a scalar, so its own transpose is itself: $(w^\top x_i)=(x_i^\top w)$</td><td>$(w^\top x_i)^2=(w^\top x_i)(x_i^\top w)$</td></tr>
+<tr><td>5</td><td>Regroup (matrix mult. is associative)</td><td>$(w^\top x_i)(x_i^\top w) = w^\top(x_i x_i^\top)w$</td></tr>
+<tr><td>6</td><td>Substitute back into the sum</td><td>$\text{Var}(z)=\frac{1}{n-1}\sum_i w^\top(x_ix_i^\top)w$</td></tr>
+<tr><td>7</td><td>$w$ doesn't depend on $i$ &rarr; pull it out of the sum</td><td>$\text{Var}(z)=w^\top\Big(\frac{1}{n-1}\sum_i x_ix_i^\top\Big)w$</td></tr>
+<tr><td>8</td><td>Name the bracket &Sigma; — this <em>is</em> the covariance matrix formula</td><td>$\Sigma:=\frac{1}{n-1}\sum_i x_ix_i^\top$</td></tr>
+</table>
+</div>
+
+<div class="callout good">
+<span class="lbl">Where we've landed</span>
+<div class="eq">$$\boxed{\text{Var}(z) = w^\top \Sigma w}$$</div>
+Maximizing this over unit vectors w <b>is</b> PCA's optimization problem (Section 13).
+</div>
+
+<div class="divider"></div>
+<h3 style="font-family:var(--display); font-size:1.1rem; color:var(--gold); margin-bottom:10px;">Watch it happen with our own numbers</h3>
+<p>Same 6 students, standardized (Section 06). $\Sigma=\frac1{n-1}\sum_i x_ix_i^\top$ means: square each student's row into a 2&times;2 block $\begin{pmatrix}x_{i1}^2&x_{i1}x_{i2}\\x_{i1}x_{i2}&x_{i2}^2\end{pmatrix}$, add all 6 blocks, divide by $n-1=5$.</p>
+
+<div class="tbl">
+<table>
+<tr><th>Student i</th><th>x&#8321;<sup>std</sup></th><th>x&#8322;<sup>std</sup></th><th>x&#8321;&sup2;</th><th>x&#8322;&sup2;</th><th>x&#8321;x&#8322;</th></tr>
+<tr><td>1</td><td class="mono">&minus;1.336</td><td class="mono">&minus;1.291</td><td class="mono">1.786</td><td class="mono">1.667</td><td class="mono">1.725</td></tr>
+<tr><td>2</td><td class="mono">&minus;0.802</td><td class="mono">&minus;0.645</td><td class="mono">0.643</td><td class="mono">0.417</td><td class="mono">0.518</td></tr>
+<tr><td>3</td><td class="mono">&minus;0.267</td><td class="mono">0.645</td><td class="mono">0.071</td><td class="mono">0.417</td><td class="mono">&minus;0.173</td></tr>
+<tr><td>4</td><td class="mono">0.267</td><td class="mono">&minus;0.645</td><td class="mono">0.071</td><td class="mono">0.417</td><td class="mono">&minus;0.173</td></tr>
+<tr><td>5</td><td class="mono">0.802</td><td class="mono">1.291</td><td class="mono">0.643</td><td class="mono">1.667</td><td class="mono">1.035</td></tr>
+<tr><td>6</td><td class="mono">1.336</td><td class="mono">0.645</td><td class="mono">1.786</td><td class="mono">0.417</td><td class="mono">0.863</td></tr>
+<tr><td class="hl"><b>Sum</b></td><td></td><td></td><td class="mono hl">5.000</td><td class="mono hl">5.000</td><td class="mono hl">3.795</td></tr>
+<tr><td class="hl"><b>&divide; (n&minus;1)=5</b></td><td></td><td></td><td class="mono hl">1.000</td><td class="mono hl">1.000</td><td class="mono hl">0.759</td></tr>
+</table>
+</div>
+
+<div class="formula">
+<div class="tag">&Sigma; for our dataset</div>
+<div class="eq">$$\Sigma = \begin{pmatrix}1.000 & 0.759\\ 0.759 & 1.000\end{pmatrix}$$</div>
+</div>
+
+<p>Diagonal = 1 (standardized variance, by construction). Off-diagonal 0.759 = correlation between hours studied and problems solved.</p>
+
+<div class="callout info"><span class="lbl">Code shortcut</span>Stack all rows $x_i^\top$ into matrix $X$ (n&times;d) &rarr; $\sum_i x_ix_i^\top = X^\top X$, so $\Sigma=\frac1{n-1}X^\top X$ in one line — what <span class="mono">np.cov(X.T)</span> does internally.</div>
+
+</section>
+<section class="block" id="s13-objective">
+<div class="eyebrow">13 · one line</div>
+<h2>PCA's optimization problem</h2>
+<div class="formula">
+<div class="tag">PCA's objective</div>
+<div class="eq">$$\max_{w} \; w^\top \Sigma w$$</div>
+</div>
+<p class="lead">Find the direction w that makes the projected variance $w^\top\Sigma w$ as large as possible. One defect to fix first &rarr; Section 14.</p>
+</section>
+
+<section class="block" id="s14-constraint">
+<div class="eyebrow">14 · closing a loophole</div>
+<h2>Why w<sup>&#7488;</sup>w = 1</h2>
+<p class="lead">Without a length limit on w, there's no maximum — you can always beat any score by just stretching w.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 300 220" width="100%" height="220">
+<line x1="15" y1="150" x2="285" y2="150" stroke="#242a34" stroke-width="1"/>
+<line x1="150" y1="15" x2="150" y2="220" stroke="#242a34" stroke-width="1"/>
+<text x="280" y="146" fill="#6b7480" font-family="IBM Plex Mono" font-size="10">w&#8321;</text>
+<text x="155" y="24" fill="#6b7480" font-family="IBM Plex Mono" font-size="10">w&#8322;</text>
+<text x="152" y="163" fill="#6b7480" font-family="IBM Plex Mono" font-size="9">0</text>
+<circle cx="150" cy="150" r="30" fill="none" stroke="#5fbfae" stroke-width="2"/>
+<circle cx="150" cy="150" r="60" fill="none" stroke="#7f9adf" stroke-width="1.5" stroke-dasharray="4 3"/>
+<circle cx="150" cy="150" r="95" fill="none" stroke="#e2836c" stroke-width="1.5" stroke-dasharray="4 3"/>
+<line x1="150" y1="150" x2="171.2" y2="128.8" stroke="#d9ab5c" stroke-width="2.5"/>
+<circle cx="171.2" cy="128.8" r="3.5" fill="#5fbfae"/>
+<text x="176" y="126" fill="#5fbfae" font-family="IBM Plex Mono" font-size="10.5">|w|=1 &rarr; 1.76</text>
+<circle cx="192.4" cy="107.6" r="3.5" fill="#7f9adf"/>
+<text x="197" y="105" fill="#7f9adf" font-family="IBM Plex Mono" font-size="10.5">|w|=2 &rarr; 7.04</text>
+<circle cx="217.2" cy="82.8" r="3.5" fill="#e2836c"/>
+<text x="222" y="80" fill="#e2836c" font-family="IBM Plex Mono" font-size="10.5">|w|=5 &rarr; 43.98</text>
+</svg>
+<div class="cap">Same direction (45&deg;), only length changing. w<sup>&#7488;</sup>&Sigma;w quadruples every time |w| doubles &mdash; no ceiling.</div>
+</div>
+
+<div class="tbl">
+<table>
+<tr><th>w</th><th>|w|</th><th>w<sup>&#7488;</sup>&Sigma;w</th></tr>
+<tr><td class="mono">(0.707, 0.707)</td><td class="mono">1</td><td class="mono">1.76</td></tr>
+<tr><td class="mono">(1.414, 1.414)</td><td class="mono">2</td><td class="mono">7.04</td></tr>
+<tr><td class="mono">(3.536, 3.536)</td><td class="mono">5</td><td class="mono">43.98</td></tr>
+</table>
+</div>
+
+<div class="callout warn"><span class="lbl">Why</span>Replacing $w$ with $tw$ turns $w^\top\Sigma w$ into $t^2(w^\top\Sigma w)$. As $t\to\infty$, it grows without bound — the problem was never direction, it's that length was left free.</div>
+
+<div class="formula">
+<div class="tag">the fix</div>
+<div class="eq">$$w^\top w = 1 \;\Leftrightarrow\; |w|=1$$</div>
+</div>
+
+<div class="callout good"><span class="lbl">Why exactly 1</span>Any fixed positive constant works the same way — it would just rescale every eigenvalue, not change which direction wins. We pick 1 because it makes w a literal unit direction vector, matching what we've been informally calling "a direction" since Section 05.</div>
+
+<div class="formula">
+<div class="tag">PCA's objective, complete</div>
+<div class="eq">$$\max_w \; w^\top \Sigma w \quad\text{s.t.}\quad w^\top w = 1$$</div>
+</div>
+
+</section>
+<section class="block" id="s15-lagrange">
+<div class="eyebrow">15 · the missing tool</div>
+<h2>Lagrange multiplier — added to enforce the constraint</h2>
+<p class="lead">We have two separate requirements: maximize $w^\top\Sigma w$, AND keep $w^\top w=1$. Plain calculus only knows how to handle one job at a time — maximize, with no restrictions. We need a way to force the second requirement <em>into</em> the first.</p>
+
+<div class="tbl">
+<table>
+<tr><th>Piece</th><th>What it is</th></tr>
+<tr><td>Objective</td><td>$w^\top\Sigma w$ — what we want to maximize</td></tr>
+<tr><td>Constraint</td><td>$w^\top w = 1$, i.e. $w^\top w - 1 = 0$ — the rule w must obey</td></tr>
+</table>
+</div>
+
+<div class="callout warn"><span class="lbl">If we skip the constraint entirely</span>We're just maximizing $w^\top\Sigma w$ with no restriction — Section 14 already showed that has no finite answer, w runs off to infinity. So we can't just ignore it and differentiate as usual.</div>
+
+<p><b>The trick:</b> introduce one new unknown number, $\lambda$ (the Lagrange multiplier), whose only job is to enforce the constraint. Build a new function by adding $-\lambda$ times "the constraint, written as = 0":</p>
+
+<div class="formula">
+<div class="tag">the Lagrangian</div>
+<div class="eq">$$\mathcal{L}(w, \lambda) = \underbrace{w^\top \Sigma w}_{\text{objective}} \;-\; \lambda\underbrace{(w^\top w - 1)}_{\text{this is 0, when w is valid}}$$</div>
+</div>
+
+<div class="tbl">
+<table>
+<tr><th>Question</th><th>Answer</th></tr>
+<tr><td>Why does adding this term not change the objective?</td><td>Whenever $w^\top w=1$ (i.e. w obeys the rule), $(w^\top w-1)=0$, so the added term is exactly $\lambda\times 0=0$ — $\mathcal L$ and $w^\top\Sigma w$ are the same number there.</td></tr>
+<tr><td>So what did we gain?</td><td>$\mathcal L$ is now an ordinary, <em>unconstrained</em> function of two variables, $w$ <em>and</em> $\lambda$. We can just differentiate it and set both derivatives to 0 — plain calculus, no special constrained-optimization machinery.</td></tr>
+<tr><td>How does the constraint actually get enforced?</td><td>Setting $\partial\mathcal L/\partial\lambda=0$ gives $-(w^\top w-1)=0$, i.e. $w^\top w=1$ — the constraint comes back <em>automatically</em>, as one of the two equations we solve.</td></tr>
+</table>
+</div>
+
+<div class="callout good"><span class="lbl">In short</span>$\lambda$ isn't something we choose in advance — like $w$, it's found by solving the equations. Its entire purpose is to make the constraint fall out on its own when we set $\partial\mathcal L/\partial\lambda=0$.</div>
+
+</section>
+
+<section class="block" id="s16-solve">
+<div class="eyebrow">16 · turning the crank</div>
+<h2>Solve for w</h2>
+<p class="lead">Two derivative rules, direct — no expansion needed.</p>
+
+<div class="tbl">
+<table>
+<tr><th>Expression</th><th>&nabla;<sub>w</sub> (derivative w.r.t. w)</th><th>Why (scalar analogy)</th></tr>
+<tr><td class="mono">w<sup>&#7488;</sup>w</td><td class="mono">2w</td><td>like $\frac{d}{dx}(x^2)=2x$</td></tr>
+<tr><td class="mono">w<sup>&#7488;</sup>&Sigma;w</td><td class="mono">2&Sigma;w</td><td>like $\frac{d}{dx}(ax^2)=2ax$ (matrix version; needs &Sigma; symmetric — true for any covariance matrix)</td></tr>
+</table>
+</div>
+
+<div class="tbl">
+<table>
+<tr><th>Step</th><th>Do this</th><th>Result</th></tr>
+<tr><td>1</td><td>Differentiate $\mathcal L$ w.r.t. $w$, set to 0</td><td>$2\Sigma w - 2\lambda w = 0$</td></tr>
+<tr><td>2</td><td>Divide by 2, rearrange</td><td>$\Sigma w = \lambda w$</td></tr>
+<tr><td>3</td><td>Differentiate $\mathcal L$ w.r.t. $\lambda$, set to 0</td><td>$w^\top w = 1$ (recovers the constraint)</td></tr>
+</table>
+</div>
+
+<div class="callout good">
+<span class="lbl">Look at what fell out</span>
+<div class="eq">$$\boxed{\Sigma w = \lambda w}$$</div>
+Exactly the eigenvector equation from Section 09 — with $A=\Sigma$. We didn't choose eigenvectors; solving the constrained problem <b>produced</b> them. <b>The best directions are eigenvectors of &Sigma;.</b>
+</div>
+
+</section>
+<section class="block" id="s17-lambda-variance">
+<div class="eyebrow">17 · the payoff</div>
+<h2>&lambda; is the variance — pick the largest one</h2>
+
+<div class="tbl">
+<table>
+<tr><th>Step</th><th>Do this</th><th>Result</th></tr>
+<tr><td>1</td><td>Left-multiply $\Sigma w=\lambda w$ by $w^\top$</td><td>$w^\top\Sigma w = \lambda(w^\top w)$</td></tr>
+<tr><td>2</td><td>Constraint: $w^\top w=1$</td><td>$w^\top\Sigma w=\lambda$</td></tr>
+<tr><td>3</td><td>But $w^\top\Sigma w=\text{Var}(z)$ (Section 12)</td><td>$\boxed{\lambda=\text{Var}(z)}$</td></tr>
+</table>
+</div>
+
+<p>Same idea as Section 06's bar chart — just testing more directions this time (every 15&ndash;30&deg;), for our 2-feature standardized data:</p>
+
+<div class="diagram">
+<svg viewBox="0 0 560 220" width="100%" height="220">
+<line x1="20" y1="190" x2="545" y2="190" stroke="#242a34"/>
+<rect x="35" y="130" width="35" height="60" fill="#7f9adf"/><text x="52" y="205" text-anchor="middle" fill="#9aa3ad" font-family="IBM Plex Mono" font-size="10">0&deg;</text>
+<rect x="93" y="90.6" width="35" height="99.4" fill="#7f9adf"/><text x="110" y="205" text-anchor="middle" fill="#9aa3ad" font-family="IBM Plex Mono" font-size="10">30&deg;</text>
+<rect x="151" y="84.5" width="35" height="105.5" fill="#d9ab5c"/><text x="168" y="205" text-anchor="middle" fill="#9aa3ad" font-family="IBM Plex Mono" font-size="10">45&deg;</text>
+<text x="168" y="72" text-anchor="middle" fill="#d9ab5c" font-family="IBM Plex Mono" font-size="11">&lambda;&#8321;=1.759</text>
+<rect x="209" y="90.6" width="35" height="99.4" fill="#7f9adf"/><text x="226" y="205" text-anchor="middle" fill="#9aa3ad" font-family="IBM Plex Mono" font-size="10">60&deg;</text>
+<rect x="267" y="130" width="35" height="60" fill="#7f9adf"/><text x="284" y="205" text-anchor="middle" fill="#9aa3ad" font-family="IBM Plex Mono" font-size="10">90&deg;</text>
+<rect x="325" y="169.4" width="35" height="20.6" fill="#7f9adf"/><text x="342" y="205" text-anchor="middle" fill="#9aa3ad" font-family="IBM Plex Mono" font-size="10">120&deg;</text>
+<rect x="383" y="175.5" width="35" height="14.5" fill="#e2836c"/><text x="400" y="205" text-anchor="middle" fill="#9aa3ad" font-family="IBM Plex Mono" font-size="10">135&deg;</text>
+<text x="400" y="164" text-anchor="middle" fill="#e2836c" font-family="IBM Plex Mono" font-size="11">&lambda;&#8322;=0.241</text>
+<rect x="441" y="169.4" width="35" height="20.6" fill="#7f9adf"/><text x="458" y="205" text-anchor="middle" fill="#9aa3ad" font-family="IBM Plex Mono" font-size="10">150&deg;</text>
+<rect x="499" y="130" width="35" height="60" fill="#7f9adf"/><text x="516" y="205" text-anchor="middle" fill="#9aa3ad" font-family="IBM Plex Mono" font-size="10">180&deg;</text>
+</svg>
+<div class="cap">Var(&theta;) at 9 directions. Tallest bar (gold) = &lambda;&#8321; at 45&deg; = PC1. Shortest bar (coral) = &lambda;&#8322; at 135&deg; = PC2.</div>
+</div>
+
+<div class="tbl">
+<table>
+<tr><th>Direction</th><th>Eigenvector w</th><th>&lambda; = Var(z)</th><th>Role</th></tr>
+<tr><td>PC1</td><td class="mono">(0.707, 0.707)</td><td class="mono hl">1.759</td><td class="good">kept — max variance</td></tr>
+<tr><td>PC2</td><td class="mono">(&minus;0.707, 0.707)</td><td class="mono">0.241</td><td class="teal">leftover, &perp; to PC1</td></tr>
+</table>
+</div>
+
+<div class="callout warn"><span class="lbl">Section 06, resolved</span>45&deg; scored best among our 3 random guesses — and the chart above confirms it actually <em>is</em> the global maximum. That's a lucky guess in 2D, not a method — with more features, the surface has many more directions to search, and guessing stops working entirely. Eigenvectors find the peak directly, no guessing, in any number of dimensions.</div>
+
+</section>
+<section class="block" id="s18-n-minus-1">
+<div class="eyebrow">18 · optional, self-read</div>
+<h2>Why divide by (n&minus;1), not n?</h2>
+
+<div class="callout info"><span class="lbl">Goal</span>We want the formula to land, on average, on the true population variance — an <b>unbiased</b> estimate.</div>
+
+<p>$\bar x$ is computed from the same sample it measures, so it fits that sample slightly too well — $\sum(x_i-\bar x)^2$ is a bit smaller than it "should" be. Dividing by $n$ keeps that shrinkage; dividing by $n-1$ (one degree of freedom used up by estimating $\bar x$) exactly corrects it.</p>
+
+<div class="tbl">
+<table>
+<tr><th>Estimator</th><th>Average over 200,000 samples (n=5, true &sigma;&sup2;=4)</th></tr>
+<tr><td class="mono">&Sigma;(x&#7522;&minus;x&#772;)&sup2; / n</td><td class="mono bad">3.205 — biased low</td></tr>
+<tr><td class="mono">&Sigma;(x&#7522;&minus;x&#772;)&sup2; / (n&minus;1)</td><td class="mono good">4.007 — matches true &sigma;&sup2;=4</td></tr>
+</table>
+</div>
+
+<p>This correction is called <b>Bessel's correction</b> — why every covariance matrix here, and <span class="mono">np.cov</span>/<span class="mono">sklearn</span> by default, divide by $n-1$.</p>
+
+</section>
+
+<section class="block" id="s19-d-eigenvectors">
+<div class="eyebrow">19 · optional, self-read</div>
+<h2>How many eigenvectors for a d&times;d matrix?</h2>
+
+<div class="tbl">
+<table>
+<tr><th>Fact</th><th>Why</th></tr>
+<tr><td>Exactly $d$ eigenvalues</td><td>$\det(A-\lambda I)=0$ is degree-$d$ in $\lambda$ &rarr; $d$ roots (fundamental theorem of algebra)</td></tr>
+<tr><td>All real, never complex (for &Sigma;)</td><td>&Sigma; is always symmetric</td></tr>
+<tr><td>All &ge; 0 (for &Sigma;)</td><td>&Sigma; is positive semi-definite — a variance can't be negative</td></tr>
+<tr><td>$d$ mutually perpendicular eigenvectors</td><td>guaranteed for any symmetric matrix</td></tr>
+</table>
+</div>
+
+<div class="callout good">A $d$-feature dataset always gives exactly $d$ principal directions. The Wisconsin Breast Cancer dataset (30 features) &rarr; 30 components; we just keep the top few by eigenvalue.</div>
+
+</section>
+<section class="block" id="s20-chain">
+<div class="eyebrow">20 · putting it all together</div>
+<h2>The full chain, start to finish</h2>
+<p class="lead">Every step below is a derivation you've worked through by hand — not a claim taken on faith.</p>
+
+<div class="timeline">
+<div class="titem"><div class="tsec">Sections 01&ndash;02</div><div class="ttext">Curse of dimensionality &rarr; want fewer dimensions, without losing information.</div></div>
+<div class="titem"><div class="tsec">Sections 03&ndash;04</div><div class="ttext">Dropping columns loses information. Blend all features into new axes instead; "good axis" = high variance.</div></div>
+<div class="titem"><div class="tsec">Sections 05&ndash;06</div><div class="ttext">Infinitely many candidate directions; trying a few by hand shows variance depends on direction, but can't guarantee we've found the best one.</div></div>
+<div class="titem"><div class="tsec">Sections 07&ndash;09</div><div class="ttext">Matrices generally rotate vectors. Eigenvectors are the special directions a matrix only rescales.</div></div>
+<div class="titem"><div class="tsec">Section 10</div><div class="ttext">Standardize raw data <b>X</b> so every feature counts equally &rarr; <b>X<sub>std</sub></b>.</div></div>
+<div class="titem"><div class="tsec">Section 11</div><div class="ttext">Project X<sub>std</sub> onto an unknown unit direction w: z = w<sup>&#7488;</sup>x.</div></div>
+<div class="titem hl"><div class="tsec">Section 12</div><div class="ttext">Expanding Var(z) algebraically <em>forces</em> the covariance matrix &Sigma; to appear: Var(z) = w<sup>&#7488;</sup>&Sigma;w.</div></div>
+<div class="titem"><div class="tsec">Section 14</div><div class="ttext">Maximizing w<sup>&#7488;</sup>&Sigma;w needs the constraint w<sup>&#7488;</sup>w = 1, or the answer is unbounded.</div></div>
+<div class="titem hl"><div class="tsec">Sections 15&ndash;16</div><div class="ttext">Solving with a Lagrange multiplier <em>produces</em> &Sigma;w = &lambda;w &mdash; the eigenvector equation, now specifically for &Sigma;.</div></div>
+<div class="titem hl"><div class="tsec">Section 17</div><div class="ttext">&lambda; = w<sup>&#7488;</sup>&Sigma;w = Var(z): each eigenvalue <em>is</em> the variance captured along its eigenvector. Rank by &lambda;, largest first &rarr; PC1, PC2, &hellip;</div></div>
+</div>
+
+<div class="mental-model">
+<div class="card-title">The one-paragraph version</div>
+<p>Fewer axes, keeping the most variance. Project onto a candidate direction w; that variance is $w^\top\Sigma w$. Maximize it subject to $w^\top w=1$ using a Lagrange multiplier &rarr; this <em>hands us</em> $\Sigma w=\lambda w$ on its own. Best directions = eigenvectors of $\Sigma$; each eigenvalue = the variance it captures. Keep the largest few, ranked by eigenvalue.</p>
+</div>
+
+<div class="callout good"><span class="lbl">Next session</span>Coding — verify every number here with <span class="mono">numpy</span> / <span class="mono">sklearn.decomposition.PCA</span>, plus explained variance ratios and scree plots on a real dataset.</div>
+
+</section>
+
+<div class="divider"></div>
+<p class="mono" style="text-align:center;font-size:.82rem;color:var(--paper-faint);padding-bottom:10px;">PCA — Built From Scratch &middot; Scaler ML Cohort &middot; Class 08</p>
+
+</main>
+</div>
+</div>
+
+<div class="wrap">
+<div class="pagefoot">
+  <a href="#">&larr; Class 07: Anomaly Detection</a>
+  <span class="relbox">Module: Unsupervised ML &middot; Class 08 of N</span>
+  <a href="#s1-recap">Back to top &uarr;</a>
+</div>
+</div>
+
+<script>
+document.querySelectorAll("nav a").forEach(a=>a.addEventListener("click",()=>{
+  document.querySelectorAll("nav a").forEach(x=>x.classList.remove("active"));
+  a.classList.add("active");
+}));
+</script>
+</body>
+</html>

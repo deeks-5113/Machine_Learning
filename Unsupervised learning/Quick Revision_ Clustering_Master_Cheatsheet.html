@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Clustering — Master Cheat Sheet | Interview Ready</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,ital@9..144,400;9..144,500;9..144,600;9..144,700;9..144,600italic&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[
+    {left:'$$',right:'$$',display:true},
+    {left:'\\[',right:'\\]',display:true},
+    {left:'$',right:'$',display:false},
+    {left:'\\(',right:'\\)',display:false}
+  ]});"></script>
+
+<style>
+:root{
+  --ink-0:#0a0c10; --ink-1:#12151b; --ink-2:#181c24;
+  --hair:#242a34; --hair-soft:#1a1e26;
+  --paper:#eef0ee; --paper-dim:#d7c9a8; --paper-faint:#7fb3a8;
+  --gold:#d9ab5c; --gold-dim:#4d3d22;
+  --teal:#5fbfae; --teal-dim:#1f4239;
+  --coral:#e2836c; --coral-dim:#4a2c22;
+  --slate-blue:#7f9adf; --slate-blue-dim:#252f4a;
+  --moss:#93c084; --moss-dim:#293c26;
+  --radius:12px;
+  --display:"Fraunces",Georgia,serif;
+  --sans:"Inter",-apple-system,Segoe UI,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--ink-0);color:var(--paper);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased;position:relative}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.5;background-image:radial-gradient(circle,#ffffff14 1px,transparent 1.4px);background-size:34px 34px;mask-image:radial-gradient(ellipse 1200px 900px at 50% 0%, black, transparent 75%)}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse 1000px 560px at 12% -8%, #d9ab5c14, transparent 60%),radial-gradient(ellipse 800px 560px at 105% 8%, #5fbfae10, transparent 60%)}
+.wrap{max-width:1240px;margin:auto;padding:0 26px 90px;position:relative;z-index:1}
+
+.hero{padding:56px 0 26px;border-bottom:1px solid var(--hair)}
+.hero .kicker{font-family:var(--mono);font-size:11px;letter-spacing:2.4px;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:10px}
+.hero .kicker::before{content:"";width:26px;height:1px;background:var(--gold)}
+.hero h1{font-family:var(--display);font-weight:600;font-size:clamp(32px,4.4vw,50px);margin:14px 0 10px;color:var(--paper);letter-spacing:-.5px;line-height:1.06}
+.hero h1 em{font-style:italic;font-weight:500;color:var(--teal);background:linear-gradient(180deg,transparent 62%,#5fbfae26 62%)}
+.hero .sub{color:var(--paper-dim);font-size:15px;max-width:760px;margin:0 0 18px}
+.hero .chiprow{display:flex;flex-wrap:wrap;gap:8px}
+.achip{font-family:var(--mono);font-size:11px;padding:5px 12px;border-radius:999px;border:1px solid var(--hair);color:var(--paper-dim)}
+.achip.km{border-color:var(--teal-dim);color:var(--teal)}
+.achip.kpp{border-color:var(--gold-dim);color:var(--gold)}
+.achip.hc{border-color:var(--coral-dim);color:var(--coral)}
+.achip.gm{border-color:var(--slate-blue-dim);color:var(--slate-blue)}
+.achip.db{border-color:var(--moss-dim);color:var(--moss)}
+
+.toc-wrap{position:sticky;top:0;z-index:50;background:rgba(10,12,16,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--hair)}
+.toc{display:flex;gap:4px;overflow-x:auto;padding:11px 26px;max-width:1240px;margin:auto;scrollbar-width:thin}
+.toc a{flex:0 0 auto;font-family:var(--mono);font-size:11.5px;color:var(--paper-dim);text-decoration:none;padding:6px 11px;border-radius:7px;white-space:nowrap;border:1px solid transparent}
+.toc a:hover{border-color:var(--hair);color:var(--paper)}
+
+section.block{margin-bottom:40px;scroll-margin-top:56px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--teal);margin-bottom:8px;display:flex;align-items:center;gap:9px}
+.eyebrow::before{content:"";width:16px;height:1px;background:var(--teal)}
+.eyebrow.c-km{color:var(--teal)} .eyebrow.c-km::before{background:var(--teal)}
+.eyebrow.c-kpp{color:var(--gold)} .eyebrow.c-kpp::before{background:var(--gold)}
+.eyebrow.c-hc{color:var(--coral)} .eyebrow.c-hc::before{background:var(--coral)}
+.eyebrow.c-gm{color:var(--slate-blue)} .eyebrow.c-gm::before{background:var(--slate-blue)}
+.eyebrow.c-db{color:var(--moss)} .eyebrow.c-db::before{background:var(--moss)}
+h2{font-family:var(--display);font-weight:600;font-size:27px;margin:2px 0 8px;color:var(--paper);letter-spacing:-.3px;line-height:1.2}
+h2 i{font-style:italic;color:var(--gold);font-weight:500}
+h3{font-family:var(--display);font-weight:600;font-size:17px;margin:18px 0 8px;color:var(--paper)}
+h4{font-family:var(--sans);font-weight:700;font-size:13.5px;margin:16px 0 6px;color:var(--paper);text-transform:uppercase;letter-spacing:.4px}
+p.lead{color:var(--paper-dim);font-size:14px;max-width:880px}
+p.lead b{color:var(--paper);font-weight:600}
+p{color:var(--paper-dim);font-size:13.3px;max-width:880px}
+p b{color:var(--paper);font-weight:600}
+ul.plain,ol.plain{color:var(--paper-dim);font-size:13.2px;max-width:860px;padding-left:19px}
+ul.plain li,ol.plain li{margin:4px 0}
+ul.plain b,ol.plain b{color:var(--paper)}
+
+.card{background:var(--ink-1);border:1px solid var(--hair);border-radius:var(--radius);padding:18px 20px;margin:12px 0;box-shadow:0 1px 0 #ffffff05 inset}
+.card.km{border-left:3px solid var(--teal)}
+.card.kpp{border-left:3px solid var(--gold)}
+.card.hc{border-left:3px solid var(--coral)}
+.card.gm{border-left:3px solid var(--slate-blue)}
+.card.db{border-left:3px solid var(--moss)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+
+.callout{border:1px solid var(--hair);border-left:3px solid var(--teal);background:linear-gradient(90deg,#5fbfae0f,transparent 40%);color:var(--paper);border-radius:0 10px 10px 0;padding:11px 16px;margin:11px 0;font-size:12.9px}
+.callout b{color:var(--teal)}
+.callout.warn{border-left-color:var(--coral);background:linear-gradient(90deg,#e2836c0f,transparent 40%)}
+.callout.warn b{color:var(--coral)}
+.callout.info{border-left-color:var(--slate-blue);background:linear-gradient(90deg,#7f9adf0f,transparent 40%)}
+.callout.info b{color:var(--slate-blue)}
+.callout.good{border-left-color:var(--moss);background:linear-gradient(90deg,#93c0840f,transparent 40%)}
+.callout.good b{color:var(--moss)}
+.callout.gold{border-left-color:var(--gold);background:linear-gradient(90deg,#d9ab5c0f,transparent 40%)}
+.callout.gold b{color:var(--gold)}
+
+.formula{background:#070809;border:1px solid var(--hair);border-radius:12px;padding:14px 18px;margin:11px 0;overflow-x:auto;text-align:center;font-size:15px;position:relative}
+.formula.left{text-align:left}
+.formula .tag{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:1.1px;text-transform:uppercase;color:var(--paper-faint);margin-bottom:8px;text-align:left}
+
+.step{display:flex;gap:13px;align-items:flex-start;margin:10px 0}
+.step .num{flex:0 0 27px;height:27px;border:1px solid var(--gold-dim);color:var(--gold);border-radius:50%;display:grid;place-items:center;font:11px var(--mono);background:#d9ab5c0d}
+.step .body{flex:1;font-size:13.4px;color:var(--paper-dim)}
+.step .body b{color:var(--paper)}
+
+.tbl{overflow-x:auto;border:1px solid var(--hair);border-radius:12px;margin:11px 0}
+table{width:100%;border-collapse:collapse;font-size:12.1px}
+th{font-family:var(--mono);color:var(--paper-faint);font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;text-align:left;padding:8px 12px;background:var(--ink-2);border-bottom:1px solid var(--hair)}
+td{padding:7px 12px;border-bottom:1px solid var(--hair-soft);color:var(--paper-dim);vertical-align:top}
+tr:last-child td{border-bottom:none}
+td.hl{color:var(--gold);font-weight:600}
+td.good{color:var(--moss);font-weight:600}
+td.bad{color:var(--coral);font-weight:600}
+td.teal{color:var(--teal);font-weight:600}
+
+.glance{overflow-x:auto;border:1px solid var(--hair);border-radius:14px}
+.glance table{font-size:11.8px;min-width:1040px}
+.glance th{position:sticky;top:0}
+.glance td.algo{font-weight:700;font-family:var(--sans)}
+.glance tr td:first-child{border-left:3px solid transparent}
+.glance tr.km td:first-child{border-left-color:var(--teal)}
+.glance tr.kpp td:first-child{border-left-color:var(--gold)}
+.glance tr.hc td:first-child{border-left-color:var(--coral)}
+.glance tr.gm td:first-child{border-left-color:var(--slate-blue)}
+.glance tr.db td:first-child{border-left-color:var(--moss)}
+
+.qa{background:var(--ink-1);border:1px solid var(--hair);border-radius:12px;padding:14px 16px}
+.qa .q{font-family:var(--sans);font-weight:700;color:var(--paper);font-size:13.1px;margin-bottom:7px;display:flex;gap:8px}
+.qa .q::before{content:"Q";flex:0 0 auto;width:19px;height:19px;border-radius:5px;background:var(--gold-dim);color:var(--gold);font:10px var(--mono);display:grid;place-items:center}
+.qa .a{font-size:12.6px;color:var(--paper-dim);padding-left:27px}
+.qa .a b{color:var(--teal)}
+
+.oneliner{background:var(--ink-1);border:1px solid var(--hair);border-radius:12px;padding:15px 17px;position:relative}
+.oneliner .who{font-family:var(--mono);font-size:10px;color:var(--paper-faint);text-transform:uppercase;letter-spacing:1px;margin-bottom:7px}
+.oneliner p{font-family:var(--display);font-style:italic;font-size:14.5px;color:var(--paper);margin:0}
+
+.diagram{background:var(--ink-1);border:1px solid var(--hair);border-radius:14px;padding:14px;margin:14px 0}
+.diagram .cap{font-family:var(--mono);font-size:10px;color:var(--paper-faint);margin-top:7px;text-align:center;letter-spacing:.3px}
+.diagram svg{width:100%;height:auto;display:block}
+
+.pagefoot{margin-top:50px;padding-top:18px;border-top:1px solid var(--hair);font-family:var(--mono);font-size:10.5px;color:var(--paper-faint);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+
+@media(max-width:920px){
+  .grid2,.grid3,.grid4,.grid5{grid-template-columns:1fr}
+  table{font-size:11px}
+}
+@media print{
+  .toc-wrap{display:none}
+  body::before,body::after{display:none}
+  .card,.callout,.formula,.tbl,.diagram,.qa,.oneliner{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<div class="toc-wrap">
+  <nav class="toc">
+    <a href="#glance">⚡ 60-sec table</a>
+    <a href="#mindset">Mental model</a>
+    <a href="#kmeans">K-Means</a>
+    <a href="#kmeanspp">K-Means++ / RFM</a>
+    <a href="#hierarchical">Hierarchical</a>
+    <a href="#gmm">GMM</a>
+    <a href="#dbscan">DBSCAN</a>
+    <a href="#silhouette">Silhouette Score</a>
+    <a href="#compare">Master table</a>
+    <a href="#decision">Decision tree</a>
+    <a href="#qa">Interview Q&amp;A</a>
+    <a href="#formulas">Formula appendix</a>
+    <a href="#recap">One-liners</a>
+  </nav>
+</div>
+
+<div class="wrap">
+
+  <div class="hero">
+    <div class="kicker">Unsupervised Learning · Classes 01–06 · Quick-recall edition</div>
+    <h1>Clustering — <em>Master Cheat Sheet</em></h1>
+    <p class="sub">Exactly what was taught, nothing extra: K-Means through DBSCAN, reduced to the procedure, the one formula that matters, the assumption that breaks it, and the line an interviewer wants to hear. Skim the 60-second table first, then drop into any card only for what you don't already recall.</p>
+    <div class="chiprow">
+      <span class="achip km">K-Means</span>
+      <span class="achip kpp">K-Means++ · RFM</span>
+      <span class="achip hc">Hierarchical</span>
+      <span class="achip gm">GMM</span>
+      <span class="achip db">DBSCAN</span>
+      <span class="achip">Silhouette Score</span>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <section class="block" id="glance">
+    <div class="eyebrow">⚡ start here</div>
+    <h2>The 60-Second Table</h2>
+    <p class="lead">If you remember nothing else from this page, remember this table. Everything below just explains <i>why</i> each cell is true.</p>
+    <div class="glance"><table>
+      <tr><th>Algorithm</th><th>Needs K?</th><th>Membership</th><th>Cluster shape</th><th>Handles outliers?</th><th>Key params</th><th>Time complexity</th><th>Memory</th><th>Use it when…</th></tr>
+      <tr class="km"><td class="algo">K-Means</td><td>Yes, upfront</td><td>Hard (1 label)</td><td>Spherical / convex, equal size &amp; density</td><td class="bad">Poor — mean is dragged</td><td>K, init</td><td>O(nkdt)</td><td>O(kd+n)</td><td>Fast baseline; round, evenly-sized groups</td></tr>
+      <tr class="kpp"><td class="algo">K-Means++</td><td>Yes, upfront</td><td>Hard (1 label)</td><td>Same as K-Means</td><td class="bad">Poor — same as K-Means</td><td>K, n_init</td><td>O(nkdt) + one-time init</td><td>O(kd+n)</td><td>Same as K-Means, but reliable init</td></tr>
+      <tr class="hc"><td class="algo">Hierarchical</td><td>No — cut after</td><td>Hard (1 label)</td><td>Depends on linkage (Ward≈spherical, Single=arbitrary)</td><td class="teal">Visible, not fixed — tall isolated merge</td><td>linkage, cut height/K</td><td>O(n²)→O(n³)</td><td class="bad">O(n²) always</td><td>Small/medium n; want full hierarchy or unsure K</td></tr>
+      <tr class="gm"><td class="algo">GMM</td><td>Yes (or via BIC/AIC)</td><td class="good">Soft (probabilities)</td><td>Elliptical — captures correlation</td><td class="bad">Poor — like K-Means</td><td>K, covariance type</td><td>O(t(nkd²+kd³))</td><td>O(nk+kd²)</td><td>Overlapping/soft groups, correlated features</td></tr>
+      <tr class="db"><td class="algo">DBSCAN</td><td class="good">Never</td><td>Hard + explicit <b>noise</b></td><td class="good">Arbitrary — any shape</td><td class="good">Excellent — noise is a first-class label</td><td>ε, MinPts</td><td>O(n log n)→O(n²)</td><td class="good">O(n) typical</td><td>Unknown K, arbitrary shapes, messy real data</td></tr>
+    </table></div>
+    <div class="callout gold" style="margin-top:14px"><b>The universal goal, one line.</b> Every algorithm on this page is trying to do the same thing in a different way: <b>minimise intra-cluster distance, maximise inter-cluster distance.</b> K-Means does it with centroids, Hierarchical with merges, GMM with probability, DBSCAN with density.</div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section class="block" id="mindset">
+    <div class="eyebrow">the big picture</div>
+    <h2>Mental Model &amp; Taxonomy</h2>
+    <p class="lead">Unsupervised learning: data arrives as <b>X only</b>, no <b>y</b>. Success is judged geometrically — tightness and separation — never against a ground-truth label.</p>
+
+    <div class="grid3">
+      <div class="card km">
+        <h4 style="color:var(--teal)">Hard clustering</h4>
+        <p style="margin:0">Every point gets exactly <b>one</b> label, 100% or 0%.</p>
+        <p style="margin:6px 0 0;font-size:12.5px">K-Means · K-Means++ · Hierarchical</p>
+      </div>
+      <div class="card gm">
+        <h4 style="color:var(--slate-blue)">Soft clustering</h4>
+        <p style="margin:0">Every point gets a <b>probability</b> across all clusters, summing to 1.</p>
+        <p style="margin:6px 0 0;font-size:12.5px">GMM</p>
+      </div>
+      <div class="card db">
+        <h4 style="color:var(--moss)">Density-based</h4>
+        <p style="margin:0">Clusters emerge from <b>density</b>, not distance-to-center; some points get <b>no</b> label (noise).</p>
+        <p style="margin:6px 0 0;font-size:12.5px">DBSCAN (→ HDBSCAN)</p>
+      </div>
+    </div>
+
+    <div class="callout">
+      <b>One-sentence question each algorithm is really asking:</b>
+      <table style="margin-top:10px"><tr><td style="width:140px" class="teal">K-Means</td><td>"Which centre is this point closest to?"</td></tr>
+      <tr><td class="hl">Hierarchical</td><td>"Which two things, right now, are most alike?"</td></tr>
+      <tr><td style="color:var(--slate-blue)">GMM</td><td>"How well does each bell-curve explain this point?"</td></tr>
+      <tr><td style="color:var(--moss)">DBSCAN</td><td>"Is there enough company nearby?"</td></tr></table>
+    </div>
+  </section>
+
+  <!-- ============================================================ K-MEANS -->
+  <section class="block" id="kmeans">
+    <div class="eyebrow c-km">algorithm 01 · hard · centroid-based</div>
+    <h2>K-Means</h2>
+    <p class="lead">Alternates between guessing where the centres are and re-averaging them toward whoever's actually nearby — repeating until nobody wants to switch sides. <b>Guaranteed to converge</b> because every step can only tighten clusters (lower WCSS), never loosen them.</p>
+
+    <ol class="plain">
+      <li>Choose <b>K</b> upfront — K-Means cannot spawn or delete clusters mid-run.</li>
+      <li>Initialise K centroids (random, or smarter — see K-Means++ next).</li>
+      <li><b>Assign:</b> every point → nearest centroid (Euclidean distance).</li>
+      <li><b>Update:</b> each centroid → mean of its assigned points.</li>
+      <li>Repeat assign/update until assignments stop changing.</li>
+    </ol>
+
+    <div class="formula"><span class="tag">core formulas</span>
+    $$d(p,q)=\sqrt{\textstyle\sum_{k=1}^d (p_k-q_k)^2} \qquad WCSS=\sum_{k=1}^{K}\sum_{p\in k}\lVert p-C_k\rVert^2$$
+    </div>
+    <p style="margin-top:-6px">WCSS = <b>Inertia</b> (sklearn's <code>model.inertia_</code>) = <b>SSE</b>. The mean provably minimises WCSS for a fixed membership — that's <i>why</i> K-Means always converges.</p>
+
+    <h3>Choosing K</h3>
+    <p>Order matters: <b>Elbow</b> (plot WCSS vs K, shortlist the bend) → <b>Silhouette Score</b> (confirm on that shortlist — see the Silhouette section) → business constraints <b>last</b>, as a deliberate override, never the starting point.</p>
+    <div class="callout warn"><b>The trap:</b> never pick K by minimising WCSS directly — it falls monotonically to <b>exactly 0 at K=n</b> (one cluster per point). The elbow, not the minimum, is the signal.</div>
+
+    <h3>The three assumptions that quietly break K-Means</h3>
+    <div class="tbl"><table>
+      <tr><th>Assumption</th><th>Breaks on</th><th>Try instead</th></tr>
+      <tr><td><b>Shape</b> — convex/round clusters</td><td>Rings, crescents/moons, any non-globular structure</td><td class="good">DBSCAN</td></tr>
+      <tr><td><b>Size</b> — similar territory per cluster</td><td>True clusters of very different sizes</td><td class="good">Hierarchical, GMM</td></tr>
+      <tr><td><b>Density</b> — similar spread/variance</td><td>One tight+dense cluster next to one loose+sparse one</td><td class="good">DBSCAN, GMM</td></tr>
+    </table></div>
+    <div class="callout info"><b>Why shape is geometry, not a design choice:</b> the perpendicular bisector between two centroids is a straight line ⇒ the region closer to one centroid is a convex polygon. Swap in Manhattan distance and the boundary becomes a diamond — shape comes from the distance metric, not the data.</div>
+
+    <div class="oneliner"><div class="who">if you remember one line</div><p>"K-Means alternates between guessing where the centres are and re-averaging them toward whoever's nearby — repeating until nobody wants to switch sides, and always converging because every step can only tighten the clusters, never loosen them."</p></div>
+  </section>
+
+  <!-- ============================================================ K-MEANS++ / RFM -->
+  <section class="block" id="kmeanspp">
+    <div class="eyebrow c-kpp">algorithm 02 · hard · smarter init + feature engineering</div>
+    <h2>K-Means++ &amp; RFM Segmentation</h2>
+    <p class="lead">K-Means++ changes <b>exactly one thing</b>: how starting centroids are picked. Assignment, update, and convergence are unmodified, identical K-Means underneath.</p>
+
+    <ol class="plain">
+      <li>Pick the first centroid uniformly at random.</li>
+      <li>For every remaining point, find its distance to the <b>nearest already-chosen</b> centroid — D(x).</li>
+      <li><b>Square</b> D(x), turn into probabilities, draw the next centroid by weighted random draw (roulette-wheel).</li>
+      <li>Repeat 2–3 until K centroids are chosen.</li>
+    </ol>
+
+    <div class="formula"><span class="tag">selection probability</span>
+    $$P(x\text{ chosen}) = \dfrac{D(x)^2}{\sum_{x'} D(x')^2}$$
+    </div>
+    <ul class="plain">
+      <li><b>Why square D(x)?</b> Widens the gap between near and far points — same reason WCSS itself squares distance.</li>
+      <li><b>Why MIN, once 2+ centroids exist?</b> Targets genuinely underserved regions, not points merely far from one unrelated centroid.</li>
+    </ul>
+    <div class="callout warn"><b>Does K-Means++ guarantee the global optimum? No.</b> The first pick is still random chance, and later picks are weighted, not forced — reliably better on average, not a guarantee. Production pairs it with multiple restarts (<code>n_init</code>).</div>
+    <div class="callout"><b>Important:</b> K-Means++ fixes <i>where you start</i>, not <i>what a centroid can represent</i> — the shape/size/density limits above still apply, even with restarts.</div>
+
+    <h3>RFM — feature engineering before any clustering runs</h3>
+    <p class="lead">Raw data is usually a transaction log (one row per line-item), not one row per customer. Building that one-row-per-entity table is <b>RFM</b> — most of the real thinking happens here, not in the K-Means call itself.</p>
+    <div class="tbl"><table>
+      <tr><th>Feature</th><th>Formula</th><th>Why this aggregation</th></tr>
+      <tr><td><b>Recency</b></td><td>days since customer's most recent purchase</td><td>Reference date = max(date)+1, derived from data</td></tr>
+      <tr><td><b>Frequency</b></td><td>count of invoices per customer</td><td>Captures engagement independent of spend</td></tr>
+      <tr><td><b>Monetary</b></td><td>sum (not average) of Quantity×UnitPrice</td><td>Sum reflects total value; average conflates "1 huge order" with "50 small ones"</td></tr>
+    </table></div>
+    <ul class="plain">
+      <li><b>IQR-clip</b> outliers on all 3 columns before scaling (K-Means' mean-based centroid is outlier-sensitive), then <b>StandardScaler</b> — R/F/M have very different native ranges; unscaled, Monetary alone would dominate Euclidean distance.</li>
+      <li>Generalises beyond retail: aggregate raw events into one row per entity using business-relevant signals — <i>telecom: usage/tenure/complaints · streaming: watch-time/completion-rate · banking: balance/txn-count.</i></li>
+    </ul>
+
+    <h3>Evaluating a cluster once formed — the priority order</h3>
+    <ol class="plain">
+      <li>Geometric check — WCSS + Silhouette (cheap, catches broken clusterings).</li>
+      <li>Profile the clusters — do mean R/F/M per group tell a coherent, human-nameable story?</li>
+      <li>Stability check — rerun with a different seed / 80% subsample; do the groups persist?</li>
+      <li>Business validation — does treating groups differently move a real metric? <i>The only step with a real answer to "good enough for what?"</i></li>
+    </ol>
+
+    <div class="oneliner"><div class="who">if you remember one line</div><p>"K-Means++ guarantees a good starting point, chosen by weighted chance, not certainty — but no initialization trick ever changes what shape, size, or density of cluster a single centroid can represent."</p></div>
+  </section>
+
+  <!-- ============================================================ HIERARCHICAL -->
+  <section class="block" id="hierarchical">
+    <div class="eyebrow c-hc">algorithm 03 · hard · no centroids, no upfront K</div>
+    <h2>Hierarchical Clustering</h2>
+    <p class="lead">Builds a <b>complete tree of nested clusters</b> instead of one flat partition — no centroids, no K chosen upfront. <b>Agglomerative</b> (bottom-up, used in practice): start with n singletons, merge the 2 closest, repeat for <b>n−1 merges</b>. <b>Divisive</b> (top-down, rare): start with 1 cluster, repeatedly split the highest-SSE cluster — usually via <b>bisecting K-Means</b>.</p>
+    <div class="callout"><b>The one rule that never changes:</b> whatever linkage you use, always merge the pair of clusters with the <b>smallest</b> computed distance.</div>
+
+    <h3>Linkage methods</h3>
+    <div class="formula"><span class="tag">the four linkage formulas</span>
+    $$D_{\text{single}}(A,B)=\min_{a\in A,b\in B} d(a,b) \qquad D_{\text{complete}}(A,B)=\max_{a\in A,b\in B} d(a,b)$$
+    $$D_{\text{avg}}(A,B)=\frac{1}{|A||B|}\sum_{a\in A}\sum_{b\in B} d(a,b) \qquad \Delta_{\text{ward}}(A,B)=\frac{|A||B|}{|A|+|B|}\lVert\mu_A-\mu_B\rVert^2$$
+    </div>
+    <div class="tbl"><table>
+      <tr><th>Linkage</th><th>Best for</th><th>Watch out for</th></tr>
+      <tr><td>Single — nearest neighbours</td><td>Non-convex, elongated, ring/crescent shapes</td><td class="bad">"Chaining" through noise — welds separate blobs into one</td></tr>
+      <tr><td>Complete — worst-case pair</td><td>Tight, roughly equal-sized clusters</td><td class="bad">One outlier inflates the farthest-pair distance</td></tr>
+      <tr><td>Average — balances single &amp; complete</td><td>General-purpose default when unsure</td><td>Sensitive to cluster-size imbalance</td></tr>
+      <tr><td>Ward — minimises variance increase</td><td>Business/RFM data, balanced segments</td><td class="bad">Inherits K-Means' spherical/equal-size assumption</td></tr>
+    </table></div>
+    <div class="callout gold"><b>Practical rule:</b> start with <b>Ward</b> (most real segments are round, similarly sized). Get suspicious if the dendrogram forces very unbalanced groups or you suspect non-round structure — then try Single/Average and compare via Silhouette + business sense.</div>
+
+    <h3>Cutting the dendrogram (choosing K)</h3>
+    <p>Output is a <b>linkage matrix</b> (idx1, idx2, distance, count) — n−1 rows. Cut procedure: find the <b>tallest vertical gap</b> between consecutive merges → cut there → lines crossed = K.</p>
+    <div class="callout warn"><b>Not guaranteed to find true K</b> — a tall gap can hide two true clusters that merged unusually cheaply. Treat it as a strong first guess; cross-check with Silhouette.</div>
+    <div class="callout"><b>vs. K-Means' elbow:</b> hierarchical's merge-height elbow is read straight off one already-built dendrogram — free, deterministic, no re-fitting or seed sensitivity, unlike re-running K-Means from scratch at every K.</div>
+
+    <h3>Scale &amp; outliers</h3>
+    <ul class="plain">
+      <li><b>O(n²) memory, always</b> — the full pairwise distance matrix, unavoidable regardless of implementation speed.</li>
+      <li><b>Merges are permanent</b> — a bad early merge propagates through the rest of the tree. Fix: cut at K+1/K+2, inspect singleton clusters as outlier candidates, remove, re-cut.</li>
+    </ul>
+    <div class="callout info"><b>Standard production pattern for large/non-spherical data:</b> sample → run Hierarchical on the sample → read K off its dendrogram → run K-Means/K-Means++ with that K on the <i>full</i> dataset. Fixes K-selection, <b>not</b> shape — for shape at scale, reach for DBSCAN or an approximate method like <b>BIRCH</b>.</div>
+
+    <div class="oneliner"><div class="who">if you remember one line</div><p>"K-Means asks 'which centre is each point closest to?' Hierarchical never asks that — it only asks 'which two things, right now, are most alike?'"</p></div>
+  </section>
+
+  <!-- ============================================================ GMM -->
+  <section class="block" id="gmm">
+    <div class="eyebrow c-gm">algorithm 04 · soft · probabilistic, generative</div>
+    <h2>Gaussian Mixture Models (GMM)</h2>
+    <p class="lead">Models data as generated from a mixture of K Gaussians. Instead of one hard label, every point gets a <b>responsibility</b> — a probability of belonging to each component, summing to 1. Fit via <b>Expectation-Maximization (EM)</b>.</p>
+
+    <div class="formula"><span class="tag">N-D Gaussian PDF</span>
+    $$P(\vec x\mid\vec\mu,\Sigma)=\frac{1}{\sqrt{(2\pi)^D|\Sigma|}}\exp\!\left(-\tfrac12(\vec x-\vec\mu)^T\Sigma^{-1}(\vec x-\vec\mu)\right)$$
+    </div>
+    <div class="callout warn"><b>Probability vs. likelihood — the mix-up interviewers listen for:</b> probability is area under the curve over a range (∈[0,1]); likelihood is curve <i>height</i> at one point (can exceed 1). GMM's E-step uses likelihood, never probability.</div>
+
+    <h3>Expectation–Maximization</h3>
+    <p>EM alternates two steps: <b>E-step</b> computes every component's responsibility (γ) for every point; <b>M-step</b> recomputes μ, Σ, π as responsibility-weighted statistics.</p>
+    <div class="formula"><span class="tag">E-step</span>
+    $$\gamma_{ik}=\frac{\pi_k\,\mathcal N(x_i\mid\mu_k,\Sigma_k)}{\sum_{j}\pi_j\,\mathcal N(x_i\mid\mu_j,\Sigma_j)} \qquad N_k=\sum_i \gamma_{ik}$$
+    </div>
+    <div class="formula"><span class="tag">M-step</span>
+    $$\pi_k^{\text{new}}=\frac{N_k}{n}\qquad \mu_k^{\text{new}}=\frac{\sum_i\gamma_{ik}x_i}{N_k}\qquad \Sigma_k^{\text{new}}=\frac{\sum_i\gamma_{ik}(x_i-\mu_k^{\text{new}})(x_i-\mu_k^{\text{new}})^T}{N_k}$$
+    </div>
+    <p style="margin-top:-6px">sklearn's <code>.predict()</code> just takes <b>argmax(γ)</b> — a legitimate simplification that discards exactly the info you chose GMM for.</p>
+
+    <div class="callout gold"><b>Interview gold:</b> K-Means is a <b>special case</b> of GMM — equal weights (πₖ=1/K), one shared spherical covariance (Σₖ=σ²I), and σ²→0 sharpens soft responsibilities into a hard 0/1 argmax. Under that limit, the M-step's weighted average reduces exactly to K-Means' centroid update.</div>
+
+    <h3>Choosing K — AIC / BIC</h3>
+    <div class="formula"><span class="tag">model selection</span>
+    $$AIC = 2p - 2\ln\hat L \qquad BIC = p\ln(n) - 2\ln\hat L$$
+    </div>
+    <p>BIC penalises complexity harder than AIC as n grows → use <b>BIC</b> for the true number of subgroups (statistically consistent); use <b>AIC</b> for the best predictive fit on new points. Elbow doesn't apply here — it's built for hard-label inertia, not likelihood.</p>
+
+    <h3>Limitations</h3>
+    <ul class="plain">
+      <li><b>Elliptical-only shape</b> — baked into the Gaussian formula; no μ/Σ can trace a crescent or ring.</li>
+      <li><b>More parameters than K-Means</b> → more init-sensitivity (mitigate with <code>n_init</code>) and risk of a near-singular covariance on small/skewed clusters (fix: <code>reg_covar</code>).</li>
+      <li><b>High-D covariance blows up</b> ($D(D+1)/2$ free entries per component) — run PCA before GMM on high-D data.</li>
+    </ul>
+
+    <div class="tbl"><table>
+      <tr><th></th><th>K-Means / Hierarchical</th><th>GMM</th></tr>
+      <tr><td>Membership</td><td>Hard — exactly one cluster</td><td class="good">Soft — probability across all</td></tr>
+      <tr><td>Shape</td><td>Spherical / linkage-dependent</td><td>Elliptical — captures correlation</td></tr>
+      <tr><td>Fitting</td><td>Iterative reassignment / merging</td><td>Expectation-Maximization</td></tr>
+    </table></div>
+
+    <div class="oneliner"><div class="who">if you remember one line</div><p>"K-Means asks 'which centroid is closest?' and forces an answer. GMM asks 'how well does each of these K bell-curves explain this exact point?' and is honest when the answer is 'a bit of both.'"</p></div>
+  </section>
+
+  <!-- ============================================================ DBSCAN -->
+  <section class="block" id="dbscan">
+    <div class="eyebrow c-db">algorithm 05 · density-based · no K, native noise</div>
+    <h2>DBSCAN</h2>
+    <p class="lead">Density-Based Spatial Clustering of Applications with Noise. Every prior algorithm asks "how close is this point to a centre (or ellipse)?" DBSCAN is the first to ask <b>"is there enough company nearby?"</b> — and the first willing to say a point belongs nowhere.</p>
+
+    <div class="formula"><span class="tag">the only two ingredients</span>
+    $$N_\varepsilon(P)=\{q\in D \mid d(P,q)\le\varepsilon\} \quad\text{(P itself counts)} \qquad \text{CORE if } |N_\varepsilon(P)|\ge \text{MinPts}$$
+    </div>
+    <div class="tbl"><table>
+      <tr><th>Role</th><th>Definition</th><th>Can it grow a cluster?</th></tr>
+      <tr><td class="good">Core</td><td>|N_ε(P)| ≥ MinPts — dense on its own</td><td class="good">Yes — pulls in neighbours</td></tr>
+      <tr><td class="hl">Border</td><td>Not core, but inside a core point's ε-neighbourhood</td><td class="bad">No — passenger only</td></tr>
+      <tr><td class="bad">Noise</td><td>Not core, not reachable from any core point</td><td class="bad">Never assigned to a cluster</td></tr>
+    </table></div>
+    <div class="callout"><b>The one asymmetry rule:</b> only <b>core</b> points can pull others in. A border point can be pulled in, but can never do the pulling.</div>
+    <div class="callout warn"><b>Two boundary gotchas:</b> the core test is <b>≥, not &gt;</b> (landing exactly on MinPts still counts). A pair of mutually-close points is <b>not automatically a cluster</b> — any group smaller than MinPts is not a valid seed, however tight.</div>
+
+    <h3>Formal cluster definition</h3>
+    <div class="tbl"><table>
+      <tr><th>Relation</th><th>Definition</th><th>Why it matters</th></tr>
+      <tr><td><b>Directly density-reachable</b></td><td>q∈N_ε(p) <i>and</i> p is core</td><td>Asymmetric — "only hosts can invite"</td></tr>
+      <tr><td><b>Density-reachable</b></td><td>a chain p=p₁,…,pₙ=q, each step directly reachable</td><td>Explains how DBSCAN follows curvy/non-round clusters</td></tr>
+      <tr><td><b>Density-connected</b></td><td>∃ point o such that both p, q are density-reachable from o</td><td>Glues border points on opposite sides of one cluster together</td></tr>
+    </table></div>
+    <p>A cluster is formally a <b>maximal set of density-connected points</b>.</p>
+
+    <h3>Choosing MinPts and ε</h3>
+    <p><b>MinPts:</b> absolute floor <b>D+1</b> (min 3, Ester et al. 1996); practical default <b>2×D</b> (Sander et al. 1998); the "4" you see everywhere in 2D tutorials is just 2×D at D=2.</p>
+    <p><b>ε via k-distance / elbow:</b> for every point, compute distance to its <b>MinPts-th</b> nearest neighbour → sort ascending → plot → the "knee" near the right end = candidate ε.</p>
+    <div class="callout warn">Use the <b>MinPts-th</b> neighbour, not MinPts−1 (your own distance-to-self = 0 always occupies the free first slot).</div>
+
+    <h3>Advantages</h3>
+    <ul class="plain">
+      <li><b>No K, ever</b> — cluster count emerges from density.</li>
+      <li><b>Genuinely arbitrary shapes</b> — crescents, rings, spirals, via multi-hop reachability.</li>
+      <li><b>Noise is first-class</b>, not forced — outliers don't distort centroids the way they drag K-Means/GMM.</li>
+      <li><b>Mostly deterministic</b> — no random initialisation to fix, unlike K-Means/GMM (there are no centroids to seed; the only order-dependence left is which cluster a border point touching two different cores joins first — core and noise labels themselves never change).</li>
+    </ul>
+    <h3>Limitations</h3>
+    <ul class="plain">
+      <li><b>Uniform-density assumption</b> — one global (ε, MinPts) can't serve a dense <i>and</i> a sparse true cluster at once. Not tunable away — structural.</li>
+      <li><b>Curse of dimensionality</b> — distances concentrate in high-D, both ε and MinPts lose meaning.</li>
+      <li><b>Single flat partition</b> — one (ε, MinPts) → one clustering, no hierarchy.</li>
+    </ul>
+    <div class="callout good"><b>HDBSCAN</b> runs DBSCAN across every ε at once and extracts the clusters most <b>stable</b> across it — solves the "one global ε can't serve differently-dense clusters" problem, with ~one parameter (min cluster size). Use plain DBSCAN when density is roughly uniform; reach for HDBSCAN when it genuinely varies.</div>
+
+    <div class="oneliner"><div class="who">if you remember one line</div><p>"Every other algorithm asks 'which centre is this point closest to?' DBSCAN never asks that — it only asks 'is there enough company nearby?' and is willing to say 'no, this one's on its own.'"</p></div>
+  </section>
+
+  <!-- ============================================================ SILHOUETTE -->
+  <section class="block" id="silhouette">
+    <div class="eyebrow">validity metric · did the clustering actually work?</div>
+    <h2>Silhouette Score</h2>
+    <p class="lead">The one internal validity metric from this module — no ground truth needed, works on any algorithm above.</p>
+
+    <div class="formula"><span class="tag">per point, then averaged</span>
+    $$a(p)=\text{avg dist to own cluster} \qquad b(p)=\min_{\text{other }k}\big(\text{avg dist to cluster }k\big) \qquad s(p)=\frac{b(p)-a(p)}{\max(a(p),b(p))}\in[-1,1]$$
+    </div>
+    <div class="callout warn"><b>Most common mistake:</b> b(p) is <i>not</i> the average distance to all other points — compute the mean distance to <b>each</b> rival cluster separately, then take the <b>minimum</b> (nearest rival). Never shortcut it to distance-to-centroid.</div>
+    <div class="callout warn"><b>Why not distance-to-centroid?</b> By Jensen's inequality, distance-to-centroid always <i>underestimates</i> the true average member distance — a fixed-direction bias that can flip which cluster counts as "nearest rival," not just add noise.</div>
+    <ul class="plain">
+      <li><b>Negative silhouette</b> = unlucky initialisation, or the data doesn't actually support well-separated clusters at that K.</li>
+      <li><b>Cost:</b> O(n²) — infeasible at scale (1M points ≈ 5×10¹¹ pairwise computations). Sample 5,000–10,000 points for offline K-selection, not live monitoring.</li>
+      <li>Rough quality bar: below ~0.3–0.5 is generally considered <b>thin separation</b>.</li>
+    </ul>
+  </section>
+
+  <!-- ============================================================ MASTER TABLE -->
+  <section class="block" id="compare">
+    <div class="eyebrow">everything, side by side</div>
+    <h2>Master Comparison Table</h2>
+    <div class="glance"><table>
+      <tr><th>Dimension</th><th class="teal">K-Means / K-Means++</th><th>Hierarchical</th><th style="color:var(--slate-blue)">GMM</th><th style="color:var(--moss)">DBSCAN</th></tr>
+      <tr><td>Needs K upfront?</td><td class="bad">Yes</td><td class="good">No — cut after</td><td>Yes (or via BIC/AIC)</td><td class="good">Never</td></tr>
+      <tr><td>Membership type</td><td>Hard</td><td>Hard</td><td class="good">Soft (probabilistic)</td><td>Hard + noise</td></tr>
+      <tr><td>Uses centroid?</td><td>Yes</td><td>Only as merge bookkeeping (Ward)</td><td>Yes (μ) + covariance (Σ)</td><td class="good">No — pure density</td></tr>
+      <tr><td>Cluster shape</td><td>Spherical / convex</td><td>Linkage-dependent</td><td>Elliptical</td><td class="good">Arbitrary</td></tr>
+      <tr><td>Outlier behaviour</td><td class="bad">Distorts centroid</td><td>Visible late on dendrogram</td><td class="bad">Distorts μ, Σ</td><td class="good">Labelled noise, ignored</td></tr>
+      <tr><td>Randomness</td><td>Yes (init) — mitigate with ++/n_init</td><td class="good">None — deterministic</td><td>Yes (init) — mitigate with n_init</td><td class="good">Mostly none (only which cluster a contested border point joins first — never changes a core/noise label)</td></tr>
+      <tr><td>Model-selection tool</td><td>Elbow + Silhouette</td><td>Merge-height elbow + Silhouette</td><td>AIC / BIC</td><td>k-distance elbow (ε) + D+1/2D rule (MinPts)</td></tr>
+      <tr><td>Time complexity</td><td>O(nkdt)</td><td>O(n²)→O(n³)</td><td>O(t(nkd²+kd³))</td><td>O(n log n)→O(n²)</td></tr>
+      <tr><td>Memory</td><td>O(kd+n)</td><td class="bad">O(n²) always</td><td>O(nk+kd²)</td><td class="good">O(n) typical</td></tr>
+      <tr><td>Best at scale</td><td class="good">Yes, linear-ish in n</td><td class="bad">No — quadratic memory floor</td><td>Moderate — quadratic in D</td><td>Good with a spatial index, low-D</td></tr>
+    </table></div>
+  </section>
+
+  <!-- ============================================================ DECISION TREE -->
+  <section class="block" id="decision">
+    <div class="eyebrow">which one do i actually pick?</div>
+    <h2>The Decision Tree</h2>
+    <div class="diagram">
+      <svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+        <defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#5a6070"/></marker></defs>
+
+        <rect x="290" y="10" width="220" height="46" rx="9" fill="#181c24" stroke="#4d3d22" stroke-width="1.2"/>
+        <text x="400" y="30" text-anchor="middle" font-family="Inter" font-size="12.5" fill="#d9ab5c">Roughly round clusters,</text>
+        <text x="400" y="45" text-anchor="middle" font-family="Inter" font-size="11" fill="#d9ab5c">similar size &amp; density?</text>
+        <path d="M290 33 L110 33 L110 92" stroke="#5a6070" stroke-width="1.4" marker-end="url(#arrow)" fill="none"/>
+        <text x="170" y="27" font-family="IBM Plex Mono" font-size="11" fill="#7fb3a8">yes</text>
+        <path d="M400 56 L400 84" stroke="#5a6070" stroke-width="1.4" marker-end="url(#arrow)" fill="none"/>
+        <text x="414" y="74" font-family="IBM Plex Mono" font-size="11" fill="#7fb3a8">no</text>
+
+        <rect x="20" y="92" width="180" height="46" rx="9" fill="#0f1716" stroke="#5fbfae" stroke-width="1.4"/>
+        <text x="110" y="112" text-anchor="middle" font-family="IBM Plex Mono" font-size="12" font-weight="600" fill="#5fbfae">K-Means++</text>
+        <text x="110" y="127" text-anchor="middle" font-family="IBM Plex Mono" font-size="10.5" fill="#7fb3a8">fast, scalable baseline</text>
+
+        <rect x="300" y="84" width="200" height="46" rx="9" fill="#181c24" stroke="#4d3d22" stroke-width="1.2"/>
+        <text x="400" y="104" text-anchor="middle" font-family="Inter" font-size="12.5" fill="#d9ab5c">Need soft / probabilistic</text>
+        <text x="400" y="119" text-anchor="middle" font-family="Inter" font-size="11" fill="#d9ab5c">membership?</text>
+        <path d="M500 107 L660 107 L660 166" stroke="#5a6070" stroke-width="1.4" marker-end="url(#arrow)" fill="none"/>
+        <text x="605" y="101" font-family="IBM Plex Mono" font-size="11" fill="#7fb3a8">yes</text>
+        <path d="M400 130 L400 158" stroke="#5a6070" stroke-width="1.4" marker-end="url(#arrow)" fill="none"/>
+        <text x="414" y="148" font-family="IBM Plex Mono" font-size="11" fill="#7fb3a8">no</text>
+
+        <rect x="570" y="166" width="180" height="46" rx="9" fill="#12151f" stroke="#7f9adf" stroke-width="1.4"/>
+        <text x="660" y="186" text-anchor="middle" font-family="IBM Plex Mono" font-size="12" font-weight="600" fill="#7f9adf">GMM</text>
+        <text x="660" y="201" text-anchor="middle" font-family="IBM Plex Mono" font-size="10.5" fill="#7fb3a8">overlapping / correlated groups</text>
+
+        <rect x="300" y="158" width="200" height="52" rx="9" fill="#181c24" stroke="#4d3d22" stroke-width="1.2"/>
+        <text x="400" y="178" text-anchor="middle" font-family="Inter" font-size="12.5" fill="#d9ab5c">Arbitrary shape, noisy,</text>
+        <text x="400" y="193" text-anchor="middle" font-family="Inter" font-size="11" fill="#d9ab5c">K genuinely unknown?</text>
+        <path d="M300 184 L110 184 L110 242" stroke="#5a6070" stroke-width="1.4" marker-end="url(#arrow)" fill="none"/>
+        <text x="170" y="178" font-family="IBM Plex Mono" font-size="11" fill="#7fb3a8">yes</text>
+        <path d="M400 210 L400 238" stroke="#5a6070" stroke-width="1.4" marker-end="url(#arrow)" fill="none"/>
+        <text x="414" y="228" font-family="IBM Plex Mono" font-size="11" fill="#7fb3a8">no</text>
+
+        <rect x="20" y="242" width="180" height="46" rx="9" fill="#0e1a0c" stroke="#93c084" stroke-width="1.4"/>
+        <text x="110" y="262" text-anchor="middle" font-family="IBM Plex Mono" font-size="12" font-weight="600" fill="#93c084">DBSCAN / HDBSCAN</text>
+        <text x="110" y="277" text-anchor="middle" font-family="IBM Plex Mono" font-size="10.5" fill="#7fb3a8">arbitrary shapes, native noise</text>
+
+        <rect x="300" y="238" width="200" height="52" rx="9" fill="#181c24" stroke="#4d3d22" stroke-width="1.2"/>
+        <text x="400" y="258" text-anchor="middle" font-family="Inter" font-size="12.5" fill="#d9ab5c">Small/medium n, want the</text>
+        <text x="400" y="273" text-anchor="middle" font-family="Inter" font-size="11" fill="#d9ab5c">full hierarchy / dendrogram?</text>
+        <path d="M500 264 L660 264 L660 322" stroke="#5a6070" stroke-width="1.4" marker-end="url(#arrow)" fill="none"/>
+        <text x="605" y="258" font-family="IBM Plex Mono" font-size="11" fill="#7fb3a8">yes</text>
+        <path d="M400 290 L400 318" stroke="#5a6070" stroke-width="1.4" marker-end="url(#arrow)" fill="none"/>
+        <text x="414" y="308" font-family="IBM Plex Mono" font-size="11" fill="#7fb3a8">no</text>
+
+        <rect x="570" y="322" width="180" height="46" rx="9" fill="#1c130a" stroke="#e2836c" stroke-width="1.4"/>
+        <text x="660" y="342" text-anchor="middle" font-family="IBM Plex Mono" font-size="12" font-weight="600" fill="#e2836c">Hierarchical</text>
+        <text x="660" y="357" text-anchor="middle" font-family="IBM Plex Mono" font-size="10.5" fill="#7fb3a8">interpretable, K discovery</text>
+
+        <rect x="300" y="322" width="200" height="46" rx="9" fill="#0f1716" stroke="#5fbfae" stroke-width="1.4"/>
+        <text x="400" y="342" text-anchor="middle" font-family="IBM Plex Mono" font-size="12" font-weight="600" fill="#5fbfae">K-Means++</text>
+        <text x="400" y="357" text-anchor="middle" font-family="IBM Plex Mono" font-size="10.5" fill="#7fb3a8">scalable default, then refine</text>
+      </svg>
+      <div class="cap">A practical starting point, not a law — real projects often fit two or three candidates and settle ties with Silhouette.</div>
+    </div>
+  </section>
+
+  <!-- ============================================================ Q&A -->
+  <section class="block" id="qa">
+    <div class="eyebrow">interview rapid-fire</div>
+    <h2>Questions You Will Actually Get Asked</h2>
+    <div class="grid2">
+      <div class="qa"><div class="q">Why can't you pick K by minimising WCSS?</div><div class="a">WCSS falls monotonically to <b>exactly 0</b> at K=n. Use the Elbow's diminishing-returns bend, confirmed by Silhouette, then apply business context.</div></div>
+      <div class="qa"><div class="q">Why does K-Means produce round/convex clusters?</div><div class="a">The perpendicular bisector between two centroids is a straight line, so the region closer to one centroid than all others is a <b>convex polygon</b> — a geometric consequence of nearest-centroid assignment, not a design choice.</div></div>
+      <div class="qa"><div class="q">Does K-Means++ guarantee the optimal clustering?</div><div class="a"><b>No.</b> The first centroid is still random, and later picks are weighted, not forced. It's reliably better on average, not a guarantee — pair it with <code>n_init</code>.</div></div>
+      <div class="qa"><div class="q">Why does K-Means++ square D(x) instead of using it directly?</div><div class="a">Squaring widens the gap between near and far points, pushing the weighted draw much harder toward genuinely underserved regions — the same reason WCSS itself squares distance.</div></div>
+      <div class="qa"><div class="q">Why is b(p) not simply the distance to the rival centroid?</div><div class="a">By Jensen's inequality, distance-to-centroid always <b>underestimates</b> the true average member distance — a fixed-direction bias that can flip which rival cluster "wins," not just add noise.</div></div>
+      <div class="qa"><div class="q">Density-reachable vs. density-connected — what's the difference?</div><div class="a">Density-reachable is a <b>directed chain</b> of core-point hops from p to q. Density-connected means both p and q are reachable from some <b>shared</b> point o — needed to unite two border points that can't reach each other directly.</div></div>
+      <div class="qa"><div class="q">If K-Means is a special case of GMM, is GMM always better?</div><div class="a"><b>No.</b> GMM has far more parameters (full covariance per component), so more initialisation sensitivity, more overfitting risk, and possible singular-covariance failures — generality is a trade-off, not a strict upgrade.</div></div>
+      <div class="qa"><div class="q">Why MinPts and not MinPts−1 in the k-distance plot?</div><div class="a">If your neighbour search includes the point itself, the free first slot is always the point's own distance-to-self (0) — so you need the <b>MinPts-th</b> neighbour to get MinPts−1 real others.</div></div>
+      <div class="qa"><div class="q">What does a negative Silhouette score mean?</div><div class="a">Either an unlucky initialisation, or the data genuinely doesn't support well-separated clusters at that K.</div></div>
+      <div class="qa"><div class="q">Why are early merges in hierarchical clustering risky?</div><div class="a">Merges are <b>permanent</b> — once two points/clusters merge, it can never be undone, so a bad early call propagates through the rest of the tree. Practical fix: cut at K+1/K+2, inspect singleton clusters as likely outliers, remove, re-cut.</div></div>
+      <div class="qa"><div class="q">DBSCAN returns one giant cluster and a lot of noise — what's usually wrong?</div><div class="a">ε is too large (or MinPts too low) — genuinely separate groups get "chained" together through sparse in-between points into one blob, while everything else that doesn't reach that chain gets left as noise. Re-check ε via the k-distance elbow.</div></div>
+      <div class="qa"><div class="q">When would you reach for HDBSCAN over plain DBSCAN?</div><div class="a">When true clusters have <b>meaningfully different densities</b> — one global (ε, MinPts) structurally cannot serve both a tight and a sparse cluster at once; HDBSCAN finds each at its own natural density level.</div></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ FORMULA APPENDIX -->
+  <section class="block" id="formulas">
+    <div class="eyebrow">last-minute cram</div>
+    <h2>Formula Appendix</h2>
+    <div class="grid2">
+      <div class="card km">
+        <h4 style="color:var(--teal)">K-Means</h4>
+        <div class="formula left" style="margin:8px 0">$d=\sqrt{\sum(p_k-q_k)^2}$<br>$WCSS=\sum_k\sum_{p\in k}\lVert p-C_k\rVert^2$</div>
+      </div>
+      <div class="card kpp">
+        <h4 style="color:var(--gold)">K-Means++</h4>
+        <div class="formula left" style="margin:8px 0">$P(x)=\dfrac{D(x)^2}{\sum D(x')^2}$<br>D(x) = dist to nearest chosen centroid</div>
+      </div>
+      <div class="card hc">
+        <h4 style="color:var(--coral)">Hierarchical</h4>
+        <div class="formula left" style="margin:8px 0">Single: $\min d(a,b)$ · Complete: $\max d(a,b)$<br>Average: $\frac{1}{|A||B|}\sum\sum d(a,b)$<br>Ward: $\frac{|A||B|}{|A|+|B|}\lVert\mu_A-\mu_B\rVert^2$</div>
+      </div>
+      <div class="card gm">
+        <h4 style="color:var(--slate-blue)">GMM</h4>
+        <div class="formula left" style="margin:8px 0">$\gamma_{ik}=\dfrac{\pi_k\mathcal N(x_i|\mu_k,\Sigma_k)}{\sum_j\pi_j\mathcal N(x_i|\mu_j,\Sigma_j)}$<br>$AIC=2p-2\ln\hat L$ · $BIC=p\ln n-2\ln\hat L$</div>
+      </div>
+      <div class="card db">
+        <h4 style="color:var(--moss)">DBSCAN</h4>
+        <div class="formula left" style="margin:8px 0">$N_\varepsilon(P)=\{q\mid d(P,q)\le\varepsilon\}$<br>Core: $|N_\varepsilon(P)|\ge$ MinPts<br>MinPts ≥ D+1, practical default 2D</div>
+      </div>
+      <div class="card">
+        <h4>Silhouette Score</h4>
+        <div class="formula left" style="margin:8px 0">$a(p)=$ avg dist, own cluster<br>$b(p)=\min$ avg dist, nearest rival cluster<br>$s(p)=\dfrac{b(p)-a(p)}{\max(a(p),b(p))}$</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ RECAP -->
+  <section class="block" id="recap">
+    <div class="eyebrow">the whole course, five sentences</div>
+    <h2>One-Liners — If You Remember Nothing Else</h2>
+    <div class="grid2">
+      <div class="oneliner"><div class="who">K-Means</div><p>Guesses where the centres are and re-averages toward whoever's nearby — repeating until nobody wants to switch sides.</p></div>
+      <div class="oneliner"><div class="who">K-Means++</div><p>Guarantees a good starting point by weighted chance, not certainty — no init trick changes what shape a centroid can represent.</p></div>
+      <div class="oneliner"><div class="who">Hierarchical</div><p>Never asks which centre is closest — only asks which two things, right now, are most alike.</p></div>
+      <div class="oneliner"><div class="who">GMM</div><p>Asks how well each bell-curve explains this point, and is honest when the answer is "a bit of both."</p></div>
+      <div class="oneliner"><div class="who">DBSCAN</div><p>Asks if there's enough company nearby, and is willing to say "this one's on its own."</p></div>
+      <div class="oneliner"><div class="who">The one goal behind all five</div><p>Minimise intra-cluster distance, maximise inter-cluster distance — every algorithm here is just a different tool for the same job.</p></div>
+    </div>
+  </section>
+
+  <div class="pagefoot"><span>Clustering Module — Classes 01–06, condensed</span><span>Cheat sheet · for revision &amp; interview prep</span></div>
+</div>
+
+<script>
+document.querySelectorAll(".toc a").forEach(a=>a.addEventListener("click",()=>{
+  document.querySelectorAll(".toc a").forEach(x=>x.classList.remove("active"));
+  a.classList.add("active");
+}));
+</script>
+</body>
+</html>
